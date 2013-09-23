@@ -13,7 +13,7 @@ In the fear of giving bad impression of taking long time on simple questions, I 
 
 The other problem is that my brain shuts down under pressure. At one time I even convinced myself I am a dumb guy until one day I came across 2013 TED winner talk by Dr. Sugata Mitra: Build a School in the Cloud. It is one of the greatest talk I have watched. At time 14min 11 second, he showed that there is evidence from neuroscience that human brain shuts down under threaten. Ah.....F**k ! why I did not learn it earlier.
 
-    [Dr. Sugata Mitra: Build a School in the Cloud ](http://www.youtube.com/watch?v=y3jYVe1RGaU&t=14m11s)
+[Dr. Sugata Mitra: Build a School in the Cloud](http://www.youtube.com/watch?v=y3jYVe1RGaU&t=14m11s)
 
 ## About Hiring
 
