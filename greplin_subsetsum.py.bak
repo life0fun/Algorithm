@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+import copy
+
+"""
+find out all the sets in the array where the largest ele in set is the sum of the rest
+   0 1 2 3 4
+   ---------
+   1 2 4 5 6
+when adding 6, call decisionTree(3,6). recursively on two branches.
+include l[3], then prev sets with sum to 6-l[3],
+not include l[3] , then prev sets sum to 6
+"""
+
+def decisionTree(l,root,val):
+    # find return all subset up to idx k that are sum to n
+
+    #print 'decision tree:' ,root, val, l
+    # exit condition, l[k] = n, or n <= 0
+    if val <= 0 or root < 0:
+        yield False, [0]
+        return
+
+    if l[root] == val:
+        yield True, [l[root]]
+        # can't stop after yield...need to continuously drive down !!!!
+
+    nextroot = root-1
+    # not include root, val keep the same and recursive on nextroot
+    for found, subset in decisionTree(l, nextroot, val):
+        if found:
+            foundset = copy.deepcopy(subset)
+            yield True, foundset
+
+    # include root, reduce val by the val of root, recursive on nextroot
+    for found, subset in decisionTree(l, nextroot, val-l[root]):
+        if found:
+            foundset = copy.deepcopy(subset)
+            foundset.extend([l[root]])
+            yield True, foundset
+
+def subsetSums(l):
+    l.sort()
+    num = len(l)
+    maxv = max(l)+1
+    table = [[-1]*maxv for i in xrange(num+1)]
+    totalcnt = 0
+    
+    i = 2
+    while i < len(l):
+        for found, subset in decisionTree(l, i-1, l[i]): 
+            if found:
+                subset.extend([l[i]])
+                yield subset
+        i += 1
+    print 'count:', totalcnt
+
+def testDecisionTree(numbers):
+    sumnsets = []
+
+    for subset in subsetSums(numbers):
+        sumnsets.append(subset)
+
+    sumnsets.sort()
+    for e in sumnsets:
+        print e
+
+    print 'total subset:', len(sumnsets)
+
+if __name__ == '__main__':
+    #numbers = [1, 2, 4, 5, 6]
+    #numbers = [1, 2, 3, 4, 6]
+    numbers = [3, 4, 9, 14, 15, 19, 28, 37, 47, 50, 54, 56, 59, 61, 70, 73, 78, 81, 92, 95, 97, 99]
+
+    testDecisionTree(numbers)

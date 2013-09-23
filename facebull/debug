@@ -1,0 +1,17 @@
+Code Flow:
+
+Discovery:
+1. cell change, 
+   handleCelltowerChange(), getLastLocation(), 
+   updateCurrentLocationDuration()  : updateCurrentLocationDuration() or updateCurrentWifiLocationDuration ()
+   checkinUponLeavingLocation()  : no checkin if lasttuple.getAccuName() == null
+
+2. timer expired, startScan().
+
+3. scan result available : 
+   requestLocationFix() or post messgae
+
+4. Fix available.
+   discoveryingLocation() 
+   updateDiscoveredLocationPoiBeacon()
+   

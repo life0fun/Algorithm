@@ -1,0 +1,9 @@
+# ans is 1.40
+3
+front_door .2 
+under_kitchen_sink .3
+under_bed .5
+3
+front_door under_kitchen_sink 1
+front_door under_bed 1
+under_kitchen_sink under_bed 100

@@ -1,0 +1,16 @@
+4
+front_door    .2
+qno_where      .00000001
+in_cabinet    .3
+no_where      .0000000
+under_bed     .4
+x             .00
+behind_blinds .1
+5
+front_door under_bed     4.999999
+under_bed  behind_blinds 9
+front_door behind_blinds 9
+front_door in_cabinet    2
+in_cabinet behind_blinds 6
+qno_where no_where 6
+no_where in_cabinet 6

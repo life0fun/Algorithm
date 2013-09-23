@@ -1,0 +1,19 @@
+<!--
+SEND ONLY YOUR .java FILES AND build.xml, AS SEPARATE ATTACHMENTS!
+To use this buildfile for, e.g., facebull: change "hoppity" to "facebull" and put main() in facebull.java .
+All .java files in the root directory will be compiled.
+-->
+<project>
+    <property name="keyword" value="facebull"/>
+    <javac srcdir="." destdir="."/>
+    <!-- enlarge the maximum heap size -->
+    <echo message="#!/bin/bash&#x0A;java -cp &quot;${0%/*}&quot; -Xmx1024M ${keyword} &quot;$1&quot;&#x0A;" file="${keyword}"/>
+    <!-- not necessary, but convenient -->
+    <chmod file="${keyword}" perm="a+x"/>
+    <target name="run">
+        <echo> Runing java class .... </echo>
+        <java classname="facebull" classpath=".">
+            <arg value="facebull.2"/>
+        </java>
+    </target>
+</project>

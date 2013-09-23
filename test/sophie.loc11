@@ -1,0 +1,222 @@
+The result is: 35.11
+
+The running time on my system:
+real 0m8.255s user 0m8.249s sys 0m0.008s
+
+The correct path is :
+front_door on_sofa on_balcony under_bed on_bed under_bed in_chair under_sofa on_tv under_sofa in_chair in_bird_cage on_bird_cage in_bird_cage in_chair in_garbage_can on_printer in_closet on_computer on_book_shelf in_toilet on_laptop front_door on_coach front_door under_sofa in_chair on_printer behind_printer on_printer in_chair under_sofa in_sink
+
+The sample file: ==========================================
+
+20
+front_door 0.01
+on_coach 0.02
+in_toilet 0.0113
+on_sofa 0.23
+on_balcony 0.057
+under_sofa 0.017
+in_sink 0.0003
+on_tv 0.07
+on_bed 0.065
+under_bed 0.005
+in_bird_cage 0.04
+on_bird_cage 0.035
+on_book_shelf 0.033
+on_computer 0.078
+on_laptop 0.053
+on_printer 0.072
+behind_printer 0.0032
+in_closet 0.031
+in_chair 0.0926
+in_garbage_can 0.0766
+190
+front_door on_coach 3
+front_door in_toilet 4
+front_door on_sofa 5
+front_door on_balcony 6
+front_door under_sofa 7
+front_door in_sink 8
+front_door on_tv 9
+front_door on_bed 10
+front_door under_bed 11
+front_door in_bird_cage 12
+front_door on_bird_cage 13
+front_door on_book_shelf 14
+front_door on_computer 15
+front_door on_laptop 16
+front_door on_printer 17
+front_door behind_printer 18
+front_door in_closet 19
+front_door in_chair 20
+front_door in_garbage_can 21
+on_coach in_toilet 94
+on_coach on_sofa 85
+on_coach on_balcony 76
+on_coach under_sofa 67
+on_coach in_sink 58
+on_coach on_tv 49
+on_coach on_bed 30
+on_coach under_bed 31
+on_coach in_bird_cage 32
+on_coach on_bird_cage 33
+on_coach on_book_shelf 34
+on_coach on_computer 35
+on_coach on_laptop 36
+on_coach on_printer 37
+on_coach behind_printer 38
+on_coach in_closet 39
+on_coach in_chair 30
+on_coach in_garbage_can 31
+in_toilet on_sofa 18
+in_toilet on_balcony 17
+in_toilet under_sofa 16
+in_toilet in_sink 15
+in_toilet on_tv 14
+in_toilet on_bed 13
+in_toilet under_bed 13
+in_toilet in_bird_cage 13
+in_toilet on_bird_cage 13
+in_toilet on_book_shelf 13
+in_toilet on_computer 13
+in_toilet on_laptop 13
+in_toilet on_printer 13
+in_toilet behind_printer 13
+in_toilet in_closet 13
+in_toilet in_chair 13
+in_toilet in_garbage_can 13
+on_sofa on_balcony 2
+on_sofa under_sofa 22
+on_sofa in_sink 23
+on_sofa on_tv 22
+on_sofa on_bed 21
+on_sofa under_bed 20
+on_sofa in_bird_cage 29
+on_sofa on_bird_cage 28
+on_sofa on_book_shelf 27
+on_sofa on_computer 26
+on_sofa on_laptop 25
+on_sofa on_printer 22
+on_sofa behind_printer 32
+on_sofa in_closet 52
+on_sofa in_chair 22
+on_sofa in_garbage_can 12
+on_balcony under_sofa 11
+on_balcony in_sink 13
+on_balcony on_tv 12
+on_balcony on_bed 11
+on_balcony under_bed 10
+on_balcony in_bird_cage 19
+on_balcony on_bird_cage 18
+on_balcony on_book_shelf 17
+on_balcony on_computer 16
+on_balcony on_laptop 15
+on_balcony on_printer 11
+on_balcony behind_printer 31
+on_balcony in_closet 51
+on_balcony in_chair 21
+on_balcony in_garbage_can 11
+under_sofa in_sink 2
+under_sofa on_tv 1
+under_sofa on_bed 54
+under_sofa under_bed 69
+under_sofa in_bird_cage 13
+under_sofa on_bird_cage 53
+under_sofa on_book_shelf 28
+under_sofa on_computer 95
+under_sofa on_laptop 72
+under_sofa on_printer 61
+under_sofa behind_printer 31
+under_sofa in_closet 15
+under_sofa in_chair 2
+under_sofa in_garbage_can 17
+in_sink on_tv 21
+in_sink on_bed 24
+in_sink under_bed 29
+in_sink in_bird_cage 23
+in_sink on_bird_cage 23
+in_sink on_book_shelf 28
+in_sink on_computer 25
+in_sink on_laptop 22
+in_sink on_printer 21
+in_sink behind_printer 21
+in_sink in_closet 25
+in_sink in_chair 22
+in_sink in_garbage_can 27
+on_tv on_bed 21
+on_tv under_bed 21
+on_tv in_bird_cage 21
+on_tv on_bird_cage 21
+on_tv on_book_shelf 21
+on_tv on_computer 21
+on_tv on_laptop 21
+on_tv on_printer 21
+on_tv behind_printer 21
+on_tv in_closet 21
+on_tv in_chair 21
+on_tv in_garbage_can 21
+on_bed under_bed 1
+on_bed in_bird_cage 21
+on_bed on_bird_cage 31
+on_bed on_book_shelf 41
+on_bed on_computer 51
+on_bed on_laptop 61
+on_bed on_printer 71
+on_bed behind_printer 81
+on_bed in_closet 91
+on_bed in_chair 10
+on_bed in_garbage_can 11
+under_bed in_bird_cage 27
+under_bed on_bird_cage 37
+under_bed on_book_shelf 47
+under_bed on_computer 57
+under_bed on_laptop 67
+under_bed on_printer 77
+under_bed behind_printer 87
+under_bed in_closet 97
+under_bed in_chair 7
+under_bed in_garbage_can 17
+in_bird_cage on_bird_cage 1
+in_bird_cage on_book_shelf 37
+in_bird_cage on_computer 37
+in_bird_cage on_laptop 37
+in_bird_cage on_printer 37
+in_bird_cage behind_printer 37
+in_bird_cage in_closet 37
+in_bird_cage in_chair 3
+in_bird_cage in_garbage_can 37
+on_bird_cage on_book_shelf 31
+on_bird_cage on_computer 32
+on_bird_cage on_laptop 33
+on_bird_cage on_printer 34
+on_bird_cage behind_printer 35
+on_bird_cage in_closet 36
+on_bird_cage in_chair 37
+on_bird_cage in_garbage_can 38
+on_book_shelf on_computer 12
+on_book_shelf on_laptop 34
+on_book_shelf on_printer 56
+on_book_shelf behind_printer 78
+on_book_shelf in_closet 90
+on_book_shelf in_chair 87
+on_book_shelf in_garbage_can 65
+on_computer on_laptop 43
+on_computer on_printer 65
+on_computer behind_printer 87
+on_computer in_closet 9
+on_computer in_chair 78
+on_computer in_garbage_can 56
+on_laptop on_printer 10
+on_laptop behind_printer 21
+on_laptop in_closet 32
+on_laptop in_chair 43
+on_laptop in_garbage_can 54
+on_printer behind_printer 1
+on_printer in_closet 3
+on_printer in_chair 4
+on_printer in_garbage_can 5
+behind_printer in_closet 6
+behind_printer in_chair 7
+behind_printer in_garbage_can 8
+in_closet in_chair 7
+in_closet in_garbage_can 8
+in_chair in_garbage_can 4
