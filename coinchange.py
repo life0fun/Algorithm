@@ -234,31 +234,65 @@ I was thinking process head, DP[i][k] = min(sum(head), DP[i+1][k-1])
 however, this breaks i denotation, from 0 to i.
 the key is, chop off last partition from the end, so DP[i][k] keep i idx meaningful.
 use cum[j] - cum[i] to calculate sum[i..j]
-"""
-const int MAX_N = 100;
-int findMax(int A[], int n, int k) {
-  int M[MAX_N+1][MAX_N+1] = {0};
-  int cum[MAX_N+1] = {0};
-  for (int i = 1; i <= n; i++)
-    cum[i] = cum[i-1] + A[i-1];
 
-  for (int i = 1; i <= n; i++)
-    M[i][1] = cum[i];
-  for (int i = 1; i <= k; i++)
-    M[1][i] = A[0];
+    const int MAX_N = 100;
+    int findMax(int A[], int n, int k) {
+      int M[MAX_N+1][MAX_N+1] = {0};
+      int cum[MAX_N+1] = {0};
+      for (int i = 1; i <= n; i++)
+        cum[i] = cum[i-1] + A[i-1];
 
-  for (int i = 2; i <= k; i++) {
-    for (int j = 2; j <= n; j++) {
-        int best = INT_MAX;
-        for (int p = 1; p <= j; p++) {
-            best = min(best, max(M[p][i-1], cum[j]-cum[p]));
+      for (int i = 1; i <= n; i++)
+        M[i][1] = cum[i];
+      for (int i = 1; i <= k; i++)
+        M[1][i] = A[0];
+
+      for (int i = 2; i <= k; i++) {
+        for (int j = 2; j <= n; j++) {
+            int best = INT_MAX;
+            for (int p = 1; p <= j; p++) {
+                best = min(best, max(M[p][i-1], cum[j]-cum[p]));
+            }
+            M[j][i] = best;
         }
-        M[j][i] = best;
+      }
+      return M[n][k];
     }
-  }
-  return M[n][k];
-}
+"""
 
+"""
+Impl regular expression matching with support of . and *
+example (as, ab*s), (abbbs, ab*bs), (abss, ab.*), (abc, abb*c), (abbc, abb*c)
+i,j idx moving is too complicated. You have to do recursion.
+come up with solution to subproblem, and re-use the solution recursively.
+"""
+def isMatch(s, p):  # s is src string and p is pattern string
+    if p is None:   # completed all patterns, s must be None
+        return s is None
+
+    pcur = p[0]
+    pnext = p[1]
+    hd = s[0]
+
+    if pnext != '*' and pcur != hd and pcur != '.':
+        return False
+
+    if pnext != '*' and (pcur == '.' or pcur == hd):
+        return isMatch(s[1:], p[1:])
+
+    # now pnext is *, we need to consider both
+    # 1. * mean 0, so if pcur != header, 0 will cancel pcur.
+    if isMatch(s, p[2:]):
+        return True
+
+    # 2. * mean 1, or greedy
+    if pcur == hd or pcur == '.' and s is not None:
+        return isMatch(s[1:], p)
+
+    return False   # if all above does not match
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 def main():
     maxInt()
     numofones(10)
