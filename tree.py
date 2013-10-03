@@ -206,6 +206,72 @@ class Tree():
         self.traverse()
 
 """
+BST serialize and deserialize, dfs recursion, fill # to the left/rite of leaf nodes.
+"""
+def serializeBST(root):
+    if root is None:
+        print '#'
+        return
+    serializeBST root.left
+    serializeBST root.rite
+
+def deserializeBST(fstream, parent, asleft):
+    node = fstream.nextToken()
+    if asleft:
+        parent.left = node
+    else:
+        parent.rite = node
+
+    if node is '#':
+        return
+
+    deserializeBST(fstream, node, True)
+    deserializeBST(fstream, node, False)
+
+
+def readBST(minv, maxv, curv, parent, fstream, asleft):
+    if curv < maxv and curv > minv:
+        node = Node(curv)
+        if asleft:
+            parent.left = node
+        else:
+            parent.rite = node
+
+        if childv = fstream.nextToken:
+            readBST(minv, curv, childv, node, fstream, True)
+            readBST(curv, maxv, childv, node, fstream, False)
+
+
+# For left tree, we do pre-order print. For rite tree, we do post-order.
+def printLeaveClock(root, preorder, shallprint):
+    ''' at each subtree, it's always print left, rite order '''
+    if preorder:
+        if shallprint or root.left is None and root.rite is None:
+            print root
+        printLeaveClock root.left, True, shallprint if root.left
+        printLeaveClock root.rite, True, False if root.rite
+    else:
+        printLeaveClock root.left, False, False if root.left
+        printLeaveClock root.rite, False, shallprint if root.rite
+        if shallprint or root.left is None and root.rite is None:
+            print root
+
+# to print the boundary, regardless of left edge or rite edge.
+def printLeaveClock(root, preorder, shallprint):
+    ''' at each subtree, it's always print left, rite order '''
+    if preorder:
+        if shallprint or root.left is None and root.rite is None:
+            print root
+        printLeaveClock root.left, True, shallprint if root.left
+        printLeaveClock root.rite, True, (shallprint and root.left ? False : True) if root.rite
+    else:
+        printLeaveClock root.left, False, (shallprint and root.rite ? False : True) if root.left
+        printLeaveClock root.rite, False, shallprint if root.rite
+        if shallprint or root.left is None and root.rite is None:
+            print root
+
+
+"""
 The key is, need to process each node AND edge.
 when dfs process each node, for each edge, process, and recursion dfs process
 the node connected by the edge. After recursion for all the children of the 
