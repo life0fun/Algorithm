@@ -25,6 +25,9 @@ list * mergesort(list* list){
 
 """
 Linear scan an array: use Extra data structure to store max/min/len seen so far and upbeat on each scan.
+think of using pre-scan to fill out aux tables for o(1) look-up. 
+1. max distance.
+    http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
 1. max conti sum: use max start/end/len to record max seen so far.
 2. segment with start-end overlap, sort by start, update min with smallest x value.
 3. max sum: a ary with ary[i] = sum(l[0:i]). so sum[l[i:j]) = ary[j] - ary[i]
@@ -1110,6 +1113,12 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
 4. find in an array of num, max delta Aj-Ai, j > i. the requirement j>i hints 
     slide thru, at each pos, if it less than cur_beg, set cur_beg, if it > cur_end, set cur_end, and update global max.
 
+5. max distance between two items where right item > left items.
+   http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
+   pre-scan, Lmin[0..n]   store min see so far. so min[i] is mono descrease.
+             Rmax[n-1..0] store max see so far from left <- right. so mono increase.
+   the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
+   after we have Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
 """
 def max_subarray(A):
     max_ending_here = max_so_far = 0
@@ -1118,6 +1127,8 @@ def max_subarray(A):
         max_so_far = max(max_so_far, max_ending_here)
     return max_so_far
 
+""" scan, enum all windows that contains chars. up-beat min upon each enum.
+"""
 def minWindow(S, T):
     ''' find min substring in S that contains all chars from T'''
     matched_chars_len = 0     # matched char len
@@ -1161,6 +1172,43 @@ def maxDelta(A):
         else:
             # do nothing if it is between cur_beg, cur_end
     return max_beg, max_end
+
+"""
+    max distance between two items where right item > left items.
+    http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
+    pre-scan, Lmin[0..n]   store min see so far. so min[i] is mono descrease.
+             Rmax[n-1..0] store max see so far from left <- right. so mono increase.
+    the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
+    Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
+"""
+def max_distance(l):
+    sz = len(l)
+    Lmin = [l[0]]*sz
+    Rmax = [l[sz-1]]*sz
+    for i in xrange(1, sz-1:
+        Lmin[i] = min(Lmin[i-1], l[i])
+    for j in xrange(sz-2,0,-1):
+        Rmax[j] = max(Rmax[j+1], l[j])
+
+    i = j = 0
+    maxdiff = -1
+    while j < sz and i < sz:
+        # found one, upbeat, Rmax also mono decrease, stretch
+        if Lmin[i] < Rmax[j]:
+            maxdiff = max(maxdiff, j-i)
+            j += 1
+        else: # Lmin is bigger, mov, Lmin is mono decrease
+            i += 1
+
+    return maxdiff
+
+
+""" slide window w in an array, find max at each position.
+    a maxheap with w items. when slide out, extract maxnode, if max is not 
+    the left edge, re-insert maxnode, continue extract until we drop left edge.
+    this is how you remove node from heap. O(nlgW)
+    To get rid of logW, squeeze w to single, upon new item, shadow/pop medium items.
+"""
 
 
 if __name__ == '__main__':

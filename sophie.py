@@ -9,7 +9,7 @@ from decimal import *
 DP with Branch-and-Bound prune.
 Compute the lower and upper bound at each level(partial solution with a path prefix)
 Upper bound is the min solution encountered so far.
-Lower bound of a partial solution: 
+Lower bound of a partial solution:
     no_of_nodes_left * min_dist_to_those_nodes * sum_of_prob_of_those_nodes
 Prune:  lower_bound >= upper bound.
 """
@@ -23,9 +23,9 @@ class Sophie():
         self.sortedDist = {}  # [('front_door', 0), ('under_bed', 5),...]
         self.startpoint = None
         self.tab = {}
-        self.upperbound = {}  # key is path, val is min expected for this path. 
+        self.upperbound = {}  # key is path, val is min expected for this path.
         self.minexp = self.MAX
-        
+
     def log(self, *x):
         #print x
         pass
@@ -57,6 +57,9 @@ class Sophie():
 
 
     # calculate the shortest path between each pair of locations
+    # the solution should be use a min-heap to store sorted dist[v] to src.
+    # delete min from min-heap, relax its neighbor's dist[n], and *re-inssert* dist[nb] into min-heap.
+    # we do not need to delete the old node in min-heap, as delete-min will always get the smallest.
     def dijkstra(self, start, dist={}, parent={}):
         q = self.distMatrix.keys()
         for k in q:
@@ -67,7 +70,7 @@ class Sophie():
         parent[start] = start
 
         # be aware if no route to start node, matrix might not have start.
-        tmpdist = copy.deepcopy(dist)  # shallow cp, [] will change. tmpdist = dist.copy()  
+        tmpdist = copy.deepcopy(dist)  # shallow cp, [] will change. tmpdist = dist.copy()
 
         while q:
             ''' resort the dist array everytime extract min'''
@@ -91,7 +94,7 @@ class Sophie():
             path = {}
             cost = {}
             self.dijkstra(node, cost, path)
-            self.dijkstraMatrix[node] = dict(path=path, cost=cost) 
+            self.dijkstraMatrix[node] = dict(path=path, cost=cost)
             self.sortedDist[node] = sorted(self.dijkstraMatrix[node]['cost'].iteritems(), key=lambda x:x[1])
             #{'path': {'front_door': 'front_door', 'in_cabinet': None, 'behind_blinds': 'front_door', 'under_bed': 'front_door'}, 'cost': {'front_door': 0, 'in_cabinet': 2147483647, 'behind_blinds': 9, 'under_bed': 5}}
 
@@ -113,7 +116,7 @@ class Sophie():
             gap = self.dijkstraMatrix[path[i-1]]['cost'][path[i]]
             tot += gap
             exp += tot*self.locProb[path[i]]
-            #self.log('head:', path[i-1], ' next:', path[i], ' dist:', gap, ' prob:', self.locProb[path[i]], ' tot:', tot, ' exp:', exp) 
+            #self.log('head:', path[i-1], ' next:', path[i], ' dist:', gap, ' prob:', self.locProb[path[i]], ' tot:', tot, ' exp:', exp)
             i += 1
         return exp
 
@@ -126,7 +129,7 @@ class Sophie():
         elif self.upperbound[curpathkey][1] > self.tab[curpathkey][1]:
             self.upperbound[curpathkey][0] = self.tab[curpathkey][0]  # set min path
             self.upperbound[curpathkey][1] = self.tab[curpathkey][1]  # set min exp
-       
+
         if self.minexp > self.upperbound[curpathkey][1]:
             self.minexp = self.upperbound[curpathkey][1]
         return
@@ -139,12 +142,12 @@ class Sophie():
         for e in self.sortedDist[node]:
             if not e[0] in s and e[0] in self.locProb:
                 return e[0],e[1]
-    
+
     ''' find the min incoming edge for the node from the set '''
     def nodeROWMinIn(self, enternode, ctime, s):
         rowexp = 0
         for node in s:
-            if node == enternode: # cur->enternode already counted before entering 
+            if node == enternode: # cur->enternode already counted before entering
                 continue
             #for i in xrange(len(self.sortedDist[node])):
             #    if self.sortedDist[node][i][0] in s:
@@ -176,10 +179,10 @@ class Sophie():
         lowexp += rowexp
 
         self.log('parentpath:', parentpath, ' rowset:', rows, ' rowset_lowexp:', rowexp, ' tot_lowexp:', lowexp)
-        
+
         return lowexp
 
-    ''' parentpath has cur in end but does not contain next node, 
+    ''' parentpath has cur in end but does not contain next node,
         curexp and ctime incl cur node but not include cur to next
     '''
     def pruneBigLowBound(self, cur, nextnode, parentpath, curexp, cumultime):
@@ -187,7 +190,7 @@ class Sophie():
             return False  # do not prune if lowbound is within
         return True
 
-    ''' traveling salesman DP BFS  BB algorithm 
+    ''' traveling salesman DP BFS  BB algorithm
         the nodes are divided into two sets, discovered parentpath set, and undiscovered ROW set
         after exploring ROW, records down in DP tab the min cost of exploring ROW given discovered
         parentpath set as the key.
@@ -225,14 +228,14 @@ class Sophie():
         if self.tab.has_key(curpathkey):  # get the min from DP tab directly
             tabminpath = self.tab[curpathkey][0]
             minpath.extend(tabminpath[len(minpath):])  # the minpath of ROW since curpathkey
-            tabexp = self.cumulatePathExp(minpath)   
+            tabexp = self.cumulatePathExp(minpath)
             self.log('tab found:', curpathkey, ' tabexp:', tabexp, ' minpath:', minpath)
             return tabexp
             #pass
 
         ''' DP tab not found, DFS BB children, and recursion on each child'''
-        minexp, curexp = self.MAX, self.cumulatePathExp(minpath) 
-        nextnode, nextminpath = None, None 
+        minexp, curexp = self.MAX, self.cumulatePathExp(minpath)
+        nextnode, nextminpath = None, None
         sortednodeprob = sorted(self.locProb.iteritems(), key=lambda x:x[1], reverse=True)
         sortednodedist = sorted(self.dijkstraMatrix[cur]['cost'].iteritems(), key=lambda x:x[1])
         for node, prob in sortednodedist:
@@ -245,7 +248,7 @@ class Sophie():
 
             '''Prune the node if projected low bound greater than min exp'''
             if self.pruneBigLowBound(cur, node, parentpath, curexp, cumultime):
-                self.log('cur:', cur, ' prune:', node, ' parentpath:', parentpath, ' minpath:', minpath) 
+                self.log('cur:', cur, ' prune:', node, ' parentpath:', parentpath, ' minpath:', minpath)
                 tmpl = ['0', '8', '2', '15', '3', '14', '10']
                 tmpl.sort()
                 tmpl.append('12')
@@ -253,7 +256,7 @@ class Sophie():
                 #    sys.exit(1)
                 continue
 
-            tmpminpath = list(minpath) 
+            tmpminpath = list(minpath)
             parentpath.append(node)
             tmpminpath.append(node)    # already appended the next node here
             nextcumultime = 0 # cumultime+self.dijkstraMatrix[cur]['cost'][node]
@@ -268,9 +271,9 @@ class Sophie():
         if not nextnode:
             return self.MAX
 
-        # cons nextnode, and its result, into the return value 
+        # cons nextnode, and its result, into the return value
         ''' nextminpath is a dup of cur min with next node appended, hence remove dup part'''
-        minpath.extend(nextminpath[len(minpath):])  
+        minpath.extend(nextminpath[len(minpath):])
 
         self.tab[curpathkey] = [0]*3
         self.tab[curpathkey][0] = minpath   # curpathkey end by cur node
@@ -279,7 +282,7 @@ class Sophie():
         ''' now update upper bound'''
         self.updateUpperBound(curpathkey)
 
-        self.log('curpath:', parentpath, 'cur->next:',self.dijkstraMatrix[cur]['path'][nextnode], ' next:', nextnode, ' nextmin:', nextminpath, 'cumultime:', cumultime, 'minexp:', self.tab[curpathkey][1], ' minpath:', minpath) 
+        self.log('curpath:', parentpath, 'cur->next:',self.dijkstraMatrix[cur]['path'][nextnode], ' next:', nextnode, ' nextmin:', nextminpath, 'cumultime:', cumultime, 'minexp:', self.tab[curpathkey][1], ' minpath:', minpath)
         return self.tab[curpathkey][1]
 
     def expectedValue(self):
@@ -299,7 +302,7 @@ class Sophie():
             if not k in minpath:
                 print "-1.00"
                 return
-        
+
         #print Decimal(exp).quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
         print "%.2f" % (exp)
 
