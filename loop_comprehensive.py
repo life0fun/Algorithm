@@ -1106,7 +1106,7 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
     use a list to note down largest so far. scan next, append to end if next > end.
     otherwise, bisect to insert next into existing largest seq. when scan done, we get largest increasing seq at end.
 
-3. min substring in S that contains all chars from T.
+3. min sliding window substring in S that contains all chars from T.
     slide thru, find first substring contains T, note down beg/end/count as max beg/end/count.
     then start to squeeze beg per every next, and upbeat global min string.
 
@@ -1119,6 +1119,19 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
              Rmax[n-1..0] store max see so far from left <- right. so mono increase.
    the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
    after we have Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
+
+6. slide window w in an array, find max at each position.
+   a maxheap with w items. when slide out, extract maxnode, if max is not 
+   the left edge, re-insert maxnode, continue extract until we drop left edge.
+   this is how you remove node from heap. O(nlgW)
+   To get rid of logW, squeeze w to single, upon new item, shadow/pop medium items.
+
+7. convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
+   cost[i], at ary index i, the cost of sorted subary[0..i] with l[i] is the last.
+   l = [5,4,7,3] => 5-1, rm 3. cost[i+1], dp each 1<k<i, 
+    l[i+1] > l[k], cost[i+1] = cost[k] + del l[k] .. l[i+1]
+    l[i+1] < l[k], cost[i+1] = min of make each l[k] to l[i+1], or del l[k]
+
 """
 def max_subarray(A):
     max_ending_here = max_so_far = 0
@@ -1210,6 +1223,43 @@ def max_distance(l):
     To get rid of logW, squeeze w to single, upon new item, shadow/pop medium items.
 """
 
+"""
+    convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
+    cost[i], at ary index i, the cost of sorted subary[0..i] with l[i] is the last.
+    l = [5,4,7,3] => 5-1, rm 3. cost[i+1], dp each 1<k<i, 
+    l[i+1] > l[k], cost[i+1] = cost[k] + del l[k] .. l[i+1]
+    l[i+1] < l[k], find the first l[j] < l[i+1], and cost[i+1] = min of make each l[j] to l[i+1], or del l[k]
+"""
+def convert_to_sort(l):
+    dp = [sys.maxint for i in xrange(len(l))]
+    # solve the cost of each subary [0..i]
+    for i in xrange(len(l)):
+        cur = l[i]
+        for j in xrange(i-1, 0, -1):
+            costi = 0
+            if l[j] < cur:
+                for k in xrange(j,i): delcost += l[k]
+                costi = cost[i] + delcost
+            else:
+                # find first l[j] <= l[i]
+                costi += delcost
+                while l[j] > cur and j > 0:
+                    costi += l[j] - cur
+                    j -= 1
+                costi += dp[j+1]
+
+            # after each round of j, up-beat
+            dp[i] = costi if dp[i] > costi else costi
+
+    # as dp[i] is the cost of with l[i] as the last item.
+    # global can be the one with last item bing deleted.
+    gmin = sys.maxint
+    for i in xrange(len(l)):
+        costi = dp[i] + delcost[n-1]-delcost[i]
+        gmin = min(costi, gmin)
+    return gmin
+
+    
 
 if __name__ == '__main__':
     #qsort([363374326, 364147530 ,61825163 ,1073065718 ,1281246024 ,1399469912, 428047635, 491595254, 879792181 ,1069262793], 0, 9)
