@@ -35,6 +35,8 @@ think of using pre-scan to fill out aux tables for o(1) look-up.
 5. for bit operation, find one bit to partition the set; repeat the iteration.
 6. for string s[..], build suffix ary A[..] sorted in O(n) space O(n), s[A[i]] = start-pos-of-substring.
 7. For int[range-known], find even occur of ints in place: toggle a[a[i]] sign. even occur will be + and odd will be -.
+8. max dist when l[j] > l[j], shadow LMin[] and RMax[], merge sort scan.
+9. stock profit. calc diff between nbs, (diff[i] = l[i] - l[i-1]), then find max subary.
 """
 
 ''' recursive, one line print int value bin string'''
@@ -1036,6 +1038,9 @@ class HuffmanCode(object):
 '''
 skip list, a probabilistic alternative to balanced tree
 https://kunigami.wordpress.com/2012/09/25/skip-lists-in-python/
+skiplist can be a replacement for heap. heap is lgn insert and o1 delete.
+however, you can not locate an item in heap, you can only extract min/max.
+with skiplist, list is sorted, insert is lgn, min/max is o1, del is lgn.
 '''
 class SkipNode:
     def __init__(self, height=0, elem = None):   # [ele, next[ [l1], [l2], ... ]
@@ -1203,7 +1208,7 @@ def max_distance(l):
     for j in xrange(sz-2,0,-1):
         Rmax[j] = max(Rmax[j+1], l[j])
 
-    i = j = 0
+    i = j = 0   # both start from 0, Lmin/Rmax 
     maxdiff = -1
     while j < sz and i < sz:
         # found one, upbeat, Rmax also mono decrease, stretch
@@ -1214,6 +1219,26 @@ def max_distance(l):
             i += 1
 
     return maxdiff
+
+"""
+    stock profit: calc diff between two neighbor. diff[i] = l[i] - l[i-1], then find
+    the max subary on diff[] array. [5 2 4 3 5] = [-3 2 -1 2]
+"""
+def stock_profit(l):
+    sz = len(l)
+    diff = [ l[i+1]-l[i] for i in xrange(sz)]
+    maxbeg = maxend = maxval = 0
+    curbeg = curend = curval = 0
+    for i in xrange(1, sz):
+        curend = i
+        if diff[i] > 0:
+            curval += diff[i]
+            upbeat()
+        elif curval > diff[i]:
+            curval += diff[i]
+        elif curval < diff[i]:
+            curbeg = curend = i+1
+            curval = 0
 
 
 """ slide window w in an array, find max at each position.
