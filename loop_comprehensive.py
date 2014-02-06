@@ -1106,6 +1106,11 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
     scan thru, compute at each pos i, the max sub array end at i. upbeat.
     if ith ele > 0, it add to max, if cur max > global max, update global max; 
     If it < 0, it dec max. If cur max down to 0, restart cur_max beg and end to next positive.
+
+1.1 max sub ary multiplication.
+    scan thru, if abs times < 1, re-start with curv=1. otherwise, upbeat.
+    do not care about sign during scan. When upbeat, if negative, cut off from the leftest negative.
+
     
 2. largest increasing sequence. 
     use a list to note down largest so far. scan next, append to end if next > end.
@@ -1144,6 +1149,50 @@ def max_subarray(A):
         max_ending_here = max(0, max_ending_here + x)  # incl x 
         max_so_far = max(max_so_far, max_ending_here)
     return max_so_far
+
+def kadane(l):
+    max_beg = max_end = max_val = 0
+    cur_beg = cur_end = cur_val = 0
+
+    for i in xrange(len(l)):
+        cur_end = i
+        if l[i] > 0:
+            cur_val += l[i]
+            upbeat()
+        else:
+            if l[i] + cur_val > 0:
+                cur_val += l[i]
+            else:
+                cur_val = 0
+                cur_start = i + 1
+
+def max_times(l):
+    def upbeat():
+        if cur_val < 0:
+            for i in xrange(cur_beg, cur_end):
+                t *= l[i]
+                if l[i] < 0:
+                    cur_max = cur_val/t
+                    cur_beg = i
+            if cur_max > max_val:
+                [max_beg, max_end] = [cur_beg, cur_end]
+
+
+    max_beg = max_end = cur_beg = cur_end = 0
+    max_val = cur_val = 1
+
+    for i in xrange(len(l)):
+        cur_end = i
+        if l[i] > 0:
+            cur_val += l[i]
+            upbeat()
+        else:
+            if l[i] + cur_val > 0:
+                cur_val += l[i]
+            else:
+                cur_val = 0
+                cur_start = i + 1
+
 
 """ scan, enum all windows that contains chars. up-beat min upon each enum.
 """
