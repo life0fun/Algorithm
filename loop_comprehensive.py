@@ -289,14 +289,12 @@ diameter = max(diameter(ltree, rtree) = max( depth(ltree) + depth(rtree) )
 '''
 def diameter(root):
     if not root:
-        return 0
-    ldepth = depth(root.lchild)
-    rdepth = depth(root.rchild)
+        return [0, 0]  # first is diameter, second is ht
 
-    ldiameter = diameter(root.lchild)
-    rdiameter = diameter(root.rchild)
+    [ldiameter, ldepth] = diameter(root.lchild)
+    [rdiameter, rdepth] = diameter(root.rchild)
 
-    return max(ldepth+rdepth+1, max(ldiameter, rdiameter))
+    return [max(ldepth+rdepth+1, max(ldiameter, rdiameter)), max(ldepth, rdepth)+1]
 
 '''
 min vertex set, dfs, when process vertex late, i.e., recursion of 
@@ -1142,6 +1140,9 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
     l[i+1] > l[k], cost[i+1] = cost[k] + del l[k] .. l[i+1]
     l[i+1] < l[k], cost[i+1] = min of make each l[k] to l[i+1], or del l[k]
 
+8. three number sum to zero
+   sort first, two point at both end, i, k, the j moving in between.
+   for i in 0..sz to try all possibilities.
 """
 def max_subarray(A):
     max_ending_here = max_so_far = 0
@@ -1333,7 +1334,30 @@ def convert_to_sort(l):
         gmin = min(costi, gmin)
     return gmin
 
-    
+"""
+   three number sum to zero
+   sort first, two point at both end, i, k, the j moving in between.
+   for i in 0..sz to try all possibilities.
+"""
+def three_sum_zero():
+    for i in xrange(1, n-2):
+        j = i  # Start where i is.
+        k = n  # Start at the end of the array.
+
+        while k >= j:
+            if A[i] + A[j] + A[k] == 0: 
+                return (A[i], A[j], A[k])
+
+            #We didn't match. Let's try to get a little closer:
+            # If the sum was too big, decrement k.
+            # If the sum was too small, increment j.
+            if A[i] + A[j] + A[k] > 0: 
+                k--
+            else: j++
+      
+    # When the while-loop finishes, j and k have passed each other and there's
+    # no more useful combinations that we can try with this i.
+
 
 if __name__ == '__main__':
     #qsort([363374326, 364147530 ,61825163 ,1073065718 ,1281246024 ,1399469912, 428047635, 491595254, 879792181 ,1069262793], 0, 9)
