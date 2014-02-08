@@ -348,51 +348,49 @@ def insertBST(root, node):
     if root.right and root.val < node.val:
         insertBST(root.right, node)
 
-def findParent(root, node):
-    if root.left == node or root.right == node:
+def common_parent(root, n1, n2):
+    if not root:
+        return None
+    if root is n1 or root is n2:
         return root
-    if root.val < node.val:
-        findParent(root.right, node)
+    left = common_parent(root.left, n1, n2)
+    rite = common_parent(root.rite, n1, n2)
+    if left and rite:
+        return root
+    return left if left else rite
+
+
+# convert bst to link list, isleft flag is true when root is left child of parent 
+# test with BST2Linklist(root, False), so the left min is returned.
+def BST2Linklist(root, is_left_child):
+    # leaf, return node itsef
+    if not root.left and not root.rite:
+        return root
+
+    if root.left:
+        lefthead = BST2Linklist(root.left, True)
+        if lefthead:
+            lefthead.next = root
+            root.pre = lefthead
+    if root.rite:
+        ritehead = BST2Linklist(root.rite, False)
+        if ritehead:
+            root.next = ritehead
+            ritehead.pre = root
+
+    if is_left_child:
+        # ret max rite
+        maxrite = root
+        while maxrite.rite:
+            maxrite = maxrite.rite
+        return maxrite
     else:
-        findParent(root.left, node)
+        # ret left min
+        minleft = root
+        while minleft.left:
+            minleft = minleft.left 
+        return minleft
 
-def findLeftMax(node):
-    if not node.left:
-        return node
-    tmpnode = node.left
-    while tmpnode:  # right most of the left tree
-        tmpnode = tmpnode.right
-    return tmpnode
-
-def findRightMin(node):
-    if not node.right:
-        return node
-    tmpnode = node.right
-    while tmpnode:  # left most of right tree
-        tmpnode = tmpnode.left
-    return tmpnode
-
-def findSuccessorByParent(node):
-    if node.right:
-        return findRightMin(node)
-
-    cur = node
-    par = node.parent
-    while par.right == cur:
-        par,cur = par.parent, par
-    return par
-
-''' min of right subtree, or first parent node whose left subtree has me'''
-def findSuccessor(node):  #
-    if node.right:
-        return findRightMin(node)
-
-    while root.val < node.val:  # the next bigger
-        root = root.right
-    while findLeftMax(root) != node:
-        root = root.left
-
-    return root
 
 ''' max of left subtree, or first parent whose right subtree has me'''
 def findPrecessor(node):
