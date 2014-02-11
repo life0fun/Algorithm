@@ -996,6 +996,59 @@ def testFindKth():
     assert(Z[9] == findKth(A, len(A), B, len(B), 10))
     
 
+""" 
+  selection algorithm, find the kth largest element with worst case O(n)
+  http://www.ardendertat.com/2011/10/27/programming-interview-questions-10-kth-largest-element-in-array/
+"""
+def selectKth(A, beg, end, k):
+    def partition(A, l, r, pivotidx):
+        A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
+        swapidx = l   # all ele smaller than pivot, stored in left, started from begining
+        for i in xrange(l, r):
+            if A.i < A.r:   # smaller than pivot, put it to left where swap idx
+                A.swapidx, A.i = A.i, A.swapidx
+                swapidx += 1
+        A.r, A.swapidx = A.swapidx, A.r
+        return swapidx
+
+    if beg == end: return A.beg
+    if not 1 <= k < (end-beg): return None
+
+    while True:   # continue to loop 
+        pivotidx = random.randint(l, r)
+        rank = partition(A, l, r, pivotidx)
+        if rank == k: return A.rank
+        if rank < k: return selectKth(A, l, rank, k-rank)
+        else: return selectKth(A, rank, r, k-rank)
+
+# median of median of divide to n groups with each group has 5 items,
+def medianmedian(A, beg, end, k):
+    def partition(A, l, r, pivot):
+        swapidx = l
+        for i in xrange(l, r+1):
+            if A.i < pivot:
+                A.swapidx, A.i = A.i, A.swapidx
+                swapidx += 1
+        # i will park at last item that is < pivot
+        return swapidx-1   # left shift as we always right shift after swap.
+
+    sz = end - beg + 1  # beg, end is idx
+    if not 1<= k <= sz: return None     # out of range, None.
+    # ret the median for this group of 5 items
+    if end-beg <= 5:
+        return sorted(A[beg:end])[k-1]  # sort and return k-1th item
+    # divide into groups of 5, ngroups, recur median of each group, pivot = median of median
+    ngroups = sz/5
+    medians = [medianmedian(A, beg+5*i, beg+5*(i+1)-1, 3) for i in xranges(ngroups)]
+    pivot = medianmedian(medians, 0, len(medians)-1, len(medians)/2+1)
+    pivotidx = partition(A, beg, end, pivot)  # scan from begining to find pivot idx.
+    rank = pivotidx - beg + 1
+    if k <= rank:
+        return medianmedian(A, beg, pivotidx, k)
+    else:
+        return medianmedian(A, pivotidx+1, end, k-rank)
+
+
 '''
 Huffman coding: sort freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
 http://en.nerdaholyc.com/huffman-coding-on-a-string/
