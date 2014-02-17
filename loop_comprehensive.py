@@ -318,23 +318,29 @@ def depth(root):
     return 1 + max(depth(root.lchild), depth(root.rchild))
 
 '''
-find the sum of one level.
-when DFS recursion into a node from the parent, carry the info parent wants to tell the child
-and child can use this global info to decide its status, prefix, level, etc
-the sum at level is just the total sum of tree till level - tot sum of tree till level-1
+find the sum of one level, bfs level and sum when level match
 '''
 def getSum(root, level):
-    ''' ret the sum while traversing the tree till the downtolevel'''
-    def traverse(node, curlevel, downtolevel):
-        sum = 0
-        if curlevel == downtolevel:
-            sum = node.val
-            return sum
-        for child in node.children:
-            sum += traverse(child, curlevel+1)
-        return sum
+    def bfs(root, level):
+        Q = collections.deque()
+        root.level = 1
+        root.instack = True
 
-    return traverse(root, 1, level) - traverse(root, 1, level-1)
+        while len(Q):
+            curnode = Q.popleft()
+            tot = tot + curnode.val if curnode.level is level else tot
+            for nb of curnode.children:
+                if not nb.processed:
+                    process_edge(curnode, nb)
+                if not nb.instack and not nb.processed:
+                    nb.level = curnode+1
+                    nb.parent = curnode
+                    nb.instack = True
+                    Q.enqueue(nb)
+            curnode.processed = True
+            if curnode.level > level:
+                break
+    return bfs(root, level)
 
 
 ''' insertion is a procedure of replacing null with new node !'''

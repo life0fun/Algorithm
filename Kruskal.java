@@ -1,46 +1,97 @@
-Kruskal's algorithm finds a minimum spanning tree for a connected, weighted, undirected graph.
+//
+// Prism algorithm, the same as dijkstra. 
+// use a priqueue to store nodes, keyed by dist from current node.
+// so init all node dist[i] to max. extractMin(), relax all its nb,
+// re-insert nb to heap with new value.
+// in dijkstra, dist[k] = min(dist[cur] + cost[cur,k])
+// here, dist[k] = min(dist[k], cost(cur,k))
+// also, color a node after processed, move from one unvisited set to visited set.
 
-http://algowiki.net/wiki/index.php?title=Kruskal's_algorithm
+class Prism {
+  public static class Node implements Comparable {
+    private int value;
+    private Node parent;
+    private bool visited;
 
- public class Kruskal {
+    public Node(int val){
+      value = val;
+      parent = null;
+      visited = false;
+    }
 
-   public ArrayList<Edge> getMST(Node[] nodes, ArrayList<Edge> edges){
-       java.util.Collections.sort(edges);
-       ArrayList<Edge> MST = new ArrayList<Edge>();
-       
-       DisjointSet<Node> nodeset = new DisjointSet<Node>();
-       nodeset.createSubsets(nodes);
-       for(Edge e : edges){
-           if(nodeset.find(e.from) != nodeset.find(e.to)){
-               nodeset.merge(nodeset.find(e.from), nodeset.find(e.to));
-               MST.add(e);
-           }
-       }
-       return MST;
-   }
+    @Override
+    public int compareTo(Object o){
+      Node n = (Node) o;
+      return this.value - o.value;
+    }
+  }
+
+  public static class Edge {
+    Node from, to;
+  }
+
+  PriorityQueue<Node> Q = new PriorityQueue<Node>();
+
+  /**
+   * generate mst for the G, as a map, with adjacent edge list
+   */
+  int MST(Node root, Map<Node, List<Edeg> G) {
+    Q.add(root);
+    root.visited = true;
+
+    while(Q.size()){
+      cur = Q.poll();
+      for(nb : G.get(cur)){
+        // dijkstra dist[nb] > dist[cur] + cost(cur,nb)
+        if not nb.visited and nb.value > cost(cur,nb):
+            nb.value = cost(cur,nb)
+            nb.parent = cur
+            Q.add(nb)
+      }
+      cur.visited = true;
+    }
+  }
 }
 
-/* DisjointSets.java */
 
-package set;
+
+// Kruskal's algorithm finds a minimum spanning tree for a connected, weighted, undirected graph.
+// http://algowiki.net/wiki/index.php?title=Kruskal's_algorithm
+//
+// graph is repr by adj hashmap. first sort all edges, and take each edge out,
+// disjoin set merge edge.from and edge.to.
+public class Kruskal {
+
+  public ArrayList<Edge> getMST(Node[] nodes, ArrayList<Edge> edges){
+      // sort all edges, and greedy to take min edge one by one.
+      java.util.Collections.sort(edges);
+      ArrayList<Edge> MST = new ArrayList<Edge>();
+       
+      DisjointSet<Node> nodeset = new DisjointSet<Node>();
+      nodeset.createSubsets(nodes);
+
+      for(Edge e : edges){
+          if(nodeset.find(e.from) != nodeset.find(e.to)){
+              nodeset.merge(nodeset.find(e.from), nodeset.find(e.to));
+              MST.add(e);
+          }
+      }
+      return MST;
+  }
+}
+
 
 /**
  *  A disjoint sets ADT.  Performs union-by-rank and path compression.
- *  Implemented using arrays.  There is no error checking whatsoever.
- *  By adding your own error-checking, you might save yourself a lot of time
- *  finding bugs in your application code for Project 3 and Homework 9.
- *  Without error-checking, expect bad things to happen if you try to unite
- *  two elements that are not roots of their respective sets, or are not
- *  distinct.
- *
+ *  Implemented using arrays.  
  *  Elements are represented by ints, numbered from zero.
- *
- *  @author Mark Allen Weiss
  **/
 
 public class DisjointSets {
 
+  // shall use hashmap, key is node, and value is its parent
   private int[] array;
+  map<Node, Node> root = new HashMap<Node, Node>();
 
   /**
    *  Construct a disjoint sets object.
@@ -51,7 +102,9 @@ public class DisjointSets {
   public DisjointSets(int numElements) {
     array = new int [numElements];
     for (int i = 0; i < array.length; i++) {
-      array[i] = -1;
+      array[i] = -1;   // parent init to -1.
+      Node = new Node(i);
+      root.put(Node, null);
     }
   }
 
@@ -73,6 +126,13 @@ public class DisjointSets {
       }
       array[root2] = root1;       // root1 equal or taller; make root1 new root
     }
+  }
+
+  Node union(Node n1, Node n2){
+    Node p1 = root.get(n1);
+    Node p2 = root.get(n2);
+    if(p2) root.put(n1, p2);
+    if(p1) root.put(n2, p1);
   }
 
   /**
