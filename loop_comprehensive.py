@@ -1157,7 +1157,7 @@ class SkipList:
 
 """ 
 list scan comprehension compute sub seq min/max, upbeat global min/max for each next item.
-1. max sub array problem. Kadane's Algo. 
+1. max sub array problem. max[i] = max(max[i-1]+A.i, A.i) or Kadane's Algo. 
     scan thru, compute at each pos i, the max sub array end at i. upbeat.
     if ith ele > 0, it add to max, if cur max > global max, update global max; 
     If it < 0, it dec max. If cur max down to 0, restart cur_max beg and end to next positive.
@@ -1165,31 +1165,32 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
 1.1 max sub ary multiplication.
     scan thru, if abs times < 1, re-start with curv=1. otherwise, upbeat.
     do not care about sign during scan. When upbeat, if negative, cut off from the leftest negative.
-
     
 2. largest increasing sequence. 
     use a list to note down largest so far. scan next, append to end if next > end.
-    otherwise, bisect to insert next into existing largest seq. when scan done, we get largest increasing seq at end.
+    if small, bisect it into the existing increasing seq. if largest start from here, eventually
+    the seq will override existing increasing seq. 
 
 3. min sliding window substring in S that contains all chars from T.
     slide thru, find first substring contains T, note down beg/end/count as max beg/end/count.
     then start to squeeze beg per every next, and upbeat global min string.
 
 4. find in an array of num, max delta Aj-Ai, j > i. the requirement j>i hints 
-    slide thru, at each pos, if it less than cur_beg, set cur_beg, if it > cur_end, set cur_end, and update global max.
+   slide thru, at each pos, compare to both lowest and highest value. if it set new low, 
+   set cur_low and re-count, if it > cur_high, upbeat global max.
 
 5. max distance between two items where right item > left items.
    http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
    pre-scan, Lmin[0..n]   store min see so far. so min[i] is mono descrease.
              Rmax[n-1..0] store max see so far from left <- right. so mono increase.
    the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
-   after we have Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
+   after we have Lmin and Rmax, scan both from left to right, stretch Rmax to the farest right.
 
 6. slide window w in an array, find max at each position.
    a maxheap with w items. when slide out, extract maxnode, if max is not 
    the left edge, re-insert maxnode, continue extract until we drop left edge.
    this is how you remove node from heap. O(nlgW)
-   To get rid of logW, squeeze w to single, upon new item, shadow/pop medium items.
+   To get rid of logW, upon append new item, shadow/pop items in the W queue to squeeze.
 
 7. convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
    cost[i], at ary index i, the cost of sorted subary[0..i] with l[i] is the last.
@@ -1202,6 +1203,7 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
    for i in 0..sz to try all possibilities.
 """
 def max_subarray(A):
+    # M[i] = max(M[i-1] + A.i, A.i)
     max_ending_here = max_so_far = 0
     for x in A:
         max_ending_here = max(0, max_ending_here + x)  # incl x 
@@ -1330,6 +1332,7 @@ def max_distance(l):
 """
     stock profit: calc diff between two neighbor. diff[i] = l[i] - l[i-1], then find
     the max subary on diff[] array. [5 2 4 3 5] = [-3 2 -1 2]
+    or scan, compare A.i to both cur_low and cur_high, if A.i set cur_low, re-set, and upbeat.
 """
 def stock_profit(l):
     sz = len(l)
