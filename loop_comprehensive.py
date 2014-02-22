@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 import sys
 import math
@@ -752,6 +751,14 @@ class MaxHeap():
             self.val = val
             self.ij = (i,j)   # the i,j index in the two array
 
+        ''' recursive in-order iterate the tree this node is the root '''
+        def inorder(self):
+            if self.lchild:
+                self.lchild.inorder()
+            self.toString()
+            if self.rchild:
+                self.rchild.inorder()
+
     def __init__(self):
         self.Q = []
 
@@ -822,109 +829,6 @@ class MaxHeap():
         self.Q.pop()      # remove the end, the extracted hearder, first
         self.siftdown(0)
 
-''' this class impl min heap
-    node has key/value and l/r child,
-'''
-class MinHeap():
-    class Node():
-        def __init__(self, key, val, l, r):
-            self.key = key
-            self.val = val
-            self.ij = (l,r)   # the i,j index in the two array
-            self.lchild = l   # the lchild of this node in the tree
-            self.rchild = r
-
-        def toString(self):
-            print 'Node : ', self.key, ' ', self.val, ' l:', self.lchild, ' r:', self.rchild
-            return 'Node : ', self.key, ' ', self.val, ' l:', self.lchild, ' r:', self.rchild
-
-        ''' recursive in-order iterate the tree this node is the root '''
-        def inorder(self):
-            if self.lchild:
-                self.lchild.inorder()
-            self.toString()
-            if self.rchild:
-                self.rchild.inorder()
-
-    def __init__(self):
-        self.Q = []
-
-    def log(self, *k, **kw):
-        print k
-
-    def toString(self):
-        self.log(' --- heap start ---- ')
-        for n in self.Q:
-            print n.key, n.val, n.lchild, n.rchild
-        self.log(' --- heap end ---- ')
-
-    def head(self):
-        return self.Q[0]
-
-    ''' node idx starts from 0 '''
-    def lchild(self, idx):
-        lc = 2*idx+1
-        if lc < len(self.Q):
-            return lc, self.Q[lc].val
-        return None, None
-    def rchild(self, idx):
-        rc = 2*idx+2
-        if rc < len(self.Q):
-            return rc, self.Q[rc].val
-        return None, None
-    def parent(self, idx):
-        if idx > 0:
-            return (idx-1)/2, self.Q[(idx-1)/2].val
-        return None, None
-
-    def swap(self,i, j):
-        self.Q[i], self.Q[j] = self.Q[j], self.Q[i]
-
-    def siftup(self, idx):
-        while True:
-            pidx, pv = self.parent(idx)
-            # swap when parent is bigger, min heap
-            if pv and pv > self.Q[idx].val:
-                self.swap(pidx, idx)
-                idx = pidx
-            else:
-                return
-
-    def siftdown(self, idx):
-        while idx < len(self.Q)-1:
-            lc, lcv = self.lchild(idx)
-            rc, rcv = self.rchild(idx)
-            if lcv and rcv:
-                mincv = min(lcv, rcv)
-                minc = lc if mincv == lcv else rc
-            else:
-                mincv = lcv if lcv else rcv
-                minc = lc if lc else rc
-
-            # min heap : sift down when node idx is bigger.
-            if mincv and self.Q[idx].val > mincv:
-                self.swap(idx, minc)
-                idx = minc
-            else:
-                return  # done when loop break
-
-    def insert(self, key, val, i, j):
-        self.log('inserting : ', key, val, i, j)
-        node = MinHeap.Node(key, val, i, j)
-        self.Q.append(node)
-        self.siftup(len(self.Q)-1)
-
-    def extract(self):
-        self.swap(0, len(self.Q)-1)
-        head = self.Q.pop()      # remove the end, the extracted hearder, first
-        head.toString()
-        self.siftdown(0)
-        return head
-
-    def heapify(self):
-        m = (len(self.Q)-1)/2
-        for i in xrange(m, -1, -1):
-            self.siftdown(i)
 
 def KthMaxSum(p, q, k):
     color = [[0 for i in xrange(len(q)) ] for i in xrange(len(p)) ]
@@ -1053,6 +957,46 @@ def medianmedian(A, beg, end, k):
         return medianmedian(A, beg, pivotidx, k)
     else:
         return medianmedian(A, pivotidx+1, end, k-rank)
+
+
+
+""" 3sum, a list of integer, 3 of them sum to 0, or 2 of them sum to another.
+    to avoid binary search, insert each item into hashtable, and for each pair,
+    hash lookup any pair sum, found mean there exists.
+""" 
+def 3sum(l):
+    l = sorted(l)
+    for i in xrange(0, len(l)-3):
+        a = l[i]
+        k = i+1
+        j = len(l)-1
+        while k < j:
+            b = l[k]
+            c = l[j]
+            if a+b+c == 0:
+                print a,b,c
+                return
+            else if a+b+c < 0:
+                k += 1
+            else:
+                l -= 1
+
+''' do not need bisect with two pointers converge '''
+def 3sum(l):
+    l = sorted(l)
+    for j in xrange(len(l), -1, 2):
+        c = l[j]
+        i = 0
+        k = j-1
+        a=l[i]
+        b=l[k]
+        while k > i:
+            if a+b = c:
+                return a, b, c
+            if a+b > c:
+                k -= 1
+            else:
+                i += 1
 
 
 '''
@@ -1417,6 +1361,56 @@ def three_sum_zero():
       
     # When the while-loop finishes, j and k have passed each other and there's
     # no more useful combinations that we can try with this i.
+
+""" integer partition problem. break to subproblem, recur equation, start from boundary.
+    for item in [0..n], so the first for will solve single item case, then bottom up.
+    fence partition, m[n, k] = min(max(m[i-1,k-1], sum[i..n])) for i in [0..n]
+    boundary: m[1,k] = A.1, one item, k divider; m[n,1] = sum(A)
+    subset sum, s[i, v] = s[i-1,v] + s[i-1, v-A.i]
+"""
+def integer_partition(A, n, k):
+    m = [[0 for i in xrange(n)] for j in xrange(k)]  # min max value
+    d = [[0 for i in xrange(n)] for j in xrange(k)]  # where divider is
+    
+    # calculate prefix sum
+    for i in xrange(A): psum[i] = psum[i-1] + A[i]
+    # boundary, one divide, and one element
+    for i in xrange(A): m[i][1] = psum[i]
+    for j in xrange(k): m[1][j] = A[1]
+
+    for i in xrange(2, n):
+        for j in xrange(2, k):
+            m[i][j] = sys.maxint
+            for x in xrange(1, i):
+                cost = max(m[x][j-1], psum[i]-psum[x])
+                if m[i][j] > cost:
+                    m[i][j] = cost
+                    d[i][j] = x     # divide at pos x
+
+
+
+# subset sum, sum val not change.
+def subset_sum(A, v):
+    def dp(A, i, v, sol):
+        if i == 0:
+            if A[i] == v:
+                sol.append(i)
+                tab[i, v] = sol
+                return True
+            return False
+
+        find = dp(A, i-1, v, sol)
+        find = dp(A, i-1, v-A[i], sol.append(i))
+
+    # using recursion function call
+    for i in xrange(len(A)):
+        dp(A, i, v, [])
+
+    # if not using recursion, and build tab[i,j]
+    for i in xrange(len(A)):
+        for v in xrange(v):
+            tab[i,v] = max(tab[i-1,v], tab[i-1, v-W.i] + V.i)
+
 
 
 if __name__ == '__main__':
