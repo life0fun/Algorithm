@@ -1116,6 +1116,8 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
     the seq will override existing increasing seq. 
 
 3. min sliding window substring in S that contains all chars from T.
+    two pointers and two tables solution. [beg..end], and while end++ and squeze beg.
+    need_to_found[x] and has_found[x], once first window established, explore end and squeeze beg.
     slide thru, find first substring contains T, note down beg/end/count as max beg/end/count.
     then start to squeeze beg per every next, and upbeat global min string.
 
@@ -1131,10 +1133,9 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
    after we have Lmin and Rmax, scan both from left to right, stretch Rmax to the farest right.
 
 6. slide window w in an array, find max at each position.
-   a maxheap with w items. when slide out, extract maxnode, if max is not 
-   the left edge, re-insert maxnode, continue extract until we drop left edge.
-   this is how you remove node from heap. O(nlgW)
-   To get rid of logW, upon append new item, shadow/pop items in the W queue to squeeze.
+   a maxheap with w items. heap node(val, idx). when sliding, add rite(val, idx) to heap.
+   if prq.top().idx < rite-winsize, max is prq.top(). if not, pop top. continue to pop while top().idx
+   not in window(rite-winsz). O(n): deque, loop pop q tail if rite > q.tail.
 
 7. convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
    cost[i], at ary index i, the cost of sorted subary[0..i] with l[i] is the last.
@@ -1198,7 +1199,8 @@ def max_times(l):
                 cur_start = i + 1
 
 
-""" scan, enum all windows that contains chars. up-beat min upon each enum.
+""" two pointers + two tables solution. 
+enum all windows that contains chars. up-beat min upon each enum.
 """
 def minWindow(S, T):
     ''' find min substring in S that contains all chars from T'''
@@ -1216,6 +1218,7 @@ def minWindow(S, T):
         matched_chars[val] += 1
         if matched_chars[val] <= need_to_match[val]:        
             matched_chars_len += 1
+        # a window found, maintain the window while squeeze left edge.
         if matched_chars_len == len(T):
             # squeeze left edge
             while need_to_match[cur_beg] == 0 || 
@@ -1228,6 +1231,39 @@ def minWindow(S, T):
                 min_beg, min_end = cur_beg, idx
 
     return min_beg, min_end
+
+""" max value in sliding window"""
+def maxValueSlidingWin(A, w):
+    maxheap = MaxHeap();
+    for i in xrange(w):
+        maxheap.add(Node(A.i, i))
+    maxWin[i-w] = maxheap.top()
+    for i in xrange(w, sz):
+        if maxheap.top.idx > i-w:
+            maxheap.add(A.i, i)
+        else:
+            top = maxheap.pop()
+            while top.idx < i-w:
+                top = maxheap.pop()
+
+        maxWin[i-w] = maxheap.top()
+
+
+def maxValueSlidingWin(A, w):
+    Q = collections.deque()
+    for i in xrange(w):
+        while q.tail() < A.i:
+            q.tail.pop()
+        q.append(A.i)
+    
+    maxWind[0] = Q.head()
+
+    for i in xrange(w, sz):
+        while q.tail() < A.i:
+            q.tail.pop()
+        q.append(A.i)
+        maxWin[i-w] = Q.head if Q.head.idx > i-w
+
 
 def maxDelta(A):
     ''' in a seq of nums, find max(Aj - Ai) where j > i '''
@@ -1410,6 +1446,20 @@ def subset_sum(A, v):
     for i in xrange(len(A)):
         for v in xrange(v):
             tab[i,v] = max(tab[i-1,v], tab[i-1, v-W.i] + V.i)
+
+
+""" reg match . *. recursion, loop try 0,1,2...times for *. """
+def regMatch(T, P, offset):
+    if P is None: return T is None
+    if p+1 is not '*':
+        return p == s or p is '.' and regMatch(T,P, offset+1)
+    else:
+        # loop match 1, 2, 3...
+        while p == s or p is '.':
+            if regMatch(T, P+2, offset+2): return True
+            s += 1
+        # match 0 time
+        return regMatch(T, P, offset+2)
 
 
 
