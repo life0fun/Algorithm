@@ -280,6 +280,37 @@ def isBST(root, minval, maxval):   # pass in global cap, check globally
 
     return False
 
+""" serde of bst """
+def serdeBtree(root):
+    if not root: print '$'
+    print root
+    serdeBtree(root.left)
+    serdeBtree(root.rite)
+
+def serdeBtree(line, parent, leftchild):
+    if line is '$'
+        return
+    node = Node(line)
+    if leftchild: parent.left = node else parent.rite = node
+    serdeBtree(nextline, node, True)
+    serdeBtree(nextline, node, False)
+
+""" serde binary search tree, pre-order node 
+    only recur when current node is child of parent, if next line not my child
+    recur will keep ret until to its bst parent. read next when creating new node.
+"""
+def serdePreBst(val, parent, leftchild, minv, maxv):
+    # only recur when this node is the child of parent
+    if minv < val < maxv:
+        node = Node(val)
+        if leftchild: parent.left = node else parent.rite = node
+        # read next line, if next line not my child, recur wi
+        nextv = nextline()
+        if nextv: 
+            serdePreBst(nextv, node, True, -sys.maxint-1, val)
+            serdePreBst(nextv, node, False, val, sys.maxint)
+
+
 '''
 find the diameter(width) of a bin tree.
 diameter is defined as the longest path between two leaf nodes.
@@ -340,6 +371,26 @@ def getSum(root, level):
             if curnode.level > level:
                 break
     return bfs(root, level)
+
+
+""" populate next right pointer to point sibling in each node
+    we can do bfs, level by level. or do recursion.
+"""
+def populateSibling(root, parent):
+    if not root: return root
+    root.sibling = parent.lchild if parent else None
+    populateSibling(root.lchild, root)
+    populateSibling(root.rchild, root)
+
+def populateSibling(root):
+    if not root: return root
+    if root.lchild:
+        root.lchild.sibling = root.rchild
+    if root.rchild:
+        root.rchild.sibling = root.sibling ? root.sibling.lchild : None
+    populateSibling(root.lchild)
+    populateSibling(root.rchild)
+
 
 
 ''' insertion is a procedure of replacing null with new node !'''
@@ -499,6 +550,13 @@ def testFindInsertionPosition():
     first, expand to prec width, then binary search
     for n [0..1], write n as a/b, sqrt(a)/sqrt(b)
 '''
+def sqrt(n, prec=2):
+    # use newton, xn+1 = xn - (xn*xn - s)/2*xn
+    rt = n/2
+    while rt*rt - n > 0.1/pow(10,prec):
+        rt = rt - (pow(rt, 2) - n)/2*rt
+    return rt
+
 def sqrt(n, prec=2):
     def intSqrt(n, prec=2):
         xn = n*pow(10, prec)*pow(10,prec)   # expand to 100^2
@@ -981,7 +1039,7 @@ def 3sum(l):
             else:
                 l -= 1
 
-''' do not need bisect with two pointers converge '''
+''' do not need bisect with two pointers converge, o(n2) '''
 def 3sum(l):
     l = sorted(l)
     for j in xrange(len(l), -1, 2):
@@ -1460,7 +1518,6 @@ def regMatch(T, P, offset):
             s += 1
         # match 0 time
         return regMatch(T, P, offset+2)
-
 
 
 if __name__ == '__main__':
