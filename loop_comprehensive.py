@@ -326,6 +326,19 @@ def diameter(root):
 
     return [max(ldepth+rdepth+1, max(ldiameter, rdiameter)), max(ldepth, rdepth)+1]
 
+def diameter(root):
+    if not root.lchild and not root.rchild:
+        return 0, [root, root], [root] # first diameter, second diamter leaf, last ht path
+    
+    ldiameter, ldialeaves, lhtpath = diameter(root.lchild)
+    rdiameter, rdialeaves, rhtpath = diameter(root.rchild)
+    if max(ldiameter, rdiameter)) > max(ldepth+rdepth)+1:
+        leaves = ldialeaves
+    else:
+        leaves = [last(lhtpath), last(rhtpat)]
+    return max(ldepth+rdepth+1, max(ldiameter, rdiameter)), leaves, max(ldepth, rdepth)+1
+
+
 '''
 min vertex set, dfs, when process vertex late, i.e., recursion of 
 all its children done and back to cur node, use greedy, if exisit
@@ -1213,6 +1226,7 @@ def max_subarray(A):
         max_so_far = max(max_so_far, max_ending_here)
     return max_so_far
 
+''' s[i] = max(s[i-1]+A.i, A.i), either expand sum, or start new win from cur '''
 def kadane(l):
     max_beg = max_end = max_val = 0
     cur_beg = cur_end = cur_val = 0
@@ -1229,32 +1243,22 @@ def kadane(l):
                 cur_val = 0
                 cur_start = i + 1
 
-def max_times(l):
-    def upbeat():
-        if cur_val < 0:
-            for i in xrange(cur_beg, cur_end):
-                t *= l[i]
-                if l[i] < 0:
-                    cur_max = cur_val/t
-                    cur_beg = i
-            if cur_max > max_val:
-                [max_beg, max_end] = [cur_beg, cur_end]
-
-
-    max_beg = max_end = cur_beg = cur_end = 0
-    max_val = cur_val = 1
-
-    for i in xrange(len(l)):
-        cur_end = i
-        if l[i] > 0:
-            cur_val += l[i]
-            upbeat()
-        else:
-            if l[i] + cur_val > 0:
-                cur_val += l[i]
-            else:
-                cur_val = 0
-                cur_start = i + 1
+''' as negative sign can twist, need to keep track both max[] and min[].
+p[i] = max(pmin[i-1]*l.i, pmax[i-1]*l.i, l.i),
+'''
+def max_product(a):
+    ans = pre_max = pre_min = a[0]
+    cur_beg, cur_end, max_beg, max_end = 0
+    for elem in a[1:]:
+        new_min = pre_min*elem
+        new_max = pre_max*elem
+        pre_min = min([elem, new_max, new_min])
+        pre_max = max([elem, new_max, new_min])
+        ans = max([ans, pre_max])
+        if ans is pre_max:
+            cur_end, max_end = i
+            upbeat(max_beg, max_end)
+    return ans
 
 
 """ two pointers + two tables solution. 
@@ -1290,7 +1294,7 @@ def minWindow(S, T):
 
     return min_beg, min_end
 
-""" max value in sliding window"""
+""" max value in sliding window """
 def maxValueSlidingWin(A, w):
     maxheap = MaxHeap();
     for i in xrange(w):
@@ -1366,6 +1370,15 @@ def max_distance(l):
             i += 1
 
     return maxdiff
+
+""" find idx a<b<c and l[a]<l[b]<l[c], two aux arr, Lmin and Rmax"""
+def abc(l):
+    ''' Lmin[i] contains idx in the left whose value is < cur, or -1
+        Rmax[i] contain idx in the rite whose value > cur. or -1
+        then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
+    '''
+    pass
+
 
 """
     stock profit: calc diff between two neighbor. diff[i] = l[i] - l[i-1], then find
