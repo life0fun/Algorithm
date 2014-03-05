@@ -260,6 +260,29 @@ def qsort3(l, beg, end):
 
     print 'final:', l
 
+""" insert into circular link list 
+    1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
+"""
+def insertCircle(l, val):
+    if not l: return Node(val)
+    if l.next == l: 
+        l.next = Node(val)
+        return min(l.val, val)
+    pre = head
+    cur = head.next
+    minnode = None
+    while True:
+        if prev < val < cur:
+            prev.next = val
+            return
+        # at the end, val is max or min
+        elif prev > cur and val > pre or val < cur:   
+            prev.next = val
+            minnode = pre
+            return
+    return minnode
+
+
 """
 BST validation, all left smaller, all right bigger.
 the key is, during the recursion, parent must be pass down to all its
