@@ -170,7 +170,9 @@ def merge(p, q, o):
         o.extend(q[j:])
 
 '''
-in-place merge use while ij loop, adjust i,j
+in-place merge use while ij loop, example, [1 3 9] [2 4 5 11]
+the key is, when l[i] > l[j], need to shift j subary until the one > l[i]
+
 '''
 def mergeInPlace(p,q):
     l = []
@@ -186,10 +188,16 @@ def mergeInPlace(p,q):
             i += 1
             continue
         else:
-            tmp = j
-            while l[tmp] >= l[i]:
-                tmp += 1
-            l[i],l[tmp] = l[tmp],l[i]
+            tmp = l[i]
+            substart = subend = j
+            while l[subend] < l[i]:
+                subend += 1
+            # fill insert pos, i
+            l[i] = l[substart]
+            # subary cp of j ary where items < l[i]
+            l[substart:subend-1] = l[substart+1:subend-1]
+            # insert l[i] into the correct idx
+            l[subend] = tmp
             continue
     print l
     return l
