@@ -7,6 +7,7 @@ class Node:
 
 
 # iterate with 3 ptr, pre, cur, next, move while next.
+# 1 > 2 > 3 > 4  ==> 4 > 3 > 2 > 1
 def rlist(l):
     if not l or not l.next:
         return l
@@ -19,8 +20,8 @@ def rlist(l):
 
 # recursion with head, and pass in last iteration of head's prev for head's next.
 def rlist(pre, head):
-    if not head or not head.next:
-        return head
+    if not head:
+        return pre
 
     hnext = head.next
     head.next = pre
@@ -80,6 +81,8 @@ def remove-all-dup(prev, head):
         prev.next = head
         return remove-all-dup(head, head.next)
 
+# if head is unique, set head next = recur(head.next). 
+# otherwise, directly recur(first node that's node head)
 def remove-all-dup(head):
     if not head or not head.next:
         return head
@@ -94,50 +97,123 @@ def remove-all-dup(head):
         head.next = remove-all-dup(head.next)
         return head
 
-def reorderList(head):
-    print "head ", head.val
-    if not head.next or not head.next.next:
+
+# rotate, not reverse, 1,2,3,4,5 => 4,5,1,2,3
+def rotate-at-k(head, k):
+    if not head: return head
+    tail = head
+    sz = 1
+    while tail.next:
+        tail = tail.next
+        sz += 1
+    p = tail
+    for i in xrange(k%sz):
+        p = p.next
+    rhead = p.next
+    p.next = None
+    return rhead
+
+
+# remove nth from end, 2 ptrs, p, q. q move n step at first. then both move to end.
+def drop-tail-kth(head, k):
+    if not head: return head
+    p, q = head
+    for i in xrange(k):   # cross k edges, move q to kth node, [0..k]
+        q = q.next
+    while q.next:
+        q = q.next
+        p = p.next
+    p.next = p.next.next
+    return head
+
+
+# swap every 2 adj node in pair, 1,2,3,4 => 2,1,4,3
+def swap-pair(head):
+    if not head or head.next:
         return head
+    headnnxt = head.next.next
+    nhead = head.next
+    nhead.next = head
+    head.next = swap-pair(headnnxt)
+    return nhead
+
+
+# reverse nodes in k-group, k=3, 1,2,3,4,5 => 3,2,1,4,5
+def reverse-k-group(head, k):
+    tail = head
+    for i in xrange(k-1): # cross k-1 edges
+        if not tail:
+            return head
+        tail = tail.next
+
+    nexthead = tail.next
+
+    dummyhead = new Node()
+    dummyhead = head
+    cur = head
+    while cur.next != nexthead:
+        swp = cur.next
+        swapnxt = swp.next
         
+        swp.next = dummyhead.next
+        dummyhead.next = swp
+        cur.next = swpnxt
+
+    cur.next = reverse-k-group(nexthead, k)
+    return dummyhead.next
+
+# cp list with random edge.
+def cpList(head):
+    if not head:
+        return head
+
+    cur = head
+    # clone
+    while cur is not None:
+        newcur = new Node(cur.value)
+        newcur.next = cur.next
+        cur.next = newcur
+        cur = newcur.next
+    # set random
+    cur = head
+    while cur is not None:
+        cur.next.random = cur.random.next
+        cur = cur.next.next
+    # split
+    cur = head
+    newhead = cur.next
+    newtail = newhead
+    while cur is not None:
+        newcur = cur.next
+        cur.next = newcur.next
+        newtail.next = newcur
+    return newhead
+
+# reverse the second half, ln->ln-1->ln-2, then interleave with l1->l2->l3
+def reorderList(head):
+    def reverse(pre, head):
+        if not head:
+            return pre
+        hdnext = head.next
+        head.next = pre
+        return reverse(head, ndnext)
+    
+    if not head or not head.next or head.next.next:
+        return head
+
     slow,fast = head, head
     while fast.next:
-        slow = slow.next
-        fast = fast.next
-        if fast.next:
-            fast = fast.next
-        else:
-            break
-    print slow.val, fast.val
-
+        slow, fast = slow.next, fast.next
+        fast = fast.next if fast.next else break
     mid = slow
-    # reverse second half
-    revprev = slow
-    revcur = slow.next
-    while revcur is not fast:
-        revnext = revcur.next
-        revcur.next = revprev
-        revpre = revcur
-        revcur = revnext
-    revcur.next = revprev
-
-    print revcur.val, fast.val, revcur.next.val
-    
-    # # mid is the end now
-    mid.next = None
-    start = head
-    while start != mid:
-        startnext = start.next
-        revnext = revcur.next
-
-        print "----", start.val, start.next.val, revcur.val
-
-        start.next = revcur
-        revcur.next = startnext
-        start = startnext
-        revcur = revnext
-    
-    print head.val, head.next.val, head.next.next.val, head.next.next.val
-    return head
+    rhead = reverse(None, mid)
+    cur, rcur = head, rhead
+    while cur and rcur:
+        p,q = cur, rcur
+        p.next = q
+        q.next = cur.next
+        cur = cur.next
+        rcur = rcur.next
 
 
 if __name__ == '__main__':
