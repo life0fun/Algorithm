@@ -1564,6 +1564,154 @@ def regMatch(T, P, offset):
         return regMatch(T, P, offset+2)
 
 
+""" """ """ """ """
+Dynamic programming, divide and conquer the problem space from minimal, then recursion. F[i,j] = {F[i-1, j-1]}
+You can do recursion fn with reducing the space to the leaf. or tabular F[i,j] from i-1,j-1, etc.
+""" """ """ """ """
+def knapsack(maxw, W, V):
+    ''' start from minimal, only item 0, i loop items, w loops weights at each item. 
+        v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
+        v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
+    '''
+    for i in xrange(n):
+        for w in xrange(maxw):
+            tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i]] + W[i])
+    return tab[n, maxw]
+
+
+def subsetSum(l, v):
+    ''' sol[i,v] is subset sum of 0..i to value v. sol[i,v] = Union(sol[i-1,v], sol[i-1, v-V[i]])
+        like knapsack, at i, only consider either include or exclude item i.
+    '''
+    for i in xrange(len(l)):
+        vi = l[i]
+        for j in xrange(i-1, 0, -1):
+            if ctx.sol[j,v-vi]:
+                ctx.sol[i,v] = extend(ctx.sol[j,v-vi], vi)    
+            if ctx.sol[j,v]:
+                ctx.sol[i,v].append(ctx.sol[j,v])
+    return ctx.sol[n-1, v]
+
+    ''' recursion, only consider head '''
+    def subsetSumDP(l, offset, val, ctx):
+        if l[offset] == val:
+            ctx.sol[offset, val].append(offset)
+        v = l[offset]
+
+        # exclude l[offset], if memoized, direct, no need to DP.
+        if ctx.sol[offset-1, val]:
+            ctx.sol[offset, val].append(ctx.sol[offset-1, val])
+        else
+            ctx.sol[offset, val] = subsetSumDP(l, offset-1, val, ctx)
+
+        # include l[offset]
+        if v < val:
+            if ctx.sol[offset-1, val-v]:
+                ctx.sol[offset,val].append(ctx.sol[offset-1, val-v])
+            else:
+                ctx.sol[offset,val].append(subsetSumDP(l, offset-1, val-v, ctx))
+
+        return ctx.sol[n, val]
+
+
+def palindromMincut(s, offset):
+    ''' partition s into sets of palindrom substrings, with min # of cuts 
+        mincut[offset] = 1 + min(mincut[k] for k in [offset+1..n] where s[offset:k] is palindrom)
+    '''
+    mincut = INT_MAX
+    for i in xrange(offset+1, len(s)):
+        if isPalindrom(s, offset, i):
+            partial = palindromMincut(s, i)   # recursion to leaf, aggregate on top.
+            mincut = min(partial + 1, mincut)
+    return mincut
+
+def palindromMincut(s):
+    ''' convert recursion Fn call to DP tab. F[i] is min cut of S[i:n], solve leaf, aggregate at top.
+        F[i] = min(F[k] for k in i..n). To aggregate at F[i], we need to recursive to leaf F[i+1].
+        For DP tabular lookup, we need to start from the end, which is minimal case, and expand
+        to the begining filling table from n -> 0.
+    '''
+    n = len(s)
+    tab[n-1] = 1  # one char is palindrom
+    for i in xrange(n-2, 0, -1):  # start from end that is minimal case, expand to full.
+        for j in xrange(i, n-1):
+            if s[i] == s[j] and palin[i+1, j-1] is True:   # palin[i,j] = palin[i+1,j-1]
+                palin[i,j] = True
+                tab[i] = min(tab[i], 1+tab[j+1])
+    # by the end, expand to full string.
+    return tab[0]
+
+def palindromMincut(s):
+    ''' another way to build tab from 0 -> n. F[i] = min(F[i-k] for k in i->0 where s[k,i] is palin)
+        To aggregate fill F[i], we need know moving k, f[k], and s[k,i] is palin.
+        For DP tabular lookup, we can start from the begin, the minimal case, and expand to entire string.
+    '''
+    n = len(s)
+    tab[1] = 1  # tab[i], the mincut of string s[0:i]
+    for i in xrange(n):
+        for j in xrange(i, 0, -1):
+            if s[i] == s[j] and palin[j+1, i-1] is True:
+                palin[j,i] = True
+                tab[i] = min(tab[j+1] + 1, tab[i])
+    # expand to full string by the end
+    return tab[n-1]
+
+def wordBreak(s, dict, offset, ctx):
+    ''' check if a string can be divide into a set of words in dict, ret all words
+        at offset, branch out for each word, and aggregate
+    '''
+    if dict[s[offset, n]] is True:
+        ctx.partial.append(s[offset,i])
+        ctx.global.append(partial)
+        
+    for i in xrange(offset, n):
+        w =  s[offset, i]
+        if dict[w] is True:
+            ctx.partial.append(w)
+            wordBreak(s, dict, i, ctx)
+    return ctx
+
+def wordBreak(s, dict, offset, ctx):
+    ''' convert recursion to DP, F[i] is solution [0..i], F[i] = any(F[k] for k in [0..k] and word[k,i])
+        we can also do F[i] solution [i..n], F[i] = any(F[k] for k in [i+1, n] and word[i,k])
+    '''
+    ctx.tab[0] = True
+    for i in xrange(len(s)):
+        for j in xrange(i-1, 0, -1):
+            w = s[j,i]
+            if dict[w] and ctx.tab[j]:
+                ctx.tab[i] = True
+    # finally expand to full string
+    return ctx.tab[n-1]
+
+def wordBreak(s, dict, offset, ctx):
+    ''' partition s into a set of words in dict, ret all words in each path
+        tab[i] is solution to [0..i], contains list of list/path, 
+        tab[i] = tab[j].append(word[i,j]) for j in [i -> 0]
+    '''
+    if dict(s[offset:]):
+        ctx.tab[offset].append(s[offset:])
+
+    ctx.tab[0] = []
+    for i in xrange(len(s)):
+        for j in xrange(i, 0, -1):
+            w = s[j,i]
+            if dict[w] and len(ctx.tab[j]) > 0:
+                ctx.tab[i].append(extend(ctx.tab[j], w))
+    return ctx.tab[n-1]
+
+    ''' tab[i] solution of [i..n], aggregate at top, tab[0] '''
+    if dict(s[offset:]):
+        ctx.tab[offset].append(s[offset:])
+
+    for i in xrange(len(s), 0, -1):
+        for j in xrange(i, len(s)):
+            w = s[i,j]
+            if dict[w] and len(ctx.tab[j]) > 0:
+                ctx.tab[i].append(extend(ctx.tab[j], w))
+    return ctx.tab[0]
+
+
 if __name__ == '__main__':
     #qsort([363374326, 364147530 ,61825163 ,1073065718 ,1281246024 ,1399469912, 428047635, 491595254, 879792181 ,1069262793], 0, 9)
     qsort3([1,2,3,4,5,6,7,8,9,10], 0, 9)
