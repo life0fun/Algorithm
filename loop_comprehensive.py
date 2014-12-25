@@ -1292,33 +1292,35 @@ def max_product(a):
     return ans
 
 
-""" two pointers + two tables solution. 
-enum all windows that contains chars. up-beat min upon each enum.
+""" 
+loop each char, update ctx when exam.
+two pointers + two tables solution. update ctx and up-beat min upon each enum.
+or a min heap with left idx at heap top. pop top if read in the same char.
 """
 def minWindow(S, T):
     ''' find min substring in S that contains all chars from T'''
-    matched_chars_len = 0     # matched char len
-    need_to_match = defaultdict(int)    # need to match dict keyed by char
-    matched_chars = defaultdict(int)
-    cur_beg = cur_end = min_beg = min_eng = 0
+    ctx.found_chars = 0     # matched char len
+    ctx.expected_cnt = defaultdict(int)    # need to match dict keyed by char
+    ctx.found_cnt = defaultdict(int)
+    ctx.cur_beg = cur_end = min_beg = min_eng = 0
 
-    for c in T:   # populate 
-        need_to_match[c] += 1
+    for c in T:   # populate dict of expected char cnt
+        ctx.expected_cnt[c] += 1
     # sliding thru src string S
     for idx, val in enumerate(S):
-        if need_to_match[c] == 0:  # do not interested in this char
+        if ctx.expected_cnt[c] == 0:  # do not interested in this char
             continue
-        matched_chars[val] += 1
-        if matched_chars[val] <= need_to_match[val]:        
-            matched_chars_len += 1
+        ctx.found_cnt[val] += 1
+        if ctx.found_cnt[val] <= ctx.expected_cnt[val]:        
+            ctx.found_chars += 1  # contribute to found_chars only when new found.
+
         # a window found, maintain the window while squeeze left edge.
-        if matched_chars_len == len(T):
-            # squeeze left edge
-            while need_to_match[cur_beg] == 0 || 
-                  matched_chars[S[cur_beg]] > need_to_match[S[cur_beg]]:
-                  if matched_chars[S[cur_beg]] > need_to_match[S[cur_beg]]:
-                    matched_chars[S[cur_beg]] -= 1
-                  cur_beg += 1
+        if ctx.found_chars == len(T):
+            # squeeze left edge, already found > expected
+            while ctx.found_cnt[S[cur_beg]] > ctx.expected_cnt[S[cur_beg]] or
+                  ctx.expected_cnt[S[cur_beg] == 0:
+                ctx.found_cnt[S[cur_beg]] -= 1
+                cur_beg += 1
             # upbeat optimal solution
             if idx - cur_beg < min_end - min_beg:
                 min_beg, min_end = cur_beg, idx

@@ -194,16 +194,27 @@ class PQ(object):
         for i in xrange(5,1, -1):
             self.insert(2*i-1)
 
-""" Heap base, impl common func for lchild, rchild, parent, head, etc.
+""" 
+Heap base, impl common func for lchild, rchild, parent, head, etc.
+To impl increase-key/decrease-key, need a map of value to its idx in the heap.
+    on Swap(i, j): map[value[i]] = j; map[value[j]] = i;
+    on Insert(key, value): map.Add(value, heapSize) in the beginning;
+    on ExtractMin: map.Remove(extractedValue)
+    on UpdateKey(value, newKey): index = map[value]; keys[index] = newKey; BubbleUp(index) in case of DecreaseKey or BubbleDown/Heapify(index) in case of IncreaseKey to restore min-heap-property.
 """
 class Heap(object):
     def __init__(self, size, initval):
         super(Heap, self).__init__()
         self.size = size
         self.l = [initval]*size
+        self.idxMap = {}
 
+    # swap is called when siftup and siftdown, every change of node in heap go thru swap.
     def swap(self, i, j):
         self.l[i], self.l[j] = self.l[j], self.l[i]
+        self.idxMap[self.l[i]] = j
+        self.idxMap[self.l[j]] = i
+
     def toString(self):
         print self.l
 
@@ -224,6 +235,52 @@ class Heap(object):
             return i*2+2, self.l[i*2+2]
         else:
             return None, None
+
+    def insert(self, v):
+        self.l.append(v)
+        self.size = len(self.l)
+        idx = self.size
+        self.idxMap[v] = idx
+        self.siftup(idx)
+
+    def update(self, oldv, newv):
+        ''' update the value of old value to the new value '''
+        idx = self.idxMap[oldv]
+        self.l[idx] = newv
+        self.idxMap[newv] = idx
+        self.siftup(idx)   
+        # self.siftdown(idx)   # in case of decrease key.
+
+    def extractMin(self):
+        val = self.l[0]
+        self.idxMap[val] = None
+
+    def siftdown(self, idx, end):   # sift down header
+        while idx <= end:
+            maxval = self.l[idx]   # maxval heap, parent > all children
+            maxidx = idx
+            lidx, lval = self.lchild(idx)
+            ridx, rval = self.rchild(idx)
+
+            if lval is not None and lval > maxval:
+                maxidx, maxval = lidx, lval
+            if rval is not None and rval > maxval:
+                maxidx, maxval = ridx, rval
+            if  maxidx == idx:
+                break
+            else:
+                self.swap(idx, maxidx)
+                idx = maxidx
+
+    def siftup(self, idx):
+        while idx >= 0:
+            parent = (idx-1)/2  # [0,1,2 ... 1,3,4...]
+            if parent >= 0 and self.l[parent] < self.l[idx]:
+                self.swap(parent, idx)
+                idx = parent
+            else:
+                return
+
 
 """ this class impl a max heap of size K.
     The head is the max of all eles in the heap
