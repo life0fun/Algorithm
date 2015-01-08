@@ -23,7 +23,7 @@ list * mergesort(list* list){
 """
 
 """
-Linear scan an array: use Extra data structure to store max/min/len seen so far and upbeat on each scan.
+Linear scan an array: context to store max/min/len seen so far and upbeat on each scan.
 think of using pre-scan to fill out aux tables for o(1) look-up. 
 1. max distance.
     http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
@@ -35,7 +35,8 @@ think of using pre-scan to fill out aux tables for o(1) look-up.
 6. for string s[..], build suffix ary A[..] sorted in O(n) space O(n), s[A[i]] = start-pos-of-substring.
 7. For int[range-known], find even occur of ints in place: toggle a[a[i]] sign. even occur will be + and odd will be -.
 8. max dist when l[j] > l[j], shadow LMin[] and RMax[], merge sort scan.
-9. stock profit. calc diff between nbs, (diff[i] = l[i] - l[i-1]), then find max subary.
+9. stock profit. max(ctx.maxprofit, l.i - ctx.min), ctx.min = min(ctx.min, l.i)
+10. first missing positve int, bucket sort: l.0 shall store 1, l.1 stores 2. for each pos, while l.pos!=pos+1 : swap(l.pos, l[l.pos-1])
 """
 
 ''' recursive, one line print int value bin string'''
@@ -1213,9 +1214,8 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
     do not care about sign during scan. When upbeat, if negative, cut off from the leftest negative.
     
 2. largest increasing sequence. 
-    use a list to note down largest so far. scan next, append to end if next > end.
-    if small, bisect it into the existing increasing seq. if largest start from here, eventually
-    the seq will override existing increasing seq. 
+    ctx.longestseq = []. scan next, append to end if next > end. if small, bisect it into the 
+    cxt.longestseq. if it is real head, eventually the seq will override nodes in ctx.longestseq.
 
 3. min sliding window substring in S that contains all chars from T.
     two pointers and two tables solution. [beg..end], and while end++ and squeze beg.
@@ -1248,6 +1248,9 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
 8. three number sum to zero
    sort first, two point at both end, i, k, the j moving in between.
    for i in 0..sz to try all possibilities.
+
+9. first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
+    foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
 """
 def max_subarray(A):
     # M[i] = max(M[i-1] + A.i, A.i)
@@ -1434,6 +1437,21 @@ def stock_profit(l):
             curbeg = curend = i+1
             curval = 0
 
+""" first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
+    foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
+"""
+def firstMissingPos(L):
+    def bucketsort(L):
+        for i in len(L)-1:
+            while L[i] != i+1:
+                if L[i] < 0 or L[i] > len(L) || L[i] == L[L[i]-1]:
+                    break
+                swap(L[i], L[L[i]-1])
+    bucketsort(L)
+    for i in len(L)-1:
+        if L[i] != i+1:
+            return i+1
+    return len(L)+1
 
 """ slide window w in an array, find max at each position.
     a maxheap with w items. when slide out, extract maxnode, if max is not 
