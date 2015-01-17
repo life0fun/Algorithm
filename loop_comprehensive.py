@@ -36,6 +36,7 @@ think of using pre-scan to fill out aux tables for o(1) look-up.
 7. For int[range-known], find even occur of ints in place: toggle a[a[i]] sign. even occur will be + and odd will be -.
 8. max dist when l[j] > l[j], shadow LMin[] and RMax[], merge sort scan.
 9. stock profit. max(ctx.maxprofit, l.i - ctx.min), ctx.min = min(ctx.min, l.i)
+   update each p[i] with max profit of l[0..i] from ctx.minp, or ctx.peak from n->1.
 10. first missing positve int, bucket sort: l.0 shall store 1, l.1 stores 2. for each pos, while l.pos!=pos+1 : swap(l.pos, l[l.pos-1])
 """
 
@@ -1436,6 +1437,25 @@ def stock_profit(l):
         elif curval < diff[i]:
             curbeg = curend = i+1
             curval = 0
+
+""" allow 2 transactions, use lp[i] = max_profit[0..i], and up[i] = max_profit[i..n]
+    while iterating, fill lp[i] and up[i]
+"""
+def stock_profit(L):
+    sz = len(L)
+    for i in xrange(sz):
+        # price valley going down from 0..n
+        ctx.minp = min(ctx.minp, L.i)
+        ctx.lp[i] = max(ctx.lp[i], L.i-ctx.minp)
+        # price peak going up from n..0
+        j = sz-i-1
+        ctx.maxp[j] = max(ctx.maxp[j+1], L.j)
+        ctx.up[j] = max(ctx.up[j+1], ctx.maxp[j]-L.j)
+
+    for i in xrange(sz):
+        tot = max(tot, ctx.lp[i] + ctx.up[i])
+
+    return tot
 
 """ first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
