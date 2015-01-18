@@ -1696,6 +1696,26 @@ def palindromMincut(s):
     # expand to full string by the end
     return tab[n-1]
 
+""" dfs word break, collect and combine result at process node late.
+    word("catsanddog", 0, dict())"""
+from collections import defaultdict
+
+def word(s, offset, ctx):
+  dict = ["cat", "cats", "and", "sand", "dog"]
+  result = []
+  sz = len(s)
+  if offset == sz:
+    result.append(["EOF"])
+  for i in xrange(offset+1, sz):
+    cw = s[offset:i+1]  # end+1 as s[start:end] as end is not closing.
+    if cw in dict:
+      for w in word(s, i+1, ctx):  # next offset starts i+1
+        if w:
+          w.append(cw)
+          result.append(w)
+  ctx['sol'][offset] = result
+  return result
+
 def wordBreak(s, dict, offset, ctx):
     ''' check if a string can be divide into a set of words in dict, ret all words
         at offset, branch out for each word, and aggregate
