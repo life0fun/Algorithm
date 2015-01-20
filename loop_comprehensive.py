@@ -1696,8 +1696,36 @@ def palindromMincut(s):
     # expand to full string by the end
     return tab[n-1]
 
+
+""" distinct subseq, you can ignore some char at pos,
+    distinct_subseq("rabbbit", 0, "rabbit", 0, []) partial result itself a [].
+"""
+def distinct_subseq(s, sidx, t, tidx, partial):
+  result = []
+  if tidx == len(t):
+    result.append(partial)
+    return result
+  
+  if sidx == len(s):
+    return result
+  
+  if s[sidx] == t[tidx]:
+    p = partial[:]
+    p.append(str(sidx) + ":" + s[sidx])
+    for r in distinct_subseq(s, sidx+1, t, tidx+1, p):
+      if r:
+        result.append(r)
+
+  for x in distinct_subseq(s, sidx+1, t, tidx, partial):
+    if x:
+      result.append(x)
+
+  return result
+
+
 """ dfs word break, collect and combine result at process node late.
-    word("catsanddog", 0, dict())"""
+    word("catsanddog", 0, dict())
+"""
 from collections import defaultdict
 
 def word(s, offset, ctx):
