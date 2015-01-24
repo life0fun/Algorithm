@@ -1252,6 +1252,8 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
 
 9. first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
+
+10. max rectangle, 
 """
 def max_subarray(A):
     # M[i] = max(M[i-1] + A.i, A.i)
@@ -1261,7 +1263,8 @@ def max_subarray(A):
         max_so_far = max(max_so_far, max_ending_here)
     return max_so_far
 
-''' s[i] = max(s[i-1]+A.i, A.i), either expand sum, or start new win from cur '''
+''' for each i, either belong to prev seq, or starts its own, deps on whether prev can include it.
+    s[i] = max(s[i-1]+A.i, A.i), either expand sum, or start new win from cur '''
 def kadane(l):
     max_beg = max_end = max_val = 0
     cur_beg = cur_end = cur_val = 0
@@ -1297,9 +1300,7 @@ def max_product(a):
 
 
 """ 
-loop each char, update ctx when exam.
-two pointers + two tables solution. update ctx and up-beat min upon each enum.
-or a min heap with left idx at heap top. pop top if read in the same char.
+loop each char, note down expected count and fount cnt. squeeze left edge.
 """
 def minWindow(S, T):
     ''' find min substring in S that contains all chars from T'''
@@ -1457,6 +1458,48 @@ def stock_profit(L):
 
     return tot
 
+
+# for each bar x, find the first smaller left, first smaller right,
+# area(x) = first_right_min(x) - first_left_min(x) * X, largestRectangle([6, 2, 5, 4, 5, 1, 6])
+# A stk of increase, so when push to stk, i's first left min is known, when pop, its first right min known.
+def largestRectangle(l):
+  maxrect = 0
+  l.append(0)  # sentinel
+  l.insert(0, 0)
+  stk = []
+  first_left_min = [0 for i in xrange(len(l))]
+  first_right_min = [len(l) for i in xrange(len(l))]
+  first_left_min[0] = 0
+  stk.append(0)  # 
+  for i in xrange(1,len(l)):
+    curval = l[i]
+    topidx = stk[-1]
+    topval = l[topidx]
+    # push to stk when current > stk top, so first smaller left of current set.
+    if curval > topval:
+      first_left_min[i] = topidx
+    # when cur smaller than stk top, stk top right is known, continue pop stk.
+    elif curval <= topval:
+      first_right_min[topidx] = i  # stk top is peak. update its left/right.
+      stk.pop()
+      while len(stk) > 0:
+        topidx = stk[-1]
+        topval = l[topidx]
+        if topval > curval:  # continue pop stk if cur is first smaller right of stk top
+          first_right_min[topidx] = i
+          stk.pop()
+        else:
+          first_left_min[i] = topidx
+          break
+    stk.append(i)  # stk in current
+
+  print first_left_min
+  print first_right_min
+  for i in xrange(len(l)):
+    maxrect = max(maxrect, l[i]*(first_right_min[i]-first_left_min[i]-1))
+
+  return maxrect
+
 """ first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
 """
@@ -1564,7 +1607,6 @@ def integer_partition(A, n, k):
                 if m[i][j] > cost:
                     m[i][j] = cost
                     d[i][j] = x     # divide at pos x
-
 
 
 # subset sum, sum val not change.
