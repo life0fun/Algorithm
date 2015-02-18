@@ -1253,7 +1253,11 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
 9. first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
 
-10. max rectangle, 
+10. max square, square[i,j] = max(square[i,j+1], square[i+1,j], square[i+1,j+1])
+
+11. largest subary with equal 0s and 1s.
+    a. change 0 -> -1, reduce to larget subary sum to 0.
+    b. in case start from idx other than head, sum[j]==sum[i], max(j-1). hash[sumval] = idx. 
 """
 def max_subarray(A):
     # M[i] = max(M[i-1] + A.i, A.i)
@@ -1458,6 +1462,49 @@ def stock_profit(L):
 
     return tot
 
+""" first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
+    foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
+"""
+def firstMissingPos(L):
+    def bucketsort(L):
+        for i in len(L)-1:
+            while L[i] != i+1:
+                if L[i] < 0 or L[i] > len(L) || L[i] == L[L[i]-1]:
+                    break
+                swap(L[i], L[L[i]-1])
+    bucketsort(L)
+    for i in len(L)-1:
+        if L[i] != i+1:
+            return i+1
+    return len(L)+1
+
+
+# largest subary with equal 0s and 1s
+# change 0 to -1, reduce to largest subary sum to 0.
+# in case subary not start from head, find max(j-1) where sum[j]=sum[i]. Use hash[sum].
+# http://www.geeksforgeeks.org/largest-subarray-with-equal-number-of-0s-and-1s/
+def ls_equal(L):
+    sz = len(L)
+    sumleft = [0 for i in sz]
+
+    for i in xrange(sz):
+        sumleft[i] = sumleft[i-1] + L[i]
+
+    for i in xrange(sz):
+        cur_sumleft = sumleft[i]
+        if cur_sumleft == 0:
+            if i > ctx.maxsz:
+                ctx.maxsz = i
+                ctx.startidx = 0
+        else:
+            if ctx.hash[cur_sumleft] is None:
+                ctx.hash[cur_sumleft] = i
+            else:
+                if i - ctx.hash[cur_sumleft] > ctx.maxsz:
+                    ctx.maxsz = i - ctx.hash[cur_sumleft]
+                    ctx.startidx = ctx.hash[cur_sumleft]
+    return ctx.startidx, ctx.maxsz
+
 
 # for each bar x, find the first smaller left, first smaller right,
 # area(x) = first_right_min(x) - first_left_min(x) * X, largestRectangle([6, 2, 5, 4, 5, 1, 6])
@@ -1500,21 +1547,6 @@ def largestRectangle(l):
 
   return maxrect
 
-""" first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
-    foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
-"""
-def firstMissingPos(L):
-    def bucketsort(L):
-        for i in len(L)-1:
-            while L[i] != i+1:
-                if L[i] < 0 or L[i] > len(L) || L[i] == L[L[i]-1]:
-                    break
-                swap(L[i], L[L[i]-1])
-    bucketsort(L)
-    for i in len(L)-1:
-        if L[i] != i+1:
-            return i+1
-    return len(L)+1
 
 """ slide window w in an array, find max at each position.
     a maxheap with w items. when slide out, extract maxnode, if max is not 
