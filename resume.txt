@@ -1,0 +1,173 @@
+
+
+Dear Manager,
+
+  I am writing to seek an opportunity with your team to create innovative 
+products.
+
+  My background is full stack development with large scale distributed systems.
+I have solid experiences in distributed system architecture, development,
+debugging, and optimization. I have worked on components from kernel driver,
+TCP internal, sqlite engine, mobile apps, to full stack web apps and servers.
+I have optimized systems on linux, Mysql, JVMs and node.js. Here is my one
+line optimization that reduced 15% cpu usage in node.js.
+    socket.setTimeout(timeout + 1000 * Math.floor(Math.random());
+
+  I design by abstraction and code to interfaces. I am skilled at both
+threading and event driven programming. I use JVM for cpu intensive apps,
+node.js for IO intensive apps, and clojure for data processing, python for 
+tooling. I use Metrics, graphite, logStash, ElasticSearch for monitoring.
+  
+  I embrace fully with functional programming. I use clojure, clojurescript,
+datomic, core.async channel, cascalog, storm for service and data pipeline.
+I use rabbitmq for scaling, and Redis, datomic, and MongoDB for data store.
+My projects in github show my work of building entire system end to end.
+
+    http://github.com/life0fun
+
+  I can be  reached at life0fun@gmail.com or (650)346-0192
+  
+  Looking forward to  hearing from  you.
+    
+  Regards,
+  haijin
+
+
+
+
+      Haijin  Yan
+
+  Full Stack Engineer, WalmartLabs.
+  life0fun@gmail.com  (650)346-0192
+
+Objective
+  Seeking opportunity to build innovative and exciting products
+
+Summary
+  Experienced in system architecture, development, debug, and optimization.
+  Experienced in full stack development from backend to frontend to mobile.
+  Deep knowledge in kernel, driver, network, database, and distributed system.
+  Excellent problem solving and analytic skills for system scaling.
+
+Programming
+  Proficient in Java, Javascript, Python, Clojure, C++, SQL, and scripting.
+  Skilled in tools for dev, deploy, profiling, monitoring distributed systems. 
+  Skilled in JVM, Node.js, Rabbitmq, Redis, Mysql, MongoDB clustering.
+  Proficient in OO and functional abstraction and design patterns.
+  familiar with real-time data processing with storm and elasticsearch.
+  Deep understanding of TCP/IP implementations in Linux and BSD.
+
+Experiences
+
+3/2014 - present, WalmartLabs, San Bruno, CA.
+- Item Recommendation Service
+  worked on lauching walmart new site with item recommendation service on both
+  FE and service side. On FE, responsible for recommendation views on various
+  pages, collecting tracking beacons, support A/B tests configurations. On 
+  service side, adding cache and metrics, webui server for publishing models, 
+  and various devops tasks. supported holiday madness with 4.5k req/sec.
+
+8/2012 - present, Locationlabs, Emeryville, CA
+ - System team
+  Designed and developed a push server to support persistent connections to 
+  mobile phones for real time push using node.js and SPDY protocol from ground
+  up, including build, deploy, monitoring and profiling, and HA, scalability
+  test automation.
+
+ - Scalability Team
+  Helped scaling up our web app throughput 10x times to more than 5k req/s.
+  deployed metrics, statsD, diamond, graphite, logstash, cubism to monitor 
+  system. Optimized Mysql by tuning parameters with slow query analysis.
+  Profiled and optimized JVM GC, hibernate and web app with Yourkit and 
+  newRelic. coded tools to improve test automation and reporting.
+ 
+ - Mobile Team
+  Added lib for our app to use Verizon direct SMS and App VPN for data.
+
+
+1/2005 - 8/2012, Motorola Mobility, Libertyville, IL
+
+  4/2010 - 8/2012, Principle Engineer
+   -Designed and implemented location service for SmartActions App,
+    including location discovery, detection, streaming, and predicting.
+   -Redesign, refactor, clean code to optimize performance and battery. 
+   -Developto Android Platform Service Wrapper for Moto Android TDD.
+   -Built location data pipeline with data collection, ETL and analysis.
+   -Setup an internal social web site using reddit open source.
+   -Setup a real-time twitter monitoring site to track product sentiment.
+   -Prototyped mobile web apps with node.js, websocket, Redis, MongoDB.
+    scaled out big data processing with MongoDB clustering and zeroMQ, etc.
+    ex: youtube.com/watch?v=hzcHN-ofnJM location.no.de location.no.de/droid
+   
+  2/2009 - 3/2010, Senior Staff, Emerging Communication Group 
+   -Led stability rack by solving critical Java exceptions, kernel panics,
+    ANRs, segfaults, OOME, and database corruption issues.
+    e.g. cursor window ashmem leak, tombstones, sqlite db corruption.
+   -Supported Motorola Android Platform bring up and stabilization.
+
+  8/2007 - 1/2009, Senior Staff, Multimedia Group
+   -Resolved hot issues across various platforms and products, 
+    e.g., cpu exceptions, watch dog panic, mem corruptions, leaks. 
+   -Ported Adobe Mobile Client to RTOS and developed Flash extensions 
+    to expose native c++ code to ActionScript client.
+   -Stabilized, optimized, and shipped MediaFinder to millions phones.
+   -Supported multimedia features and bug fixes on various products.
+   -Designed and implemented ATT Napster MTP feature with Janus DRM. 
+
+  1/2005 - 3/2006, Senior Software Engineer
+   -Developed multimedia navigation and cataloging engine in RTOS platform.
+    with Finite State Machine, multimedia parsing, sqlite db store.
+   -Ported SQLite to RTOS, stabilized and optimized db engine.
+   -Optimized MMCSD driver and FAT32 on RTOS by adding caches. 
+
+9/2001 - 12/2004, Research Assistant, CS, Univ. of Georgia     
+   -Ph.D research on the network support for energy-efficient wireless 
+    communications. Research paper co-authored with Dr. Larry Peterson 
+    published on IEEE Transaction on Mobile Computing.
+
+6/2002 - 8/2004, System Programmer, Life Science, Univ. of Georgia
+   -Developed a distributed computation system for Bio-informatics 
+    software package SGXPRO in a Linux cluster with 64 nodes.
+ 
+5/2001 - 8/2001. Summer Intern, WhyDataWorks Inc, Athens, GA. 
+   -Developed a management information system for mobile data management
+    using PHP and DB2 on Linux.
+
+5/1998 - 8/2000, Project Manager, Mobile Data Dept, China Mobile, Sichuan. 
+   -Built the Mobile Telecom Management Network(TMN) for Sichuan Mobile.
+   -Led the SMS based new service development for Sichuan Mobile. 
+   -Led the technology strategic planning for Sichuan Mobile 3G. 
+
+8/1996 - 12/1997, Research assistant, CS Dept, UESTC,  
+   -Developed device driver and tools for Creative Sound Card on a  
+    POSIX complaint operating system for Chinese government.
+
+Education
+   Ph.D. Computer Science, minor in management, Jan 2005.
+   The University of Georgia, Athens, Georgia
+   Dissertation: Network Support for Energy-Efficient Wireless Communications.
+
+   M.S. Computer Science, May 1998. 
+   The University of Electronic Science and Technology of China, Chengdu
+   Thesis: Sound blaster device driver and multimedia mechanism for COSIX. 
+
+   B.S. Electronic Mechanics, August 1995.
+   The University of Electronic Science and Technology of China, Chengdu
+
+Patent
+    Enhancements to discovering meaningful locations. (Pending)
+    Methods and devices for identifying local area networks (Pending)
+
+Selected Publications 
+   Client-Centered, Energy-Efficient Wireless Communication on 802.11b Network.
+   Haijin Yan, David Lowenthal, and Larry L. Peterson.
+   IEEE Transaction on Mobile Computing, Vol 5, No.11, Nov, 2006
+
+   Towards Cooperation Fairness in Mobile Ad Hoc Networks.  
+   Haijin Yan and David K. Lowenthal.   
+   The 6th IEEE Wireless Computing and Networking Conference, Mar, 2005.
+
+   Client-Centered Energy Savings for Concurrent HTTP Connections.  
+   Haijin Yan, Rupa Krishnan, and David K. Lowenthal. 
+   14th ACM Workshop on Networks and Operating System Support for Digital 
+   Audio and Video (NOSSDAV), June, 2004.

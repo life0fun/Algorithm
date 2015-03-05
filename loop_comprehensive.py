@@ -1214,7 +1214,7 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
     scan thru, if abs times < 1, re-start with curv=1. otherwise, upbeat.
     do not care about sign during scan. When upbeat, if negative, cut off from the leftest negative.
     
-2. largest increasing sequence. 
+2. longest increasing sequence. (LIS, variations, box stack)
     ctx.longestseq = []. scan next, append to end if next > end. if small, bisect it into the 
     cxt.longestseq. if it is real head, eventually the seq will override nodes in ctx.longestseq.
 
