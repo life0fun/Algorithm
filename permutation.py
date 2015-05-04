@@ -132,6 +132,40 @@ def permList(l):
             ret.append(e[:pos] + [hd] + e[pos:])
     return ret
 
+def perm(l):
+    result = []
+    if len(l) == 1:
+        return [].append(l[0])
+    
+    for hd in l:
+        for r in perm(remove(l, hd)):
+            result.append(hd + r)
+    return result
+
+'''
+Distinct subsets for an array with duplicated elements
+Arr = {1,2,2,3,3,4,5} 
+Arr_distinct = {1,4,5}
+First, gen powset of Arr_distinct, then for each dup item,
+add {2} and {2,2} to the result, and combine it. The same for {3}, {3,3}
+https://csjobinterview.wordpress.com/2012/10/04/distinct-subsets-for-an-array-with-duplicated-elements/
+'''
+def subsetWithDup(l):
+    distinctL = removeDup(l)
+    dupSets = []
+    for d in dups(l):
+        for cnt in xrange(dups(d)):
+            dupSets.append(d*cnt)
+
+    result = powset(distinctL)
+    for d in dupSets:
+        for r in results:
+            result.append(r.append(d))
+
+    return result
+
+
+
 ''' give a string of n items, find all the subset of k items
     generator version and no generator version
     two cases: 1. incl e, recur of k-1; not incl e, recur of k;
