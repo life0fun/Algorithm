@@ -1161,18 +1161,18 @@ class SkipList:
         keep the node found at each level right before go down the level.
         """
         expressEachLevel = [None]*len(self.head.next)
-        x = self.head
+        levelhd = self.head
         #  for each level top down, inside each level, while until stop on boundary.
         for level in reversed(xrange(len(self.head.next))):  # for each level down: park next node just before node >= ele.(insertion ponit).
-            while x.next[level] != None and x.next[level].ele < ele:  # advance skipNode till to node whose next[level] >= ele, then down level
-                x = x.next[level]
-            expressEachLevel[level] = x
+            while levelhd.next[level] != None and levelhd.next[level].ele < ele:  # advance skipNode till to node whose next[level] >= ele, then down level
+                levelhd = levelhd.next[level]
+            expressEachLevel[level] = levelhd
         return expressEachLevel
 
     def find(self, ele):
         expressList = findExpressStopAtEachLevel(self, ele)
         if len(expressList) > 0:
-            candidate = expressList[0].next[0]
+            candidate = expressList[0].next[0]  # the final bottom level.
             if candidate != None and candidate.ele == ele:
                 return candidate
         return None
@@ -1184,13 +1184,13 @@ class SkipList:
         # first, populate head next all level with None
         while len(self.head.next) < len(node.next):
             self.head.next.append(None)
+        
         expressList = self.findExpressStopAtEachLevel(ele)
-
         if self.find(ele, expressList) == None :
             # did not find ele, start insert
-            for i in range(len(node.next)):
-                node.next[i] = expressList[i].next[i]
-                expressList[i].next[i] = node
+            for level in range(len(node.next)):
+                node.next[level] = expressList[level].next[level]
+                expressList[level].next[level] = node
 
     ''' lookup for ith ele, for every link, store the width(span)(the no of bottom layer links) of the link.
     '''

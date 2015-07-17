@@ -37,76 +37,178 @@ def tokenize(s, removePunctuation = True):
                 t.append(word)
         return [el for el in t if el]
 
-''' each node has 26 children in the next dict '''
-class Node(object):
-    def __init__(self, name=None):
-        self.name = name
-        self.color = 0
-        self.freq = 0
-        self.next = defaultdict(int)  # 26 branches out, dict key=[a-z]
-        self.indent = 0
-        self.children = []
-        self.indentstr = '=> '
-        self.op = ''
+# hash table with timetable.
+# {
+#  k1: [[1, "v11"], [2, "v21"], ...]
+#  k2, [[1, "v21"], [2, "v22"], ...]
+# }
+from collections import defaultdict
+class HashTimeTable:
+  def __init__(self):
+    self._tab = defaultdict(lambda: [])
+  def findTime(self, timelist, timeval):
+    if len(timelist) == 0:
+        return False, 0
+    lo, hi = 0, len(timelist)-1
+    while lo != hi:
+      mid = (lo + hi)/2
+      if timelist[mid] < timeval:
+        lo = mid + 1
+      else:
+        hi = mid
+    if timelist[lo] == timeval:
+      return True, lo
+    else:
+      if timelist[lo] < timeval:
+        return False, lo+1
+    return False, lo
+  def put(self, k, v, t):
+    timelist = self._tab[k]
+    found, slot = self.findTime(map(lambda x: x[0], timelist), t)
+    if found:
+      timelist[slot] = [t, v]
+    else:
+      timelist.insert(slot, [t,v])
+  def get(self, k, t):
+    timelist = self._tab[k]
+    found, slot = self.findTime(map(lambda x: x[0], timelist), t)
+    if not found:
+      slot -= 1
+    print "get ", k, t, slot, timelist
+    return timelist[slot][1]
+  def test():
+    htt = HashTimeTable()
+    htt.put("k1", "v11", 1)
+    htt.put("k1", "v12", 2)
+    htt.put("k2", "v21", 1)
+    htt.put("k2", "v23", 3)
+    print htt.get("k1", 1), "v11"
+    print htt.get("k1", 2), "v12"
 
-    def log(self, *k, **kw):
-        print k
+""" trie impls for auto completion 
+"""
+from collections import defaultdict, deque
+class Trie(object):
+    def __init__(self, key):
+        self.key = key
+        self.children = defaultdict()
+        self.leaf = False
+    def addChild(self, c):
+        self.children[c] = Trie(c)
+        return self.children[c]
+    def insert(self, word):  # when inserting, current is parent
+        hd = word[0]
+        nxt = self.children[hd]
+        if not nxt:
+            nxt = self.addChild(hd)
+        nxt.insert(word[1:])
+    def contains(self, word):
+        if len(word) == 0:    # self is the last matched
+            return self.leaf, self  #
+        hd = word[0]
+        nxt = self.children[hd]
+        if nxt:
+            return nxt.contains(word[1:])
+        else:  # no nxt, does not exist
+            return False, self  # if not contain, ret parent
+    def allSuffix(self, prefix):
+        found, parent = self.contains(prefix)
+        parent.bfs()
+    def dfs(self, prefix, resultset):
+        for c in self.children():
+            if c.leaf:
+                resultset.add(prefix+c.key)
+            c.dfs(prefix+c.key, resultset)
 
-    ''' print out the node with its indent '''
-    def toString(self):
-        ind = ''
-        for i in xrange(self.indent):
-            ind += self.indentstr
-        #print ind, self.name
-        return ind + self.name
+""" 
+    node contains only 3 pointers, left < eq < rite, always descend down along eq pointer.
+"""
+class TernaryTree(object):
+    def __init__(self, key=None):
+        self.left = self.rite = self.eq = None
+        self.key = key
+        self.leaf = False
+    def insert(self, word):
+        hd = word[0]
+        if not self.key:
+            self.key = hd
+        if hd == self.key:
+            if len(word) == 1:
+                self.leaf = True
+                return self.eq
+            else:
+                if not self.eq:
+                    self.eq = TernaryTree(word[1])  # new eq point to next.
+                self.eq.insert(word[1:])
+        elif hd < self.key:
+            if not self.left:
+                self.left = TernaryTree(hd)
+            self.left.insert(word)
+        else:
+            if not self.rite:
+                self.rite = TernaryTree(hd)
+            self.rite.insert(word)
+    def search(self, word):   # return parent where eq originated
+        if not len(word):
+            return False, self
+        hd = word[0]
+        if hd == self.key:
+            if len(word) == 1:
+                return True, self # when leaf flag is set
+            elif self.eq:
+                return self.eq.search(word[1:])
+            else:
+                return False, self
+        elif hd < self.key:
+            if self.left:
+                return self.left.search(word)
+            else:
+                return False, self
+        elif hd > self.key:
+            if self.rite:
+                return self.rite.search(word)
+            else:
+                return False, self
+    def all(self, prefix):
+        result = set()
+        found, node = self.search(prefix)
+        if not found:
+            return result
+        if node.leaf:
+            result.add(prefix)
+        if node.eq:   # descend to eq only.
+            node.eq.dfs(prefix, result)
+        return result
+    def dfs(self, prefix, result):
+        if self.leaf:
+            result.add(prefix+self.key)
+        if self.left:
+            self.left.dfs(prefix, result)
+        if self.eq:
+            self.eq.dfs(prefix+self.key, result)
+        if self.rite:
+            self.rite.dfs(prefix, result)
+        return result
 
-    def buildNode(self, strval):
-        l = strval.split()
-        self.indent = len(l)-1
-        self.name = l[-1]
+def test():
+    t = TernaryTree()
+    t.insert("af")
+    t.insert("ab")
+    t.insert("abd")
+    t.insert("abe")
+    t.insert("standford")
+    t.insert("stace")
+    t.insert("cpq")
+    t.insert("cpq")
+    found, node = t.search("b") 
+    print found, node.key
+    print t.all("abc")
+    print t.all("ab")
+    print t.all("af")
+    print t.all("sta")
+    print t.all("c")
 
-    def addChild(self, child):
-        self.children.append(child)
 
-    def visit(self):
-        self.color = 1
-        self.log(self)
-
-    ''' DFS pre-order, recursive, carry parent's indent, add my on top of it.
-        update the total idx/cnt offset after each recursion
-        idx just record total # of nodes traversed. Every traverse incr idx.
-    '''
-    def traverse(self, indent, idx):
-        ''' recursion into this node, parent tells its level '''
-        self.indent += indent
-        #self.log('traverse one node : idx :', idx)
-        self.log(self.toString())   # pre-order visit
-        for c in self.children:   # wont accumulate idx in callback
-            # recursion on cur child, DFS
-            idx = c.traverse(indent+1, idx+1)  # recursion into child, tell child's level
-        return idx
-
-    ''' connect sibling http://programmers.stackexchange.com/questions/133437/how-to-find-siblings-of-a-tree
-        just need a separate list for book keeping to rem the optimal result so far
-    '''
-    def walker(self, node, level):
-        if head[level]:
-            node.sib = head[level]
-        head[level] = node
-        for c in self.node.child:
-            self.walker(c, level+1)
-
-''' recursive traverse op node to evaluate 2+3*4 '''
-class OpNode(Node):
-    def __init__(self, name, op):
-        super(OpNode, self).__init__(name)
-        self.op = op
-
-    def traverse(self):
-        if not self.op:
-            return self.toString()
-        ''' op node must have lchild and rchild '''
-        return "( " + self.children[0].traverse() + " op=" + self.op + " " + self.children[1].traverse() + " )"
 
 class Tree():
     def __init__(self, root=None):
