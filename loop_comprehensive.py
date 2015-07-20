@@ -292,27 +292,6 @@ def insertCircle(l, val):
             return
     return minnode
 
-
-"""
-BST validation, all left smaller, all right bigger.
-the key is, during the recursion, parent must be pass down to all its
-subtrees to ensure non of them violates.
-if no max/min parameter, we are checking subtree locally without knowing parent cap.
-!!!! When recursion, carry the global cap!!!!
-"""
-def isBST(root, minval, maxval):   # pass in global cap, check globally
-    if not root:
-        return True
-
-    if root.val > maxval or root.val < minval:
-        return False
-
-    # case 1, both left/right good
-    if isBST(root.left, minval, root.val) and isBST(root.right, root.val, maxval):
-        return True
-
-    return False
-
 """ serde of bst """
 def serdeBtree(root):
     if not root: print '$'
@@ -342,6 +321,133 @@ def serdePreBst(val, parent, leftchild, minv, maxv):
         if nextv: 
             serdePreBst(nextv, node, True, -sys.maxint-1, val)
             serdePreBst(nextv, node, False, val, sys.maxint)
+
+""" merge or toggle interval """
+class Interval(object):
+    def __init__(self):
+        self.arr = []
+        self.size = 0
+    def bisect(self, arr, val):
+        lo,hi = 0, len(self.arr)-1
+        while lo != hi:
+            md = (lo+hi)/2
+            if val > arr[md]:
+                lo = md+1
+            else:
+                hi = md
+        if arr[lo] == val:
+            return True, lo
+        elif val > arr[lo]:
+            return False, lo+1
+        else:
+            return False, lo
+    def findStartSlot(self, st, ed):
+        """ pre-ed < start < next-ed, bisect insert pos is next """
+        endvals = map(lambda x: x[1], self.arr)
+        found, idx = self.bisect(endvals, st)  # insert position
+        return idx
+    def findEndSlot(self, st, ed):
+        """ pre-st < ed < next-st, bisect ret insert pos, pre-st+1, so left shift"""
+        startvals = map(lambda x: x[0], self.arr)
+        found, idx = self.bisect(startvals, ed)        
+        return idx-1
+    def overlap(self, st1, ed1, st2, ed2):
+        if st2 > ed1 or ed2 < st1:
+            return False
+        return True
+    def merge(self, st1, ed1, st2, ed2):
+        return [min(st1,st2), max(ed1,ed2)]
+    def insertMerge(self, sted):
+        [st,ed] = sted
+        if len(self.arr) == 0:
+            self.arr.append([st,ed])
+            return 0
+        stslot = self.findStartSlot(st,ed)
+        edslot = self.findEndSlot(st,ed)
+        print "insert ", sted, stslot, edslot
+        if stslot >= len(self.arr):
+            self.arr.insert(stslot, [st, ed])
+        elif stslot > edslot:  # no overlap
+            self.arr.insert(stslot, [st, ed])
+        else:
+            minst = min(self.arr[stslot][0], st)
+            maxed = max(self.arr[edslot][1], ed)
+            for i in xrange(stslot+1, edslot+1):
+                del self.arr[stslot+1]
+            self.arr[stslot][0] = minst
+            self.arr[stslot][1] = maxed
+        return stslot
+    def insertToggle(self, sted):
+        [st,ed] = sted
+        if len(self.arr) == 0:
+            self.arr.append([st,ed])
+            return 0
+        stslot = self.findStartSlot(st,ed)
+        edslot = self.findEndSlot(st,ed)
+        if stslot >= len(self.arr):
+            self.arr.append([st,ed])
+        elif stslot > edslot:
+            self.arr.insert(stslot, [st,ed])
+        else:
+            output = []
+            for i in xrange(0, stslot):
+                output.append(self.arr[i])
+            output.append([min(st, self.arr[stslot][0]), max(st, self.arr[stslot][0])])
+            for i in xrange(stslot+1, edslot+1):
+                output.append([self.arr[i-1][1], self.arr[i][0]])
+            output.append([min(ed, self.arr[edslot][1]), max(ed, self.arr[edslot][1])])
+            for i in xrange(edslot+1, len(self.arr)):
+                output.append(self.arr[i])
+            self.arr = output
+    def insertToggleIter(self, sted):
+        [st,ed] = sted
+        output = []
+        if len(self.arr) == 0:
+            self.arr.append(sted)
+            return 0
+        for i in xrange(len(self.arr)):
+            if not self.overlap(self.arr[i][0], self.arr[i][1], st, ed):
+                output.append(self.arr[i])
+            elif self.arr[i][0] < st:
+                output.append([self.arr[i][0], st])
+                nxtst = min(self.arr[i][1], ed)
+                nxted = max(self.arr[i][1], ed)
+                if len(self.arr) > i+1:
+                    nxted = min(self.arr[i+1][0], nxted)
+                output.append([nxtst, nxted])
+            elif self.arr[i][0] > st:
+                prest = st
+                if i > 0:
+                    prest = max(prest, self.arr[i-1][1])
+                if prest == st:  # only append if st not appended before.
+                    output.append([prest, self.arr[i][0]])
+                nxtst = min(self.arr[i][1], ed)
+                nxted = max(self.arr[i][1], ed)
+                if len(self.arr) > i+1:
+                    nxted = min(self.arr[i+1][0], nxted)
+                output.append([nxtst, nxted])
+        if st > output[i][1]:
+            output.append(sted)
+        self.arr = output
+    def dump(self):
+        for i in xrange(len(self.arr)):
+            print self.arr[i][0], " -> ", self.arr[i][1]
+
+def testInterval():
+    intv = Interval()
+    intv.insertMerge([4,6])
+    intv.insertMerge([7,9])
+    intv.insertMerge([12,14])
+    intv.insertMerge([1,2])
+    intv.insertMerge([3,17])
+    intv.dump()
+    
+    intv = Interval()
+    intv.insertToggle([4,6])
+    intv.insertToggle([8,10])
+    intv.insertToggle([12, 14])
+    intv.insertToggle([5, 15])
+    intv.dump()
 
 
 '''
@@ -392,31 +498,6 @@ def depth(root):
     if not root:
         return 0
     return 1 + max(depth(root.lchild), depth(root.rchild))
-
-'''
-find the sum of one level, bfs level and sum when level match
-'''
-def getSum(root, level):
-    def bfs(root, level):
-        Q = collections.deque()
-        root.level = 1
-        root.instack = True
-
-        while len(Q):
-            curnode = Q.popleft()
-            tot = tot + curnode.val if curnode.level is level else tot
-            for nb of curnode.children:
-                if not nb.processed:
-                    process_edge(curnode, nb)
-                if not nb.instack and not nb.processed:
-                    nb.level = curnode+1
-                    nb.parent = curnode
-                    nb.instack = True
-                    Q.enqueue(nb)
-            curnode.processed = True
-            if curnode.level > level:
-                break
-    return bfs(root, level)
 
 
 """ populate next right pointer to point sibling in each node
@@ -538,29 +619,6 @@ def toBST(l):
     return root
 
 
-''' return the val, or the idx to insert the val
-    first thing first, assign roles to variable, so we can update accordingly.
-'''
-def binSearch(l, val):
-    i = 0   # assign roles first, so we can update variable accordingly.
-    j = len(l)-1
-    # with =, make sure the logic got run even for single ele.
-    while i <= j:  # i==j, single ele, i=mid=0, break by j<i after i incr or j reduce.
-
-        # mid takes math.floor, eqs i when i=j+1
-        mid = i + (j-i)/2  # the same as i+j/2,
-        if l[mid] == val:
-            i = mid
-            break
-        elif l[mid] < val:  # test <, so i point to insert pos, which is after mid
-            i = mid + 1     # i idx move up, [0...sz]
-        else:
-            j = mid - 1     # j idx move down [-1...sz-1]
-
-    # i=[0..sz], j=[-1..sz-1],
-    print l, val, '==>', i
-    return i
-
 '''
 Given a huge sorted integer array A, and there are huge duplicates in the
 array. Given an integer T, inert T to the array, if T already exisit, insert
@@ -651,55 +709,6 @@ def numOfIncrSeq(l, start, cursol, k):
 
 ''' pascal triangle, http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
 '''
-def pascalTriangle(n):
-    if n == 1:
-        return [1]
-    if n == 2:
-        return [1,1]
-
-    l = pascalTriangle(n-1)
-    q = []
-    q.append(l[0])
-    for i in xrange(1, len(l), 1):
-        q.append(l[i]+l[i-1])
-    q.append(l[i])
-    print n, ' ==> ', q
-    return q
-
-def pascalTriangle_iter(n):
-    num = n
-    l = []
-    l.append([1,1])
-    r = 3
-    while r < n:
-        pre = l[0]
-        q = []
-        q.append(1)
-
-        mid = (r-1)/2
-        for j in xrange(1,mid+1,1):
-            q.append(pre[j]+pre[j-1])
-
-        if r%2 > 0:  # odd
-            k = mid-1
-        else:  # even
-            k = mid
-
-        for z in xrange(k, 0, -1):
-            q.append(q[z])
-
-        q.append(1)
-        print r, '==>', q
-        l.pop()
-        l.append(q)
-        r += 1
-
-def powerset(l):
-    q = []
-    for i in xrange(len(l)):
-        for j in xrange(i+1, len(l), 1):
-            q.append(str(l[i])+'-'+str(l[j]))
-    print q
 
 
 ''' recursively on sublist '''
@@ -967,6 +976,77 @@ def testKthMaxSum():
     q = [110, 20, 5, 3, 2]
     KthMaxSum(p, q, 7)
 
+""" min heap for priority queue """
+from collections import defaultdict
+class MinHeap(object):
+    def __init__(self, size=10):
+        self.arr = []
+        self.size = 0
+        self.val2idx = defaultdict()
+    def get(self, idx):
+        return self.arr[idx][0]
+    def lchild(self, idx):
+        if idx*2+1 < self.size:
+            return idx*2+1
+        return None
+    def rchild(self, idx):
+        if idx*2+2 < self.size:
+            return idx*2+2
+        return None
+    def parent(self,idx):
+        if idx > 0:
+            return (idx-1)/2
+        return None
+    def swap(self, src, dst):
+        srcv = self.get(src)
+        dstv = self.get(dst)
+        self.arr[src], self.arr[dst] = [dstv], [srcv]
+        self.val2idx[srcv] = dst
+        self.val2idx[dstv] = src
+    def insert(self, val):
+        entry = [val]
+        self.arr.append(entry)
+        self.val2idx[val] = self.size
+        self.size += 1
+        self.siftup(self.size-1)
+    def siftup(self, idx):
+        parent = self.parent(idx)
+        if parent >= 0 and self.get(parent) > self.get(idx):
+            self.swap(parent, idx)
+            return self.siftup(parent)
+        return parent
+    def siftdown(self, idx):
+        l,r = self.lchild(idx), self.rchild(idx)
+        minidx = idx
+        if l and self.get(l) < self.get(minidx):
+            minidx = l
+        if r and self.get(r) < self.get(minidx):
+            minidx = r
+        if minidx != idx:
+            self.swap(idx, minidx)
+            return self.siftdown(minidx)
+        return mindix
+    def heapify(self):
+        mid = (len(self.arr)-1)/2
+        while mid >= 0:
+            self.siftdown(mid)
+            mid -= 1
+    def extractMin(self):
+        self.swap(0, self.size-1)
+        self.size -= 1
+        self.siftdown(0)
+    def decreaseKey(self, v, newv):
+        idx = self.val2idx[v]
+        self.arr[idx] = [newv]
+        self.siftup(idx)
+def testMinHeap():
+    h = MinHeap()
+    h.insert(5)
+    h.insert(4)
+    h.insert(9)
+    h.insert(3)
+    h.decreaseKey(9, 2)
+    print h.arr[0][0], h.arr[1][0], h.arr[2][0]
 
 """
 find kth smallest ele in a union of two sorted list
@@ -1063,7 +1143,6 @@ def medianmedian(A, beg, end, k):
         return medianmedian(A, pivotidx+1, end, k-rank)
 
 
-
 """ 3sum, a list of integer, 3 of them sum to 0, or 2 of them sum to another.
     to avoid binary search, insert each item into hashtable, and for each pair,
     hash lookup any pair sum, found mean there exists.
@@ -1084,23 +1163,6 @@ def 3sum(l):
                 k += 1
             else:
                 l -= 1
-
-''' do not need bisect with two pointers converge, o(n2) '''
-def 3sum(l):
-    l = sorted(l)
-    for j in xrange(len(l), -1, 2):
-        c = l[j]
-        i = 0
-        k = j-1
-        a=l[i]
-        b=l[k]
-        while k > i:
-            if a+b = c:
-                return a, b, c
-            if a+b > c:
-                k -= 1
-            else:
-                i += 1
 
 
 '''

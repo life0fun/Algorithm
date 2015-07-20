@@ -136,7 +136,7 @@ class TernaryTree(object):
             if len(word) == 1:
                 self.leaf = True
                 return self.eq
-            else:
+            else:  # more keys, advance and descend
                 if not self.eq:
                     self.eq = TernaryTree(word[1])  # new eq point to next.
                 self.eq.insert(word[1:])
