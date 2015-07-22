@@ -102,7 +102,6 @@ def convert(num, src, trg):
     for c in num:
         n=n*srcbase+src.find(c)  # len(src) is the base of src
         print 'c:', c, 'num:', num, 'n:', n
-
     res = ""
     while n:
         res = trg[n%trgbase] + res  #len(trg) is the base of target
@@ -110,27 +109,6 @@ def convert(num, src, trg):
     print 'convert', num, ' res:', res
     return res
 
-'''
-find the common elements between two sorted sequence
-tail recusion so no worry of stackoverflow.
-'''
-def common(l, r, q):
-    if not len(l) or not len(r):
-        return
-    if l[0] == r[0]:
-        q.append(l[0])
-        return common(l[1:], r[1:], q)
-    elif l[0] < r[0]:
-        return common(l[1:], r, q)
-    else:
-        return common(l, r[1:], q)
-
-def testCommon():
-    q = []
-    l = [2,4,7,9]
-    r = [1,2,7]
-    common(l,r,q)
-    print 'common:', q
 
 """
 when building a list, describe the first typical element,
@@ -201,7 +179,6 @@ def mergeInPlace(p,q):
             # insert l[i] into the correct idx
             l[subend] = tmp
             continue
-    print l
     return l
 
 def testMergeSort():
@@ -292,12 +269,41 @@ def insertCircle(l, val):
             return
     return minnode
 
-""" serde of bst """
+""" serde tree with arbi # of children """
+def serdeTree(root):
+    print root
+    for c in root.children:
+        serdeTree(c)
+    print "$"
+# 1 [2 [4 $] $] [3 [5 $] $] $
+from collections import deque
+def deserTree(l):
+    s = deque()
+    while nxt = l.readLine():
+        if nxt is "$":
+            s.pop()
+        else:
+            n = Node(nxt)
+            if count(s) == 0:
+                s.append(n)
+            else:
+                s[-1].children.append(n)
+                s.append(n)
+
+""" serde of bin tree with l/r child, no lchild and rchild, append $ $"""
 def serdeBtree(root):
     if not root: print '$'
     print root
     serdeBtree(root.left)
     serdeBtree(root.rite)
+
+def serdeBtree(root):
+    print root
+    if root.lchild:
+        serdeBtree(root.lchild)
+    if root.rchild:
+        serdeBtree(root.rchild)
+    print "$"
 
 def serdeBtree(line, parent, leftchild):
     if line is '$'
@@ -327,6 +333,7 @@ class Interval(object):
     def __init__(self):
         self.arr = []
         self.size = 0
+    # bisect ret prev_slot + 1 where arr[prev_slot] < target, or 0.
     def bisect(self, arr, val):
         lo,hi = 0, len(self.arr)-1
         while lo != hi:
@@ -341,11 +348,13 @@ class Interval(object):
             return False, lo+1
         else:
             return False, lo
+    # which slot in the arr this new interval shall be inserted
     def findStartSlot(self, st, ed):
         """ pre-ed < start < next-ed, bisect insert pos is next """
         endvals = map(lambda x: x[1], self.arr)
         found, idx = self.bisect(endvals, st)  # insert position
         return idx
+    # the last slot in the arr that this new interval may overlap
     def findEndSlot(self, st, ed):
         """ pre-st < ed < next-st, bisect ret insert pos, pre-st+1, so left shift"""
         startvals = map(lambda x: x[0], self.arr)
@@ -405,30 +414,29 @@ class Interval(object):
         if len(self.arr) == 0:
             self.arr.append(sted)
             return 0
+        if ed < self.arr[0][0]:
+            self.arr.insert(0, sted)
+            return 0
+        if st > self.arr[len(self.arr)-1][1]:
+            self.arr.append(sted)
+            return len(self.arr)-1
         for i in xrange(len(self.arr)):
             if not self.overlap(self.arr[i][0], self.arr[i][1], st, ed):
                 output.append(self.arr[i])
-            elif self.arr[i][0] < st:
+                continue
+            if self.arr[i][0] < st:
                 output.append([self.arr[i][0], st])
-                nxtst = min(self.arr[i][1], ed)
-                nxted = max(self.arr[i][1], ed)
-                if len(self.arr) > i+1:
-                    nxted = min(self.arr[i+1][0], nxted)
-                output.append([nxtst, nxted])
-            elif self.arr[i][0] > st:
+            if self.arr[i][0] > st:
                 prest = st
                 if i > 0:
                     prest = max(prest, self.arr[i-1][1])
-                if prest == st:  # only append if st not appended before.
-                    output.append([prest, self.arr[i][0]])
-                nxtst = min(self.arr[i][1], ed)
-                nxted = max(self.arr[i][1], ed)
-                if len(self.arr) > i+1:
-                    nxted = min(self.arr[i+1][0], nxted)
-                output.append([nxtst, nxted])
-        if st > output[i][1]:
-            output.append(sted)
+                output.append([prest, self.arr[i][0]])
+            if self.arr[i][0] < ed and self.arr[i][1] > ed:
+                output.append([ed, self.arr[i][1]])
+            if i < len(self.arr) - 1 and self.arr[i][1] < ed and self.arr[i+1][0] > ed:
+                output.append([self.arr[i][1], ed])
         self.arr = output
+        return i
     def dump(self):
         for i in xrange(len(self.arr)):
             print self.arr[i][0], " -> ", self.arr[i][1]
@@ -503,12 +511,6 @@ def depth(root):
 """ populate next right pointer to point sibling in each node
     we can do bfs, level by level. or do recursion.
 """
-def populateSibling(root, parent):
-    if not root: return root
-    root.sibling = parent.lchild if parent else None
-    populateSibling(root.lchild, root)
-    populateSibling(root.rchild, root)
-
 def populateSibling(root):
     if not root: return root
     if root.lchild:
@@ -517,7 +519,6 @@ def populateSibling(root):
         root.rchild.sibling = root.sibling ? root.sibling.lchild : None
     populateSibling(root.lchild)
     populateSibling(root.rchild)
-
 
 
 ''' insertion is a procedure of replacing null with new node !'''
@@ -549,7 +550,6 @@ def BST2Linklist(root, is_left_child):
     # leaf, return node itsef
     if not root.left and not root.rite:
         return root
-
     if root.left:
         lefthead = BST2Linklist(root.left, True)
         if lefthead:
@@ -560,7 +560,6 @@ def BST2Linklist(root, is_left_child):
         if ritehead:
             root.next = ritehead
             ritehead.pre = root
-
     if is_left_child:
         # ret max rite
         maxrite = root
@@ -579,10 +578,8 @@ def BST2Linklist(root, is_left_child):
 def findPrecessor(node):
     if node.left:
         return findLeftMax(node.left)
-
     while root.val > node.val:  # smaller preced must be in left tree
         root = root.left
-
     while findRightMin(root) != node:
         root = root.right
     return root
@@ -591,7 +588,6 @@ def delBST(node):
     parent = findParent(root, node)
     if not node.left and not node.right:
         parent.left = null
-
     # if node has left, max of left child
     if node.left:
         cur = findLeftMax(node)
@@ -603,11 +599,9 @@ def delBST(node):
         delBST(cur)
         parent.left = cur
         return
-
 def testIsBST():
     root = Node()
     isBST(root, -sys.maxint, sys.maxint)
-
 def toBST(l):
     if not l:
         return None
@@ -640,11 +634,9 @@ def findInsertionPosition(l, val):
             beg = mid + 1
         else:   # in less case, of course advance lower.
             beg = mid + 1
-
     # now begin contains insertion point
     print 'insertion point is : ', beg
     return beg
-
 def testFindInsertionPosition():
     l = [2,5,7,8,8,8,8,8,8,8,8,8,8,8,9]
     findInsertionPosition(l, 6)
@@ -695,19 +687,18 @@ def numOfIncrSeq(l, start, cursol, k):
         return
     if start + k > len(l):
         return
-
     if len(cursol) > 0:
         last = cursol[len(cursol)-1]
     else:
         last = -sys.maxint
-
     for i in xrange(start, len(l), 1):
         if l[i] > last:
             tmpsol = list(cursol)
             tmpsol.append(l[i])
             numOfIncrSeq(l, i+1, tmpsol, k-1)
 
-''' pascal triangle, http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
+''' pascal triangle, 
+http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
 '''
 
 
@@ -738,12 +729,10 @@ def factors_of(n):
     f = 2
     for step in chain([0,1,2,2], cycle([4,2,4,2,4,6,2,6])):
         f += step
-
         if f*f > n:
             if n != 1:
                 yield n
             break
-
         if n%f == 0:
             yield f
             while n%f == 0:
@@ -752,12 +741,9 @@ def factors_of(n):
 def is_prime(n):
     '''proves primality of n using Lucas test.'''
     x = n-1
-
     if n%2 == 0:
         return n == 2
-
     factors = list( factors_of(x))
-
     b = 2
     while b < n:
         if pow( b, x, n ) == 1:
@@ -767,9 +753,7 @@ def is_prime(n):
                     break
             else:
                 return True
-
         b += 1
-
     return False
 
 ''' continue when the smaller one, which is the remain of mod, still not zeroed '''
@@ -792,7 +776,6 @@ def gcd_extension(a, b):
 def primes():
     primes_cache, prime_jumps = [], defaultdict(list)
     #primes_cache, prime_jumps = [], dict()
-
     prime = 1
     for i in count():
         if i < len(primes_cache): prime = primes_cache[i]
@@ -863,7 +846,6 @@ class MaxHeap():
         def __init__(self, val, i, j):
             self.val = val
             self.ij = (i,j)   # the i,j index in the two array
-
         ''' recursive in-order iterate the tree this node is the root '''
         def inorder(self):
             if self.lchild:
@@ -871,18 +853,14 @@ class MaxHeap():
             self.toString()
             if self.rchild:
                 self.rchild.inorder()
-
     def __init__(self):
         self.Q = []
-
     def toString(self):
         for n in self.Q:
             print n.val, n.ij
         print ' --- heap end ---- '
-
     def head(self):
         return self.Q[0]
-
     def lchild(self, idx):
         lc = 2*idx+1
         if lc < len(self.Q):
@@ -897,10 +875,8 @@ class MaxHeap():
         if idx > 0:
             return (idx-1)/2, self.Q[(idx-1)/2].val
         return None, None
-
     def swap(self,i, j):
         self.Q[i], self.Q[j] = self.Q[j], self.Q[i]
-
     def siftup(self, idx):
         print self.toString()
         while True:
@@ -911,7 +887,6 @@ class MaxHeap():
                 idx = pidx
             else:
                 return
-
     def siftdown(self, idx):
         while idx < len(self.Q):
             lc, lcv = self.lchild(idx)
@@ -928,20 +903,17 @@ class MaxHeap():
                 idx = maxc
             else:
                 return  # done when loop break
-
     def insert(self, val, i, j):
         print 'inserting ', val, i, j
         node = MaxHeap.Node(val, i, j)
         self.Q.append(node)
         self.siftup(len(self.Q)-1)
-
     def extract(self):
         head = self.Q[0]
         print 'extract ', head.val, head.ij
         self.swap(0, len(self.Q)-1)
         self.Q.pop()      # remove the end, the extracted hearder, first
         self.siftdown(0)
-
 
 def KthMaxSum(p, q, k):
     color = [[0 for i in xrange(len(q)) ] for i in xrange(len(p)) ]
@@ -968,7 +940,6 @@ def KthMaxSum(p, q, k):
         if j+1 < len(q) and not color[i][j+1]:
             color[i][j+1] = 1
             heap.insert(p[i]+q[j+1], i, j+1)
-
     print 'result ', outl
 
 def testKthMaxSum():
@@ -1164,7 +1135,6 @@ def 3sum(l):
             else:
                 l -= 1
 
-
 '''
 Huffman coding: sort freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
 http://en.nerdaholyc.com/huffman-coding-on-a-string/
@@ -1215,7 +1185,6 @@ class SkipNode:
 class SkipList:
     def __inti__(self):
         self.head = SkipNode()  # head has
-
     def findExpressStopAtEachLevel(self, ele):   # find list of express stop node at each level whose greatest value smaller than ele
         """ find q, we begin from the top-most level, go thru the list down, until find node with largest ele le q
         then go level below, begin search from the node found at prev level, and search again for node with largest ele le q
@@ -1230,7 +1199,6 @@ class SkipList:
                 levelhd = levelhd.next[level]
             expressEachLevel[level] = levelhd
         return expressEachLevel
-
     def find(self, ele):
         expressList = findExpressStopAtEachLevel(self, ele)
         if len(expressList) > 0:
@@ -1238,7 +1206,6 @@ class SkipList:
             if candidate != None and candidate.ele == ele:
                 return candidate
         return None
-
     ''' insert always done at bottom level, flip coin which other lists should be in, 1/2, 1/4, 1/8
     '''
     def insert(self, ele):
@@ -1246,14 +1213,12 @@ class SkipList:
         # first, populate head next all level with None
         while len(self.head.next) < len(node.next):
             self.head.next.append(None)
-        
         expressList = self.findExpressStopAtEachLevel(ele)
         if self.find(ele, expressList) == None :
             # did not find ele, start insert
             for level in range(len(node.next)):
                 node.next[level] = expressList[level].next[level]
                 expressList[level].next[level] = node
-
     ''' lookup for ith ele, for every link, store the width(span)(the no of bottom layer links) of the link.
     '''
     def findIthEle(self, i):
@@ -1334,7 +1299,6 @@ def max_subarray(A):
 def kadane(l):
     max_beg = max_end = max_val = 0
     cur_beg = cur_end = cur_val = 0
-
     for i in xrange(len(l)):
         cur_end = i
         if l[i] > 0:
@@ -1411,7 +1375,6 @@ def maxValueSlidingWin(A, w):
             top = maxheap.pop()
             while top.idx < i-w:
                 top = maxheap.pop()
-
         maxWin[i-w] = maxheap.top()
 
 
@@ -1421,9 +1384,7 @@ def maxValueSlidingWin(A, w):
         while q.tail() < A.i:
             q.tail.pop()
         q.append(A.i)
-    
     maxWind[0] = Q.head()
-
     for i in xrange(w, sz):
         while q.tail() < A.i:
             q.tail.pop()
@@ -1462,7 +1423,6 @@ def max_distance(l):
         Lmin[i] = min(Lmin[i-1], l[i])
     for j in xrange(sz-2,0,-1):
         Rmax[j] = max(Rmax[j+1], l[j])
-
     i = j = 0   # both start from 0, Lmin/Rmax 
     maxdiff = -1
     while j < sz and i < sz:
@@ -1472,7 +1432,6 @@ def max_distance(l):
             j += 1
         else: # Lmin is bigger, mov, Lmin is mono decrease
             i += 1
-
     return maxdiff
 
 """ find idx a<b<c and l[a]<l[b]<l[c], two aux arr, Lmin and Rmax"""
@@ -1686,13 +1645,11 @@ def three_sum_zero():
 def integer_partition(A, n, k):
     m = [[0 for i in xrange(n)] for j in xrange(k)]  # min max value
     d = [[0 for i in xrange(n)] for j in xrange(k)]  # where divider is
-    
     # calculate prefix sum
     for i in xrange(A): psum[i] = psum[i-1] + A[i]
     # boundary, one divide, and one element
     for i in xrange(A): m[i][1] = psum[i]
     for j in xrange(k): m[1][j] = A[1]
-
     for i in xrange(2, n):
         for j in xrange(2, k):
             m[i][j] = sys.maxint
@@ -1712,14 +1669,11 @@ def subset_sum(A, v):
                 tab[i, v] = sol
                 return True
             return False
-
         find = dp(A, i-1, v, sol)
         find = dp(A, i-1, v-A[i], sol.append(i))
-
     # using recursion function call
     for i in xrange(len(A)):
         dp(A, i, v, [])
-
     # if not using recursion, and build tab[i,j]
     for i in xrange(len(A)):
         for v in xrange(v):
