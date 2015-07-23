@@ -457,6 +457,148 @@ def testInterval():
     intv.insertToggle([5, 15])
     intv.dump()
 
+""" bst with lo as the bst search key
+    interval tree annotate with max. Augmented search tree with # of children for rank.
+"""
+class IntervalTree(object):
+    def __init__(self, lo=None, hi=None):
+        self.lo = lo
+        self.hi = hi
+        self.max = max(lo, hi)
+        self.left = self.rite = None
+    def overlap(self, intv):
+        [lo,hi] = intv
+        if lo > self.hi or self.lo > hi:
+            return False
+        return True
+    def toString(self):
+        val = "[ " + str(self.lo) + ":" + str(self.hi) + ":" + str(self.max)
+        if self.left:
+            val += " / :" + self.left.toString()
+        if self.rite:
+            val += " \ :" + self.rite.toString()
+        val += " ] "
+        return val
+    def insert(self, intv):  # lo as BST key
+        [lo,hi] = intv
+        if not self.lo:  # empty tree
+            self.lo = lo
+            self.hi = hi
+            self.max = max(self.lo, self.hi)
+            self.left = self.rite = None
+            return self
+        if self.max < hi:
+            self.max = hi
+        if lo < self.lo:
+            if not self.left:
+                self.left = IntervalTree(lo, hi)
+                return self.left
+            else:
+                self.left.insert(intv)
+        else:
+            if not self.rite:
+                self.rite = IntervalTree(lo, hi)
+                return self.rite
+            else:
+                self.rite.insert(intv)
+    def search(self, intv):
+        [lo,hi] = intv
+        if self.overlap(intv):
+            return self
+        if self.left and lo <= self.left.max:
+            return self.left.search(intv)
+        elif self.rite:
+            return self.rite.search(intv)
+        else:
+            return None   
+    def riteMin(self):  # ret the min from self's rite, either rite, or leftmost of rite.
+        if not self.rite:
+            return self
+        node = self.rite
+        while node.left:
+            node = node.left
+        return node
+    def dfs(self, intv, result):
+        [lo,hi] = intv
+        if self.overlap(intv):
+            result.add(self)   # update result upon base condition.
+        if self.left and lo < self.left.max:
+            self.left.dfs(intv, result)
+        if self.rite and hi > self.riteMin().lo:
+            self.rite.dfs(intv, result)
+        return result
+    def delete(self, intv):
+        [lo,hi] = intv
+        if lo == self.lo and hi == self.hi:
+            if not self.left:
+                return self.rite
+            elif not self.rite:
+                return self.left
+            else:
+                node = self.rite
+                while node.left:
+                    node = node.left
+                node.left = self.left
+                if node != self.rite:
+                    tmp = node.rite
+                    node.rite = self.rite
+                    self.rite.left = tmp
+                node.max = max(self.left.max, self.rite.max)
+            return node
+        if lo <= self.lo:
+            self.left = self.left.delete(intv)
+        else:
+            self.rite = self.rite.delete(intv)
+        self.max = max(self.lo, self.hi)
+        if self.left:
+            self.max = max(self.left.max, self.max)
+        if self.rite:
+            self.max = max(self.rite.max, self.max)
+        return self
+    def inorder(self):
+        result = set()
+        pre, cur = None, self
+        if not cur:
+            return cur
+        while cur:
+            if not cur.left:
+                result.add(cur)
+                pre,cur = cur, cur.rite
+            else:
+                node = cur.left
+                while node.rite and node.rite != cur:
+                    node = node.rite
+                if not node.rite:
+                    node.rite = cur
+                    cur = cur.left    # descend to left, recur
+                else:
+                    result.add(cur)
+                    pre,cur = cur, cur.rite
+                    node.rite = None
+        return result
+
+def test():
+    intvtree = IntervalTree()
+    intvtree.insert([17,19])
+    intvtree.insert([5,8])
+    intvtree.insert([21,24])
+    intvtree.insert([4,8])
+    intvtree.insert([15,18])
+    intvtree.insert([7,10])
+    intvtree.insert([16,22])
+    print intvtree.search([21,23]).toString()
+    result = set()
+    intvtree.dfs([16,22], result)
+    for e in result:
+        print e.toString()
+
+    intvtree = intvtree.delete([17,19])
+    print intvtree.lo, intvtree.hi, intvtree.max
+    result = set()
+    intvtree.dfs([9,24], result)
+    for e in result:
+        print e.toString()
+    
 
 '''
 find the diameter(width) of a bin tree.
