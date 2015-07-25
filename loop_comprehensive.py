@@ -535,20 +535,23 @@ class IntervalTree(object):
             elif not self.rite:
                 return self.left
             else:
+                # find in order successor, leftmost of rite branch.
                 node = self.rite
                 while node.left:
                     node = node.left
-                node.left = self.left
-                if node != self.rite:
-                    tmp = node.rite
-                    node.rite = self.rite
-                    self.rite.left = tmp
-                node.max = max(self.left.max, self.rite.max)
-            return node
+                self.lo = node.lo
+                self.hi = node.hi
+                # recursive delete in order successor
+                self.rite = self.rite.delete([node.lo, node.hi])
+                self.max = max(self.lo, self.hi, self.left.max)
+                if self.rite:
+                    self.max = max(self.max, self.rite.max)
+                return self
         if lo <= self.lo:
             self.left = self.left.delete(intv)
         else:
             self.rite = self.rite.delete(intv)
+        # update max after deletion
         self.max = max(self.lo, self.hi)
         if self.left:
             self.max = max(self.left.max, self.max)
