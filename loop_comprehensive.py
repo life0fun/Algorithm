@@ -602,6 +602,144 @@ def test():
     for e in result:
         print e.toString()
     
+""" segment tree, two version, tree and heap """
+import math
+import sys
+class RMQ(object):
+    class Node():
+        def __init__(self, lo=0, hi=0, minval=0, minvalidx=0, heapidx=0):
+            self.lo = lo
+            self.hi = hi
+            self.minval = minval
+            self.minvalidx = minvalidx
+            self.heapidx = heapidx
+            self.left = self.rite = None
+    def __init__(self, arr=[]):
+        self.arr = arr
+        self.size = len(self.arr)
+        self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
+        self.root = self.build(0, self.size-1, 0)[0]
+    def build(self, lo, hi, heapidx):
+        if lo == hi:
+            n = RMQ.Node(lo, hi, self.arr[lo], lo, heapidx)
+            self.heap[heapidx] = n
+            return [n, lo]
+        mid = (lo+hi)/2
+        left,lidx = self.build(lo, mid, 2*heapidx+1)
+        rite,ridx = self.build(mid+1, hi, 2*heapidx+2)
+        minval = min(left.minval, rite.minval)
+        minidx = lidx if minval == left.minval else ridx
+        n = RMQ.Node(lo, hi, minval, minidx, heapidx)
+        n.left = left
+        n.rite = rite
+        self.heap[heapidx] = n
+        return [n,minidx]
+    def query(self, root, lo, hi):
+        if lo > root.hi or hi < root.lo:
+            return sys.maxint, -1
+        if lo <= root.lo and hi >= root.hi:
+            return root.minval, root.minvalidx
+        lmin,rmin = root.minval, root.minval
+        if root.left:
+            lmin,lidx = self.query(root.left, lo, hi)
+        if root.rite:
+            rmin,ridx = self.query(root.rite, lo, hi)
+        minidx = lidx if lmin < rmin else ridx
+        return min(lmin,rmin),minidx
+    def queryIdx(self, idx, lo, hi):
+        node = self.heap[idx]
+        if lo > node.hi or hi < node.lo:
+            return sys.maxint, -1
+        if lo <= node.lo and hi >= node.hi:
+            return node.minval, node.minvalidx
+        lmin,rmin = node.minval, node.minval
+        if self.heap[2*idx+1]:
+            lmin,lidx = self.queryIdx(2*idx+1, lo, hi)
+        if self.heap[2*idx+2]:
+            rmin,ridx = self.queryIdx(2*idx+2, lo, hi)
+        minidx = lidx if lmin < rmin else ridx
+        return min(lmin,rmin), minidx
+def test():
+    r = RMQ([4,7,3,5,12,9])
+    print r.query(r.root,0,5)
+    print r.queryIdx(0,0,5)
+
+
+""" 2d tree """
+class KdTree(object):
+    def __init__(self, xy, level=0):
+        self.xy = xy
+        self.level = level
+        self.left = self.rite = None
+    def __repr__(self):
+        return "[" + str(self.xy) + "] L" + str(self.level)
+    def leaf(self):
+        if self.left or self.rite:
+            return False
+        return True
+    def find(self,xy):
+        keyidx = self.level % 2
+        if self.xy[keyidx] == xy[keyidx]:
+            return True, self
+        elif xy[keyidx] < self.xy[keyidx]:
+            if self.left:
+                return self.left.find(xy)
+        else:
+            if self.rite:
+                return self.rite.find(xy)
+        return False, self
+    def insert(self, xy):
+        found, parent = self.find(xy)
+        keyidx = parent.level % 2
+        if xy[keyidx] > parent.xy[keyidx]:
+            parent.rite = KdTree(xy, parent.level+1)
+            return parent.rite
+        else:
+            parent.left = KdTree(xy, parent.level+1)
+            return parent.left
+    # root.search(q,null,sys.maxint)
+    def search(self, q, p, w):
+      if self.left():
+        if distance(q,self.xy) < w:
+          return self.xy
+        else:
+          return p
+      else:
+        keyidx = self.level % 2
+        if w == sys.maxint:   # w is infinity
+          if q[keyidx] < self.xy[keyidx]:
+            p = self.left.search(q,p,w)
+            w = distance(p,q)
+            if q[keyidx] + w > self.xy[keyidx]:
+              p = self.rite.search(q, p, w)
+          else:
+            p = self.rite.search(q,p,w)
+            w = distance(p,q)
+            if q[keyidx] + w > self.xy[keyidx]:
+              p = self.left.search(q, p, w)
+        else:  # w is not infinity
+          if q[keyidx] - w < self.xy[keyidx]:
+            p = self.left.search(q, p, w)
+            w = distance(p,q);
+            if q[keyidx] + w > self.xy[keyidx]:
+              p = self.rite.search(q, p, w)
+        return p            
+def test():
+    kd = KdTree([35, 90])
+    kd.insert([70, 80])
+    kd.insert([10, 75])
+    kd.insert([80, 40])
+    kd.insert([50, 90])
+    kd.insert([70, 30])
+    kd.insert([90, 60])
+    kd.insert([50, 25])
+    kd.insert([25, 10])
+    kd.insert([20, 50])
+    kd.insert([60, 10])
+
+    print kd, kd.rite, kd.left
+    print kd.find([80,40])[1].left
+
 
 '''
 find the diameter(width) of a bin tree.
