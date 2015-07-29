@@ -209,7 +209,6 @@ def test():
     print t.all("c")
 
 
-
 class Tree():
     def __init__(self, root=None):
         self.root = root
@@ -323,10 +322,8 @@ def deserializeBST(fstream, parent, asleft):
         parent.left = node
     else:
         parent.rite = node
-
     if node is '#':
         return
-
     deserializeBST(fstream, node, True)
     deserializeBST(fstream, node, False)
 
@@ -444,14 +441,14 @@ class MinVertexCover(Node):
         self.minvertex = []
 
     # pass in parent during dfs cursion
-    def DFS(self, n, parent):
+    def dfs(self, n, parent):
         # for leaf node, return to select parent.
         if n.children is None:
             return
         # process_node_earlier()
         for c in n.children:
             # process_edge(n, c)
-            self.DFS(c, n)
+            self.dfs(c, n)
 
         # process_node_late(), as a child, and done all my paths, update my parent is children's responsible.
         # after done n, traversed all n's children. this parent-child edge, decide which node
@@ -460,7 +457,7 @@ class MinVertexCover(Node):
                 self.minvertex.append(parent)
 
     # A node has 3 array, parent, discovered(grey), and processed(black)
-    # DFS : process node early : entering time, rank.
+    # dfs : process node early : entering time, rank.
     # process node late when done exploring my path. update my parent
     # process edge: (me, my_child), collect info from my reachable child.
     # edge classification: parent/child defined by entering time. pos in stack.

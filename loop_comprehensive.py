@@ -1990,7 +1990,87 @@ def knapsack(maxw, W, V):
         for w in xrange(maxw):
             tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i]] + W[i])
     return tab[n, maxw]
+# order does not matter, exclu current i, and incl cuurent i
+def coinchange(n, v):
+    for i in xrange(n):
+        for v in xrange(v):
+            c[i,v] = c[i-1,v] + c[i, v-V[i]]
+# order matters
+def coinchange(n, v):
+    for v in V:
+        for i in n:
+            tab[v] += tab[v-V[i]]
 
+def calPack(arr):
+    prepre, pre = arr[0], arr[1]
+    for i in xrange(2,len(arr)):
+        curmaxv = max(prepre + arr[i], pre)
+        maxv = max(maxv, curmaxv)
+        prepre, pre = pre, curmaxv
+
+# 2 boundary checks: sz, and offset.
+def combination(arr, path, sz, offset, result):
+    if sz == 0:
+        result.append(path)
+        return result
+    if offset >= len(arr):
+        return
+    l = path[:]
+    l.append(arr[offset])
+    combination(arr, l, sz-1, offset+1, result)
+    combination(arr, path, sz, offset+1, result)
+    return
+"""
+   result = []; combinationIter(["a","b","c","d"], [], 2, 0, result); print result;
+"""
+def combinationIter(arr, path, sz, offset, result):
+    if sz == 0:
+        result.append(path)
+        return result
+    if offset >= len(arr):
+        return
+    for i in xrange(offset, len(arr)):
+        l = path[:]
+        l.append(arr[i])
+        combinationIter(arr, l, sz-1, i+1, result)
+
+def permutation(arr, path, offset, result):
+    if offset >= len(arr)-1:
+        path.append(arr[offset])
+        result.append(path)
+        return
+    for i in xrange(offset, len(arr)):
+        l = path[:]
+        arr[offset], arr[i] = arr[i], arr[offset]
+        l.append(arr[offset])
+        permutation(arr, l, offset+1, result)
+        arr[offset], arr[i] = arr[i], arr[offset]
+
+def perm(arr):
+    result = []
+    if len(arr) == 1:
+        result.append([arr[0]])
+        return result
+    for i in xrange(len(arr)):
+        hd = arr[i]
+        l = arr[:]
+        del l[i]
+        for e in perm(l):
+            e.insert(0,hd)
+            result.append(e)
+    return result
+
+"""
+;; cons each head to each tail, which is recur result of list without header
+(defn all-permutations [things]
+  (if (= 1 (count things))
+    (list things)
+    (for [head things
+          tail (all-permutations (disj (set things) head))]
+      (do
+        (cons head tail)))))
+(all-permutations '(a b c))
+"""
 
 def subsetSum(l, v):
     ''' sol[i,v] is subset sum of 0..i to value v. sol[i,v] = Union(sol[i-1,v], sol[i-1, v-V[i]])
