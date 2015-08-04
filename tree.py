@@ -108,12 +108,17 @@ class Trie(object):
         hd = word[0]
         nxt = self.children[hd]
         if nxt:
-            return nxt.contains(word[1:])
+            if len(word) == 1:
+                return self.leaf, self
+            else:
+                return nxt.contains(word[1:])
         else:  # no nxt, does not exist
             return False, self  # if not contain, ret parent
     def allSuffix(self, prefix):
         found, parent = self.contains(prefix)
-        parent.bfs()
+        if found:
+            result = set()
+            parent.dfs(prefix, result)
     def dfs(self, prefix, resultset):
         for c in self.children():
             if c.leaf:
@@ -138,7 +143,7 @@ class TernaryTree(object):
                 return self.eq
             else:  # more keys, advance and descend
                 if not self.eq:
-                    self.eq = TernaryTree(word[1])  # new eq point to next.
+                    self.eq = TernaryTree(word[1])  # new eq point to next char.
                 self.eq.insert(word[1:])
         elif hd < self.key:
             if not self.left:
@@ -176,7 +181,7 @@ class TernaryTree(object):
             return result
         if node.leaf:
             result.add(prefix)
-        if node.eq:   # descend to eq only.
+        if node.eq:   # dfs on eq branch of prefix parent only.
             node.eq.dfs(prefix, result)
         return result
     def dfs(self, prefix, result):

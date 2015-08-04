@@ -611,11 +611,11 @@ class RMQ(object):
             self.lo = lo
             self.hi = hi
             self.minval = minval
-            self.minvalidx = minvalidx
-            self.heapidx = heapidx
+            self.minvalidx = minvalidx  # idx in origin val arr
+            self.heapidx = heapidx      # idx in rmq heap tree.
             self.left = self.rite = None
     def __init__(self, arr=[]):
-        self.arr = arr
+        self.arr = arr  # value arr
         self.size = len(self.arr)
         self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
         self.root = self.build(0, self.size-1, 0)[0]
@@ -803,6 +803,23 @@ def populateSibling(root):
     populateSibling(root.lchild)
     populateSibling(root.rchild)
 
+
+def populateNext(root):
+    while root:
+        nextlevelhd = None
+        nextlevelcur = None
+        cur = root
+        while cur:
+            for c in cur.children:
+                if not nextlevelhd:
+                    nextlevelhd = c
+                if not nextlevelcur:
+                    nextlevelcur = c
+                else:
+                    nextlevelcur.next = c
+                    nextlevelcur = c
+            cur = cur.next
+        root = nextlevelhd
 
 ''' insertion is a procedure of replacing null with new node !'''
 def insertBST(root, node):

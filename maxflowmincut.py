@@ -36,16 +36,12 @@ def MaxFlowMinCut(S, T, G):  # graph, source, sink
             P[i] = -1
             V[i] = 0
             min_capacity[i] = 1<<31  # a vertex's min cap means the cap of this vertex to sink.
-
         Q.clear()
         Q.append(source)  # always start from source
         V[source] = 1
-        print 'source', source
-
         ''' first, found the augmenting-path'''
         while len(Q):
             node = Q.popleft()
-            print 'pop out:', node
             for nb in xrange(vertices):   # all the node in graph, not only the nb
                 if V[nb] == 0 and ResC[node][nb] > 0: # not visited, and have ResC
                     V[nb] = 1
@@ -63,7 +59,6 @@ def MaxFlowMinCut(S, T, G):  # graph, source, sink
     while BFS(Q, P, S, min_capacity):  # BFS continue to find a path to sink with min capacity
         max_flow += min_capacity[T] # add capacity of the path into max flow
         where = T
-        print P
         while where != S:
             prev = P[where]
             F[prev][where] += min_capacity[T]
