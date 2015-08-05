@@ -2028,7 +2028,7 @@ def calPack(arr):
 # 2 boundary checks: sz, and offset.
 def combination(arr, path, sz, offset, result):
     if sz == 0:
-        result.append(path)
+        result.append(path)  # add to result only when sz
         return result
     if offset >= len(arr):
         return
@@ -2051,8 +2051,17 @@ def combinationIter(arr, path, sz, offset, result):
         l.append(arr[i])
         combinationIter(arr, l, sz-1, i+1, result)
 
+# [a [ab [abc]] [ac]] , [b [bc]] , [c]
+def powerset(arr, offset, path, result):
+    result.append(path)
+    for i in xrange(offset, len(arr)):
+        l = path[:]
+        l.append(arr[i])
+        powerset(arr, i+1, l, result)
+
+# [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
 def permutation(arr, path, offset, result):
-    if offset >= len(arr)-1:
+    if offset == len(arr)-1:
         path.append(arr[offset])
         result.append(path)
         return
