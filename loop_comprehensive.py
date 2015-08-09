@@ -1960,26 +1960,6 @@ def integer_partition(A, n, k):
                     d[i][j] = x     # divide at pos x
 
 
-# subset sum, sum val not change.
-def subset_sum(A, v):
-    def dp(A, i, v, sol):
-        if i == 0:
-            if A[i] == v:
-                sol.append(i)
-                tab[i, v] = sol
-                return True
-            return False
-        find = dp(A, i-1, v, sol)
-        find = dp(A, i-1, v-A[i], sol.append(i))
-    # using recursion function call
-    for i in xrange(len(A)):
-        dp(A, i, v, [])
-    # if not using recursion, and build tab[i,j]
-    for i in xrange(len(A)):
-        for v in xrange(v):
-            tab[i,v] = max(tab[i-1,v], tab[i-1, v-W.i] + V.i)
-
-
 """ reg match . *. recursion, loop try 0,1,2...times for *. """
 def regMatch(T, P, offset):
     if P is None: return T is None
@@ -2097,6 +2077,59 @@ def perm(arr):
         (cons head tail)))))
 (all-permutations '(a b c))
 """
+
+""" valid parenthese, two branches """
+def parenthese(n, lefts, rites, path, result):
+    if (lefts == n):
+        for i in xrange(rites, n):
+            path.append(")")
+        result.append(path)
+        return
+    if (lefts == rites):
+        p = path[:]
+        p.append("(")
+        parenthese(n, lefts+1, rites, p, result)
+        return    
+    p = path[:]
+    p.append("(")
+    parenthese(n, lefts+1, rites, p, result)
+    p = path[:]
+    p.append(")")
+    parenthese(n, lefts, rites+1, p, result)
+
+
+""" if dup not allowed, shift offset when dfs inclusion branch """
+# path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
+def subsetsum(l, offset, n, path, result):
+    if offset < 0:
+        return
+    p = path[:]
+    if n == l[offset]:
+        p.append(l[offset])
+        result.append(p)
+    if n > l[offset]:  # branch incl when when l.i smaller
+        p.append(l[offset])
+        # dup allowed, offset stay when include, incl 1+ times.
+        subsetsum(l, offset,   n-l[offset], p, result)
+        subsetsum(l, offset-1, n-l[offset], p, result)
+    # always reduce when excl current, with excl l[i] path.
+    subsetsum(l, offset-1, n, path, result)
+
+"""
+ when for loop enum next items in parallel, effectively as exclude current item branch.
+"""
+def subsetsum(l, offset, n, path, result):
+    if n == 0:
+        result.append(path)
+        return
+    for i in xrange(offset, -1, -1):
+        if n >= l[i]:  # only include l[i]
+            p = path[:]
+            p.append(l[i])
+            subsetsum(l, i, n-l[i], p, result)
+            # shift offset when no dup allowed, to incl once
+            # subsetsum(l, i-1, n-l[i], p, result)
+
 
 def subsetSum(l, v):
     ''' sol[i,v] is subset sum of 0..i to value v. sol[i,v] = Union(sol[i-1,v], sol[i-1, v-V[i]])
