@@ -1998,13 +1998,6 @@ def coinchange(n, v):
         for i in n:
             tab[v] += tab[v-V[i]]
 
-def calPack(arr):
-    prepre, pre = arr[0], arr[1]
-    for i in xrange(2,len(arr)):
-        curmaxv = max(prepre + arr[i], pre)
-        maxv = max(maxv, curmaxv)
-        prepre, pre = pre, curmaxv
-
 # 2 boundary checks: sz, and offset.
 def combination(arr, path, sz, offset, result):
     if sz == 0:
@@ -2038,6 +2031,7 @@ def powerset(arr, offset, path, result):
         l = path[:]
         l.append(arr[i])
         powerset(arr, i+1, l, result)
+
 
 # [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
 def permutation(arr, path, offset, result):
@@ -2131,6 +2125,93 @@ def subsetsum(l, offset, n, path, result):
             # subsetsum(l, i-1, n-l[i], p, result)
 
 
+def calPack(arr):
+    prepre, pre = arr[0], arr[1]
+    for i in xrange(2,len(arr)):
+        curmaxv = max(prepre + arr[i], pre)
+        maxv = max(maxv, curmaxv)
+        prepre, pre = pre, curmaxv
+
+
+""" bottom up, forward, from 0..n-1 """
+def decode(dstr, pos):
+  if dstr[pos] == '0':  # when forward, no more branch when hits 0
+    return 0
+  if pos == len(dstr)-1:
+    return 1
+  if dstr[pos] == '1' or (dstr[pos] == '2' and dstr[pos+1] <= '6'):
+    if pos+2 < len(dstr):
+      return decode(dstr, pos+1) + decode(dstr, pos+2)
+    else:
+      return decode(dstr, pos+1) + 1
+  else:
+    return decode(dstr, pos+1)
+
+""" top down, backward, from n-1..0 """
+def decode(dstr, pos):
+  if pos == 0:
+    return 1
+  if dstr[pos] == '0':  # when backwards, recur when hits 0.
+    return decode(dstr, pos-1)
+  if dstr[pos-1] == '1' or (dstr[pos-1]=='2' and dstr[pos]<='6'):
+    if pos - 2 < 0:
+      return decode(dstr, pos-1) + 1
+    else:
+      return decode(dstr, pos-1) + decode(dstr,pos-2)
+  else:
+    return decode(dstr, pos-1)
+
+""" recursive build a tree, then print all leaf """
+def decode(dstr):
+    root = Node(dstr)
+    root.left = decode(dstr[1:])
+    root.rite = decode(dstr[2:])
+    return root
+
+""" DP, with O(n) ary """
+def decode(dstr):
+  dp = [1 for i in xrange(len(dstr))]
+  for i in xrange(1, len(dstr)):
+    if dstr[i] == '0':
+      dp[i] = dp[i-1]
+    elif dstr[i-1] == '1' or (dstr[i-1]== '2' and dstr[i] <= '6'):
+      if i < 2:
+        dp[i] = 2
+      else:
+        dp[i] = dp[i-1] + dp[i-2]
+    else:
+      dp[i] = dp[i-1]
+  return dp[len(dstr)-1]
+
+""" DP with O(1) """
+def decode(dstr):
+  if len(dstr) == 1:
+    return 1
+  prepre, pre = 1, 1
+  for i in xrange(1, len(dstr)):
+    if dstr[i] == '0':
+      cur = pre
+    elif dstr[i-1] == '1' or (dstr[i-1]=='2' and dstr[i]<='6'):
+      cur = prepre + pre  # fib seq here.
+    else:
+      cur = pre
+    prepre, pre = pre, cur
+  return cur
+
+def decode(dstr):
+    if len(dstr) == 1:
+        return 1
+    pre,cur = 0, 1
+    for i in xrange(1, len(dstr)+1):
+        if dstr[i-1] == '0':
+            cur = 0
+        if i < 2 or not (dstr[i-2] == '1' or (dstr[i-2]=='2' and dstr[i-1]<='6')):
+            pre = 0
+        tmp = cur
+        cur = pre + cur
+        pre = tmp
+    return cur
+
 def subsetSum(l, v):
     ''' sol[i,v] is subset sum of 0..i to value v. sol[i,v] = Union(sol[i-1,v], sol[i-1, v-V[i]])
         like knapsack, at i, only consider either include or exclude item i.
@@ -2208,31 +2289,6 @@ def palindromMincut(s):
     # expand to full string by the end
     return tab[n-1]
 
-
-""" distinct subseq, you can ignore some char at pos,
-    distinct_subseq("rabbbit", 0, "rabbit", 0, []) partial result itself a [].
-"""
-def distinct_subseq(s, sidx, t, tidx, partial):
-  result = []
-  if tidx == len(t):
-    result.append(partial)
-    return result
-  
-  if sidx == len(s):
-    return result
-  
-  if s[sidx] == t[tidx]:
-    p = partial[:]
-    p.append(str(sidx) + ":" + s[sidx])
-    for r in distinct_subseq(s, sidx+1, t, tidx+1, p):
-      if r:
-        result.append(r)
-
-  for x in distinct_subseq(s, sidx+1, t, tidx, partial):
-    if x:
-      result.append(x)
-
-  return result
 
 
 """ dfs word break, collect and combine result at process node late.
