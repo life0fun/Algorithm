@@ -2092,38 +2092,74 @@ def parenthese(n, lefts, rites, path, result):
     parenthese(n, lefts, rites+1, p, result)
 
 
-""" if dup not allowed, shift offset when dfs inclusion branch """
-# path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
-def subsetsum(l, offset, n, path, result):
-    if offset < 0:
-        return
-    p = path[:]
-    if n == l[offset]:
-        p.append(l[offset])
-        result.append(p)
-    if n > l[offset]:  # branch incl when when l.i smaller
-        p.append(l[offset])
-        # dup allowed, offset stay when include, incl 1+ times.
-        subsetsum(l, offset,   n-l[offset], p, result)
-        subsetsum(l, offset-1, n-l[offset], p, result)
-    # always reduce when excl current, with excl l[i] path.
-    subsetsum(l, offset-1, n, path, result)
-
-"""
- when for loop enum next items in parallel, effectively as exclude current item branch.
-"""
-def subsetsum(l, offset, n, path, result):
-    if n == 0:
+""" word break, O(n2) """
+# result=[];path=[];word="catsanddog";print wordbreak(word,0,path,result)
+def wordbreak(word, offset, path, result):
+    dict = ["cat", "cats", "and", "sand", "dog"]
+    if offset == len(word):
         result.append(path)
-        return
-    for i in xrange(offset, -1, -1):
-        if n >= l[i]:  # only include l[i]
-            p = path[:]
-            p.append(l[i])
-            subsetsum(l, i, n-l[i], p, result)
-            # shift offset when no dup allowed, to incl once
-            # subsetsum(l, i-1, n-l[i], p, result)
+        return result
+    for i in xrange(offset, len(word)):
+        if word[offset:i+1] in dict:
+            l = path[:]
+            l.append(word[offset:i+1])
+            wordbreak(word, i+1, l, result)
+    return result
 
+""" recursion version """
+from collections import defaultdict
+def wordbreak(word):
+    dict = ["cat", "cats", "and", "sand", "dog"]
+    tab = defaultdict(lambda: []) # tab[i] = tab[j] + cw, when j < i
+    def dp(offset):
+        for i in xrange(offset-1, -1, -1):
+            cw = word[i:offset+1]
+            if cw in dict:
+                if i == 0:
+                    tab[offset].append([cw])
+                    return
+                if len(tab[i-1]) == 0:
+                    dp(i-1)
+                if len(tab[i-1]) > 0:
+                    for e in tab[i-1]:
+                        tmp = list(e)
+                        tmp.append(cw)
+                        tab[offset].append(tmp)
+    dp(len(word)-1)   # recursion to rest from head
+    return tab[len(word)-1]
+
+""" DP version """
+def wordbreak(word, dict):
+    dp = [0 for i in xrange(word)]
+    for i in xrange(word):
+        for j in xrange(i):
+            cw = word[j:i+1]
+            if cw in dict:
+                if j == 0:
+                    dp[i] = 1
+                elif dp[j]:
+                    dp[i] += dp[j]
+    return dp[len(word)-1]
+
+from collections import defaultdict
+def wordbreak(word):
+    dict = ["cat", "cats", "and", "sand", "dog"]
+    tab = defaultdict(lambda: [])
+    for i in xrange(len(word)):
+        for j in xrange(i-1, -1, -1):
+            cw = word[j:i+1]
+            if cw in dict:
+                if j == 0:
+                    tab[i].append([cw])
+                elif len(tab[j-1]) > 0:
+                    for e in tab[j-1]:
+                        tmp = list(e)
+                        tmp.append(cw)
+                        tab[i].append(tmp)
+    return tab[len(word)-1]
+
+
+""" various way for decode """
 
 def calPack(arr):
     prepre, pre = arr[0], arr[1]
@@ -2199,6 +2235,22 @@ def decode(dstr):
   return cur
 
 def decode(dstr):
+  if len(dstr) == 1:
+    return 1
+  prepre = 1
+  if int(dstr[0:2]) <= 26 and dstr[1] != '0':
+    pre = 2
+  else:
+    pre = 1
+  cur = pre
+  for i in xrange(2, len(dstr)):
+    cur = pre
+    if dstr[i-1] is '1' or dstr[i-1] is '2' and dstr[i] <= '6':
+      cur = prepre + pre
+    prepre, pre = pre, cur
+  return cur
+
+def decode(dstr):
     if len(dstr) == 1:
         return 1
     pre,cur = 0, 1
@@ -2211,6 +2263,75 @@ def decode(dstr):
         cur = pre + cur
         pre = tmp
     return cur
+
+""" if dup not allowed, shift offset when dfs inclusion branch """
+# path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
+def subsetsum(l, offset, n, path, result):
+    if offset < 0:
+        return
+    p = path[:]
+    if n == l[offset]:
+        p.append(l[offset])
+        result.append(p)
+    if n > l[offset]:  # branch incl when when l.i smaller
+        p.append(l[offset])
+        # dup allowed, offset stay when include, incl 1+ times.
+        subsetsum(l, offset,   n-l[offset], p, result)
+        subsetsum(l, offset-1, n-l[offset], p, result)
+    # always reduce when excl current, with excl l[i] path.
+    subsetsum(l, offset-1, n, path, result)
+
+"""
+ when for loop enum next items in parallel, effectively as exclude current item branch.
+"""
+def subsetsum(l, offset, n, path, result):
+    if n == 0:
+        result.append(path)
+        return
+    for i in xrange(offset, -1, -1):
+        if n >= l[i]:  # only include l[i]
+            p = path[:]
+            p.append(l[i])
+            subsetsum(l, i, n-l[i], p, result)
+            # shift offset when no dup allowed, to incl once
+            # subsetsum(l, i-1, n-l[i], p, result)
+
+
+""" DP tab[offset][val] """
+from collections import defaultdict
+def subsetsum(l, val):
+    tab = [[0]*val for i in xrange(l)]
+    for r in xrange(len(l)):
+        for j in xrange(i-1, -1, -1):
+            if len(tab[j][val]) > 0:
+                tab[r][val].append(list(tab[j][val]))
+            if len(tab[j][val-l[r]]) > 0:
+                p = list(tab[j][val-l[r]])
+                for e in p:
+                    e.append(l[r])
+                    tab[r][val].append(e)
+
+from collections import defaultdict
+def subsetsum(l, val):
+    tab = [[0]*(val+1) for i in xrange(len(l))]  # tab[i][v], l[0:i] has v
+    for i in xrange(len(l)):
+        for v in xrange(val+1):
+            tab[i][v] = []
+        v = l[i]
+        tab[i][v].append([v])
+    for r in xrange(1,len(l)):
+        v = l[r]
+        for v in xrange(val+1):
+            if len(tab[r-1][val]) > 0:
+                tab[r][val].append(list(tab[r-1][val]))
+            if len(tab[r-1][val-v) > 0:
+                p = list(tab[r-1][val-v])
+                for e in p:
+                    e.append(v)
+                    tab[r][val].append(e)
+    return tab[len(l)-1][val]
+
+
 
 def subsetSum(l, v):
     ''' sol[i,v] is subset sum of 0..i to value v. sol[i,v] = Union(sol[i-1,v], sol[i-1, v-V[i]])
@@ -2288,84 +2409,6 @@ def palindromMincut(s):
                 tab[i] = min(tab[j+1] + 1, tab[i])
     # expand to full string by the end
     return tab[n-1]
-
-
-
-""" dfs word break, collect and combine result at process node late.
-    word("catsanddog", 0, dict())
-"""
-from collections import defaultdict
-
-def word(s, offset, ctx):
-  dict = ["cat", "cats", "and", "sand", "dog"]
-  result = []
-  sz = len(s)
-  if offset == sz:
-    result.append(["EOF"])
-  for i in xrange(offset+1, sz):
-    cw = s[offset:i+1]  # end+1 as s[start:end] as end is not closing.
-    if cw in dict:
-      for w in word(s, i+1, ctx):  # next offset starts i+1
-        if w:
-          w.append(cw)
-          result.append(w)
-  ctx['sol'][offset] = result
-  return result
-
-def wordBreak(s, dict, offset, ctx):
-    ''' check if a string can be divide into a set of words in dict, ret all words
-        at offset, branch out for each word, and aggregate
-    '''
-    if dict[s[offset, n]] is True:
-        ctx.partial.append(s[offset,i])
-        ctx.global.append(partial)
-        
-    for i in xrange(offset, n):
-        w =  s[offset, i]
-        if dict[w] is True:
-            ctx.partial.append(w)
-            wordBreak(s, dict, i, ctx)
-    return ctx
-
-def wordBreak(s, dict, offset, ctx):
-    ''' convert recursion to DP, F[i] is solution [0..i], F[i] = any(F[k] for k in [0..k] and word[k,i])
-        we can also do F[i] solution [i..n], F[i] = any(F[k] for k in [i+1, n] and word[i,k])
-    '''
-    ctx.tab[0] = True
-    for i in xrange(len(s)):
-        for j in xrange(i-1, 0, -1):
-            w = s[j,i]
-            if dict[w] and ctx.tab[j]:
-                ctx.tab[i] = True
-    # finally expand to full string
-    return ctx.tab[n-1]
-
-def wordBreak(s, dict, offset, ctx):
-    ''' partition s into a set of words in dict, ret all words in each path
-        tab[i] is solution to [0..i], contains list of list/path, 
-        tab[i] = tab[j].append(word[i,j]) for j in [i -> 0]
-    '''
-    if dict(s[offset:]):
-        ctx.tab[offset].append(s[offset:])
-
-    ctx.tab[0] = []
-    for i in xrange(len(s)):
-        for j in xrange(i, 0, -1):
-            w = s[j,i]
-            if dict[w] and len(ctx.tab[j]) > 0:
-                ctx.tab[i].append(extend(ctx.tab[j], w))
-    return ctx.tab[n-1]
-
-    ''' tab[i] solution of [i..n], aggregate at top, tab[0] '''
-    if dict(s[offset:]):
-        ctx.tab[offset].append(s[offset:])
-
-    for i in xrange(len(s), 0, -1):
-        for j in xrange(i, len(s)):
-            w = s[i,j]
-            if dict[w] and len(ctx.tab[j]) > 0:
-                ctx.tab[i].append(extend(ctx.tab[j], w))
-    return ctx.tab[0]
 
 
 if __name__ == '__main__':
