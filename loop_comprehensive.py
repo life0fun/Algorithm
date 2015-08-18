@@ -269,12 +269,23 @@ def insertCircle(l, val):
             return
     return minnode
 
+
+""" dfs clone """
+def clone(root, cloned):
+  nroot = Node(root)
+  cloned[root] = nroot
+  for c in root.children:
+    if not cloned[c]:
+      nroot.children.push(clone(c, cloned))
+  return nroot
+
 """ serde tree with arbi # of children """
 def serdeTree(root):
     print root
     for c in root.children:
         serdeTree(c)
     print "$"
+
 # 1 [2 [4 $] $] [3 [5 $] $] $
 from collections import deque
 def deserTree(l):
@@ -1611,6 +1622,29 @@ def kadane(l):
                 cur_val = 0
                 cur_start = i + 1
 
+""" nlgn LIS, only compute length """
+def lis(arr):
+  def bisectUpdate(l, val):
+    lo,hi = 0, len(l)-1
+    while lo != hi:
+      mid = (lo+hi)/2
+      if val > l[mid]:
+        lo = mid+1
+      else:
+        hi = mid
+    if l[lo] > val:  # l[lo] bound to great, if val is great, val appended.
+      l[lo] = val # update lo with smaller
+    return lo
+  lis = []
+  lis.append(arr[0])
+  maxlen = 0
+  for i in xrange(1,len(arr)):
+    if arr[i] > lis[-1]:
+      lis.append(arr[i])
+    else:
+      lo = bisectUpdate(lis, arr[i])
+  return lis
+
 ''' as negative sign can twist, need to keep track both max[] and min[].
 p[i] = max(pmin[i-1]*l.i, pmax[i-1]*l.i, l.i),
 '''
@@ -1985,7 +2019,7 @@ def knapsack(maxw, W, V):
     '''
     for i in xrange(n):
         for w in xrange(maxw):
-            tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i]] + W[i])
+            tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i-1]] + V[i])
     return tab[n, maxw]
 # order does not matter, exclu current i, and incl cuurent i
 def coinchange(n, v):
@@ -2059,6 +2093,74 @@ def perm(arr):
             e.insert(0,hd)
             result.append(e)
     return result
+
+""" permutation rank of a string, at pos i, num of permuations is i!
+    find count n on the rite of pos is smaller, n * pos!, with dup, n*pos!/d[i]
+"""
+from collections import defaultdict
+def permRankNoDup(s):
+    def ordchar(c):
+        return ord(c)-ord('a')
+    def fact(n):
+        f = 1
+        for i in xrange(1,n+1):
+            f = f*i
+        return f
+    def riteSmaller(arr):
+        smallcnt = [0]*26
+        count = [0]*26
+        for i in xrange(len(arr)-1, -1, -1):
+            cord = ordchar(arr[i])
+            count[cord] += 1
+            for j in xrange(cord):
+                smallcnt[cord] += count[j]
+        return smallcnt
+    arr = list(s)
+    smallcnt = riteSmaller(arr)
+    permu = fact(len(arr))
+    rank = 1
+    for i in xrange(len(arr)-1):
+        c = arr[i]
+        ritesmaller = smallcnt[ordchar(c)]
+        permu /= (len(arr)-i)
+        rank += ritesmaller*permu
+        print i, c, ritesmaller, permu, rank
+    return rank
+
+from collections import defaultdict
+def permRankDup(s):
+    def ordchar(c):
+        return ord(c)-ord('a')
+    def fact(n):
+        f = 1
+        for i in xrange(1,n+1):
+            f = f*i
+        return f
+    def riteSmaller(arr):
+        smallcnt = [0]*26
+        count = [0]*26
+        for i in xrange(len(arr)-1, -1, -1):
+            cord = ordchar(arr[i])
+            count[cord] += 1
+            for j in xrange(cord):
+                smallcnt[cord] += count[j]
+        return smallcnt, count
+    arr = list(s)
+    smallcnt, count = riteSmaller(arr)
+    permu = fact(len(arr))
+    rank = 1
+    for i in xrange(len(arr)-1):
+        c = arr[i]
+        cidx = ordchar(c)
+        ritesmaller = smallcnt[cidx]
+        permu = permu / (count[cidx] * (len(arr)-i))
+        count[cidx] -= 1
+        rank += ritesmaller*permu
+        print i, c, ritesmaller, permu, rank
+    return rank
+
+
+
 
 """
 ;; cons each head to each tail, which is recur result of list without header
@@ -2160,7 +2262,6 @@ def wordbreak(word):
 
 
 """ various way for decode """
-
 def calPack(arr):
     prepre, pre = arr[0], arr[1]
     for i in xrange(2,len(arr)):
@@ -2169,7 +2270,7 @@ def calPack(arr):
         prepre, pre = pre, curmaxv
 
 
-""" bottom up, forward, from 0..n-1 """
+""" recursion, bottom up, forward, from 0..n-1 """
 def decode(dstr, pos):
   if dstr[pos] == '0':  # when forward, no more branch when hits 0
     return 0
@@ -2183,7 +2284,7 @@ def decode(dstr, pos):
   else:
     return decode(dstr, pos+1)
 
-""" top down, backward, from n-1..0 """
+""" recursion, top down, backward, from n-1..0 """
 def decode(dstr, pos):
   if pos == 0:
     return 1
@@ -2242,7 +2343,7 @@ def decode(dstr):
     pre = 2
   else:
     pre = 1
-  cur = pre
+  cur = pre   # in case only 2 digit
   for i in xrange(2, len(dstr)):
     cur = pre
     if dstr[i-1] is '1' or dstr[i-1] is '2' and dstr[i] <= '6':
@@ -2300,19 +2401,6 @@ def subsetsum(l, offset, n, path, result):
 """ DP tab[offset][val] """
 from collections import defaultdict
 def subsetsum(l, val):
-    tab = [[0]*val for i in xrange(l)]
-    for r in xrange(len(l)):
-        for j in xrange(i-1, -1, -1):
-            if len(tab[j][val]) > 0:
-                tab[r][val].append(list(tab[j][val]))
-            if len(tab[j][val-l[r]]) > 0:
-                p = list(tab[j][val-l[r]])
-                for e in p:
-                    e.append(l[r])
-                    tab[r][val].append(e)
-
-from collections import defaultdict
-def subsetsum(l, val):
     tab = [[0]*(val+1) for i in xrange(len(l))]  # tab[i][v], l[0:i] has v
     for i in xrange(len(l)):
         for v in xrange(val+1):
@@ -2320,52 +2408,16 @@ def subsetsum(l, val):
         v = l[i]
         tab[i][v].append([v])
     for r in xrange(1,len(l)):
-        v = l[r]
+        rv = l[r]
         for v in xrange(val+1):
-            if len(tab[r-1][val]) > 0:
-                tab[r][val].append(list(tab[r-1][val]))
-            if len(tab[r-1][val-v) > 0:
-                p = list(tab[r-1][val-v])
+            if len(tab[r-1][v]) > 0:
+                tab[r][v].append(list(tab[r-1][v]))
+            if len(tab[r-1][v-rv]) > 0:
+                p = list(tab[r-1][v-rv])
                 for e in p:
-                    e.append(v)
-                    tab[r][val].append(e)
+                    e.append(rv)
+                    tab[r][v].append(e)
     return tab[len(l)-1][val]
-
-
-
-def subsetSum(l, v):
-    ''' sol[i,v] is subset sum of 0..i to value v. sol[i,v] = Union(sol[i-1,v], sol[i-1, v-V[i]])
-        like knapsack, at i, only consider either include or exclude item i.
-    '''
-    for i in xrange(len(l)):
-        vi = l[i]
-        for j in xrange(i-1, 0, -1):
-            if ctx.sol[j,v-vi]:
-                ctx.sol[i,v] = extend(ctx.sol[j,v-vi], vi)    
-            if ctx.sol[j,v]:
-                ctx.sol[i,v].append(ctx.sol[j,v])
-    return ctx.sol[n-1, v]
-
-    ''' recursion, only consider head '''
-    def subsetSumDP(l, offset, val, ctx):
-        if l[offset] == val:
-            ctx.sol[offset, val].append(offset)
-        v = l[offset]
-
-        # exclude l[offset], if memoized, direct, no need to DP.
-        if ctx.sol[offset-1, val]:
-            ctx.sol[offset, val].append(ctx.sol[offset-1, val])
-        else
-            ctx.sol[offset, val] = subsetSumDP(l, offset-1, val, ctx)
-
-        # include l[offset]
-        if v < val:
-            if ctx.sol[offset-1, val-v]:
-                ctx.sol[offset,val].append(ctx.sol[offset-1, val-v])
-            else:
-                ctx.sol[offset,val].append(subsetSumDP(l, offset-1, val-v, ctx))
-
-        return ctx.sol[n, val]
 
 
 def palindromMincut(s, offset):
