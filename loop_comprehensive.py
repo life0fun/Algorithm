@@ -782,7 +782,7 @@ def diameter(root):
 
 '''
 min vertex set, dfs, when process vertex late, i.e., recursion of 
-all its children done and back to cur node, use greedy, if exisit
+all its children done and back to cur node, use greedy, if exist
 children not in min vertex set, make cur node into min set. return
 recursion back to bottom up.
 '''
@@ -795,6 +795,17 @@ def min_vertex(root):
             root.selected = true
     return root.selected
 
+# the same as Largest Indep Set.
+def vertexCover(root):
+    if root == None or root.left == None and root.rite == None:
+        return 0
+    return root.vc if root.vc
+
+    incl = 1 + vertexCover(root.left) + vertexCover(root.rite)
+    excl = 1 + vertexCover(root.left.left) + vertexCover(root.left.rite)
+    excl += 1 + vertexCover(root.rite.left) + vertexCover(root.rite.rite)
+    root.vc = min(incl, excl)
+    return root.vc
 
 def depth(root):
     if not root:
@@ -1621,6 +1632,28 @@ def kadane(l):
             else:
                 cur_val = 0
                 cur_start = i + 1
+
+""" max sub arr product with pos and neg ints 
+    mps([-2,-3,4,5])
+"""
+def mps(arr):
+  pos,neg,maxsofar = 1,1,1
+  for i in xrange(len(arr)):
+    cur = arr[i]
+    if cur == 0:
+      pos = 1
+      neg = 1
+    elif cur < 0:
+      tmp = pos
+      pos = max(neg*cur, 1)
+      neg = tmp*cur
+    else:
+      pos *= cur
+      neg = min(cur*neg, 1)
+    if pos > maxsofar:
+      maxsofar = pos
+  return maxsofar
+
 
 """ nlgn LIS, only compute length """
 def lis(arr):
