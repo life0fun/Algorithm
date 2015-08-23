@@ -1158,6 +1158,27 @@ def radixsort(l):
         strl = sorted(strl, key=lambda k: int(k[len(k)-1-i]) if len(k)>i else 0)
         print strl
 
+# radix sort use counting sort O(n) to sort each idx
+def radixsort(arr):
+    m = getMax(arr, n)
+    exp = 1
+    while m/exp > 0:
+        countingSort(arr, n, exp)
+        exp *= 10
+    def countingSort(arr, n, exp):
+        count = [0]*n
+        output = [0]*n
+        for i in xrange(n):
+            count[(arr[i]/exp)%10] += 1
+        for i in xrange(1,n):
+            count[i] += count[i-1]
+        for i in xrange(n-1,-1,-1):
+            output[count[(arr[i]/exp)%10-1]] = arr[i]
+            count[(arr[i]/exp)%10]--;
+        for i in xrange(n):
+            arr[i] = output[i] 
+
+
 ''' http://stackoverflow.com/questions/5212037/find-the-kth-largest-sum-in-two-arrays
     The idea is, take a pair(i,j), we need to consider both [(i+1, j),(i,j+1)] as next val
     in turn, when considering (i-1,j), we need to consider (i-2,j)(i-1,j-1), recursively.
@@ -1634,9 +1655,9 @@ def kadane(l):
                 cur_start = i + 1
 
 """ max sub arr product with pos and neg ints 
-    mps([-2,-3,4,5])
+    mps([-2,-3,4,5]), maxproduct(-2,-3,4,-5)
 """
-def mps(arr):
+def maxproduct(arr):
   pos,neg,maxsofar = 1,1,1
   for i in xrange(len(arr)):
     cur = arr[i]
@@ -1654,6 +1675,22 @@ def mps(arr):
       maxsofar = pos
   return maxsofar
 
+''' as negative sign can twist, need to keep track both max[] and min[].
+p[i] = max(pmin[i-1]*l.i, pmax[i-1]*l.i, l.i),
+'''
+def max_product(a):
+    ans = pre_max = pre_min = a[0]
+    cur_beg, cur_end, max_beg, max_end = 0,0,0,0
+    for elem in a[1:]:
+        new_min = pre_min*elem
+        new_max = pre_max*elem
+        pre_min = min([elem, new_max, new_min])
+        pre_max = max([elem, new_max, new_min])
+        ans = max([ans, pre_max])
+        if ans is pre_max:
+            cur_end, max_end = i,i
+            #upbeat(max_beg, max_end)
+    return ans
 
 """ nlgn LIS, only compute length """
 def lis(arr):
@@ -1678,23 +1715,34 @@ def lis(arr):
       lo = bisectUpdate(lis, arr[i])
   return lis
 
-''' as negative sign can twist, need to keep track both max[] and min[].
-p[i] = max(pmin[i-1]*l.i, pmax[i-1]*l.i, l.i),
-'''
-def max_product(a):
-    ans = pre_max = pre_min = a[0]
-    cur_beg, cur_end, max_beg, max_end = 0
-    for elem in a[1:]:
-        new_min = pre_min*elem
-        new_max = pre_max*elem
-        pre_min = min([elem, new_max, new_min])
-        pre_max = max([elem, new_max, new_min])
-        ans = max([ans, pre_max])
-        if ans is pre_max:
-            cur_end, max_end = i
-            upbeat(max_beg, max_end)
-    return ans
-
+""" no same char next to each other """
+from collections import defaultdict
+def noConsecutive(text):
+  freq = defaultdict(int)
+  for i in xrange(len(text)):
+    freq[text[i]] += 1
+  rfreq = sorted(freq.items(), key=lambda x: x[1], reverse=True)
+  segs = rfreq[0][1]   # most frequence div arr into k segments.
+  sz = (1+len(text))/segs
+  print rfreq, segs, sz
+  if sz < 2:
+    return "wrong"
+  nextfree = [-1]*segs
+  out = [-1]*len(text)
+  for i in xrange(segs):
+    out[i*sz] = rfreq[0][0]
+    nextfree[i] = i*sz+1
+  for k,v in rfreq[1:]:
+    segidx = 0
+    while nextfree[segidx] > sz:
+        segidx += 1
+    if segs - segidx < v:
+      return "wrong"
+    for cnt in xrange(v):
+      out[nextfree[segidx]] = k
+      nextfree[segidx] += 1
+      segidx += 1
+  return out
 
 """ 
 loop each char, note down expected count and fount cnt. squeeze left edge.
@@ -1801,13 +1849,27 @@ def max_distance(l):
             i += 1
     return maxdiff
 
-""" find idx a<b<c and l[a]<l[b]<l[c], two aux arr, Lmin and Rmax"""
-def abc(l):
-    ''' Lmin[i] contains idx in the left whose value is < cur, or -1
+""" Lmin[i] contains idx in the left whose value is < cur, or -1
         Rmax[i] contain idx in the rite whose value > cur. or -1
         then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
-    '''
-    pass
+"""
+def triplet(arr):
+    sz = len(arr)
+    lmin,rmax = [999]*sz, [-1]*sz
+    lmin[0], rmax[sz-1] = arr[0], arr[sz-1]
+    for i in xrange(1, sz):
+        v = arr[i]       
+        lmin[i] = v
+        if v > lmin[i-1]:
+            lmin[i] = lmin[i-1]
+        v = arr[sz-1-i]
+        rmax[sz-1-i] = v
+        if v < rmax[sz-1-i+1]:
+            rmax[sz-1-i] = rmax[sz-1-i+1]
+    for i in xrange(1,sz):
+        v = arr[i]
+        if lmin[i] < v and v < rmax[i]:
+            print lmin[i], v, rmax[i]
 
 
 """
@@ -2191,8 +2253,6 @@ def permRankDup(s):
         rank += ritesmaller*permu
         print i, c, ritesmaller, permu, rank
     return rank
-
-
 
 
 """
