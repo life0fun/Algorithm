@@ -1375,12 +1375,10 @@ def findKth(A, m, B, n, k):
     # ensure index i + j = k -1, so next index is kth element.
     i = int(float(m)/(m+n) * (k-1))
     j = (k-1)-i
-    
     ai_1 = A[i-1] if i is not 0 else -sys.maxint
     bj_1 = B[j-1] if j is not 0 else -sys.maxint
     ai = A[i] if i is not m else sys.maxint  # if reach end of ary, max value
     bj = B[j] if j is not n else sys.maxint  
-
     # if either of i, j index falls in others.
     if ai > bj_1 and ai < bj:
         #print "ai ", ai
@@ -1394,6 +1392,19 @@ def findKth(A, m, B, n, k):
         return findKth( A[i+1:], m-i-1, B[:j], j, k-i-1)
     else: # ai > bj case
         return findKth( A[:i], i, B[j+1:], n-j-1, k-j-1)
+
+def find_kth(A, m, B, n, k):
+    if m > n:
+        find_kth(B,n,A,m,k)
+    if m == 0: return B[k-1]
+    ia = min(k//2, m)
+    ib = k-ia
+    if A[ia-1] < B[ib-1]:
+        find_kth(A, ia, B, n, k-ia)
+    else:
+        find_kth(A, m, B+ib, n-ib, k-ib)
+    else:
+        return A[ia-1]
 
 def testFindKth():
     A = [1, 5, 10, 15, 20, 25, 40]
@@ -1411,13 +1422,13 @@ def testFindKth():
 def selectKth(A, beg, end, k):
     def partition(A, l, r, pivotidx):
         A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
-        swapidx = l   # all ele smaller than pivot, stored in left, started from begining
+        widx = l   # all ele smaller than pivot, stored in left, started from begining
         for i in xrange(l, r):
-            if A.i < A.r:   # smaller than pivot, put it to left where swap idx
-                A.swapidx, A.i = A.i, A.swapidx
-                swapidx += 1
-        A.r, A.swapidx = A.swapidx, A.r
-        return swapidx
+            if A.i < pivot:   # smaller than pivot, put it to left where swap idx
+                A.widx, A.i = A.i, A.widx
+                widx += 1
+        A.r, A.widx = A.widx, A.r
+        return widx
 
     if beg == end: return A.beg
     if not 1 <= k < (end-beg): return None
@@ -1432,13 +1443,13 @@ def selectKth(A, beg, end, k):
 # median of median of divide to n groups with each group has 5 items,
 def medianmedian(A, beg, end, k):
     def partition(A, l, r, pivot):
-        swapidx = l
+        widx = l
         for i in xrange(l, r+1):
             if A.i < pivot:
-                A.swapidx, A.i = A.i, A.swapidx
-                swapidx += 1
+                A.widx, A.i = A.i, A.widx
+                widx += 1
         # i will park at last item that is < pivot
-        return swapidx-1   # left shift as we always right shift after swap.
+        return widx-1   # left shift as we always right shift after swap.
 
     sz = end - beg + 1  # beg, end is idx
     if not 1<= k <= sz: return None     # out of range, None.
@@ -1653,6 +1664,24 @@ def kadane(l):
             else:
                 cur_val = 0
                 cur_start = i + 1
+def kadan(arr):
+  curmax, maxsum = 0,0
+  for i in xrange(len(arr)):
+    curmax += arr[i]
+    if curmax < 0:
+      curmax = 0
+    maxsum = max(maxsum, curmax)
+  return maxsum
+
+# arr=[-1, 40, -14, 7, 6, 5, -4, -1]
+def maxSumWrap(arr):
+    maxsum = kadan(arr)
+    for i in xrange(len(arr)):
+        wrapsum += arr[i]
+        arr[i] = -arr[i]
+    maxWrap = wrapsum - kadan(arr)
+    return max(maxsum, maxWrap)
+
 
 """ max sub arr product with pos and neg ints 
     mps([-2,-3,4,5]), maxproduct(-2,-3,4,-5)
@@ -1928,6 +1957,31 @@ def firstMissingPos(L):
             return i+1
     return len(L)+1
 
+""" max repetition num, bucket sort. change val to -1, dec on every reptition.
+"""
+# arr=[1, 2, 2, 2, 0, 2, 0, 2, 3, 8, 0, 9, 2, 3]
+def maxrep(arr):
+  def swap(arr, i, j):
+    arr[i], arr[j] = arr[j], arr[i]
+  sz = len(arr)
+  for i in xrange(sz):
+    while arr[i] != i:
+      v = arr[i]
+      if v < 0:
+        continue
+      if v == i:
+        arr[i] = -1
+        break
+      if arr[arr[i]] > 0 and arr[arr[i]] != arr[i]:
+        swap(arr, i, arr[i])
+        arr[arr[i]] = -1
+      else:
+        if arr[arr[i]] > 0:
+          arr[arr[i]] = -1
+        else:
+          arr[arr[i]] -= 1
+        break
+  return arr
 
 # largest subary with equal 0s and 1s
 # change 0 to -1, reduce to largest subary sum to 0.
