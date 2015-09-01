@@ -339,6 +339,142 @@ def serdePreBst(val, parent, leftchild, minv, maxv):
             serdePreBst(nextv, node, True, -sys.maxint-1, val)
             serdePreBst(nextv, node, False, val, sys.maxint)
 
+
+
+""" AVL tree with rank, getRank ret num node smaller. left/rite rotate.
+    Ex: count smaller ele on the right, find bigger on the left, max(a[i]*a[j]*a[k])
+"""
+class AVLTree(object):
+    def __init__(self,key):
+        self.key = key
+        self.size = 1
+        self.rank = 0
+        self.height = 1
+        self.left = None
+        self.rite = None
+    def __repr__(self):
+        return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
+    # left heavy, pos balance, right heavy, neg balance
+    # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
+    def balance(self):
+        if not self.left and not self.rite:
+            return 0
+        if self.left and self.rite:
+            return self.left.height - self.rite.height
+        if self.left:
+            return self.left.height
+        else:
+            return self.rite.height
+    def updateHeightSize(self):
+        self.height = 0
+        self.size = 0
+        if self.left:
+            self.height = self.left.height
+            self.size = self.left.size
+        if self.rite:
+            self.height = max(self.height, self.rite.height)
+            self.size += self.rite.size
+        self.height += 1
+        self.size += 1
+    def rotate(self, key):
+        bal = self.balance()
+        if bal > 1 and self.left and key < self.left.key:
+            return self.riteRotate()
+        elif bal < -1 and self.rite and key > self.rite.key:
+            return self.leftRotate()
+        elif bal > 1 and self.left and key > self.left.key: # < , left rotate left subtree.
+            self.left = self.left.leftRotate()
+            return self.riteRotate()  # then rite rotate after /
+        elif bal < -1 and self.rite and key < self.rite.key: # >, rite rotate rite subtree.
+            self.rite = self.rite.riteRotate()
+            return self.leftRotate()  # left rotate after \
+        return self  # no rotation
+    ''' bend / left heavy subtree to ^ subtree '''
+    def riteRotate(self):
+        newroot = self.left
+        newrite = newroot.rite
+        newroot.rite = self
+        self.left = newrite
+
+        self.updateHeightSize()
+        newroot.updateHeightSize()
+        return newroot
+    ''' bend \ subtree to ^ subtree '''
+    def leftRotate(self):
+        newroot = self.rite
+        newleft = newroot.left
+        newroot.left = self
+        self.rite = newleft
+        
+        self.updateHeightSize()
+        newroot.updateHeightSize()
+        return newroot
+    def search(self, key):
+        if self.key == key:
+            return True, self
+        elif key < self.key:
+            if self.left:
+                return self.left.search(key)
+            else:
+                return False, self
+        else:
+            if self.rite:
+                return self.rite.search(key)
+            else:
+                return False, self
+    ''' rank is num of node smaller than key '''
+    def getRank(self,key):
+        if key == self.key:
+            if self.left:
+                return self.left.size + 1
+            else:
+                return 1
+        elif key < self.key:
+            if self.left:
+                return self.left.getRank(key)
+            else:
+                return 0
+        else:
+            r = 1
+            if self.left:
+                r += self.left.size
+            if self.rite:
+                r += self.rite.getRank(key)
+            return r
+    # return subtree root, and # of node smaller or equal
+    def insert(self,key):
+        if self.key == key:
+            return self
+        elif key < self.key:
+            if not self.left:
+                self.left = AVLTree(key)
+            else:
+                self.left = self.left.insert(key)
+        else:
+            if not self.rite:
+                self.rite = AVLTree(key)
+            else:
+                self.rite = self.rite.insert(key)
+        # after insersion, rotate if needed.
+        self.updateHeightSize()
+        subtree = self.rotate(key)
+        print "insert ", key, " rotated root ", subtree
+        return subtree
+
+def riteSmaller(arr):
+    sz = len(arr)
+    root = AVLTree(arr[-1])
+    riteSmaller = [0]*sz
+    for i in xrange(sz-2, -1, -1):
+        v = arr[i]
+        rank = root.getRank(v)
+        root = root.insert(v)
+        riteSmaller[i] = rank
+    return riteSmaller
+
+assert(riteSmaller([12, 1, 2, 3, 0, 11, 4]) == [6, 1, 1, 1, 0, 1, 0] )
+assert(riteSmaller([5, 4, 3, 2, 1]) == [5, 4, 3, 2, 1])
+
 """ merge or toggle interval """
 class Interval(object):
     def __init__(self):
@@ -626,7 +762,7 @@ class RMQ(object):
             self.heapidx = heapidx      # idx in rmq heap tree.
             self.left = self.rite = None
     def __init__(self, arr=[]):
-        self.arr = arr  # value arr
+        self.arr = arr  # original arr
         self.size = len(self.arr)
         self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
         self.root = self.build(0, self.size-1, 0)[0]
@@ -1397,7 +1533,7 @@ def find_kth(A, m, B, n, k):
     if m > n:
         find_kth(B,n,A,m,k)
     if m == 0: return B[k-1]
-    ia = min(k//2, m)
+    ia = min(k/2, m)
     ib = k-ia
     if A[ia-1] < B[ib-1]:
         find_kth(A, ia, B, n, k-ia)
@@ -1958,30 +2094,42 @@ def firstMissingPos(L):
     return len(L)+1
 
 """ max repetition num, bucket sort. change val to -1, dec on every reptition.
+    bucket sort, when arr[i] is neg, means it has correct pos. when hit again, inc neg.
+    when dup processed, set it to max num to avoid process it again.
 """
-# arr=[1, 2, 2, 2, 0, 2, 0, 2, 3, 8, 0, 9, 2, 3]
+# maxrep([1, 2, 2, 2, 0, 2, 0, 2, 3, 8, 0, 9, 2, 3])
 def maxrep(arr):
   def swap(arr, i, j):
     arr[i], arr[j] = arr[j], arr[i]
   sz = len(arr)
   for i in xrange(sz):
-    while arr[i] != i:
+    if arr[i] >= 0 and i == arr[i]:
+      arr[i] = -1
+      continue
+    while arr[i] >= 0 and i != arr[i]:
       v = arr[i]
-      if v < 0:
-        continue
-      if v == i:
-        arr[i] = -1
-        break
-      if arr[arr[i]] > 0 and arr[arr[i]] != arr[i]:
-        swap(arr, i, arr[i])
-        arr[arr[i]] = -1
+      if v < sz and arr[v] >= 0:
+        swap(arr, i, v)
+        arr[v] = -1
       else:
-        if arr[arr[i]] > 0:
-          arr[arr[i]] = -1
-        else:
-          arr[arr[i]] -= 1
+        if v < sz:
+          arr[v] -= 1
+          print "no swap at ", i, v, arr[v]
+          arr[i] = 999
         break
   return arr
+
+def repmiss(arr):
+  def swap(arr, i, j):
+    arr[i], arr[j] = arr[j], arr[i]
+  for i in xrange(len(arr)):
+    while arr[i] > 0 and arr[i] != i+1:
+      v = arr[i]
+      if arr[v-1] < 0:
+        print "dup at ", i, arr
+        break
+      swap(arr, i, v-1)
+      arr[v-1] = -arr[v-1]
 
 # largest subary with equal 0s and 1s
 # change 0 to -1, reduce to largest subary sum to 0.
@@ -2543,7 +2691,6 @@ def subsetsum(l, offset, n, path, result):
             subsetsum(l, i, n-l[i], p, result)
             # shift offset when no dup allowed, to incl once
             # subsetsum(l, i-1, n-l[i], p, result)
-
 
 """ DP tab[offset][val] """
 from collections import defaultdict
