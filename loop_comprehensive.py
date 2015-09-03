@@ -460,6 +460,30 @@ class AVLTree(object):
         subtree = self.rotate(key)
         print "insert ", key, " rotated root ", subtree
         return subtree
+    # delete a node.
+    def delete(self,key):
+        if key < self.key:
+            self.left = self.left.delete(key)
+        elif key > self.key:
+            self.rite = self.rite.delete(key)
+        else:
+            if not self.left or not self.rite:
+                node = self.left
+                if not node:
+                    node = self.rite
+                if not node:
+                    return None
+                else:
+                    self = node
+            else:
+                node = self
+                while node.left:
+                    node = node.left
+                self.key = node.key
+                self.rite = self.rite.delete(node.key)
+        self.updateHeightSize()
+        subtree = self.rotate(key)
+        return subtree
 
 def riteSmaller(arr):
     sz = len(arr)
@@ -960,7 +984,6 @@ def populateSibling(root):
         root.rchild.sibling = root.sibling ? root.sibling.lchild : None
     populateSibling(root.lchild)
     populateSibling(root.rchild)
-
 
 def populateNext(root):
     while root:
@@ -2391,7 +2414,7 @@ def perm(arr):
             result.append(e)
     return result
 
-""" permutation rank of a string, at pos i, num of permuations is i!
+""" permutation rank. at pos i, tot i! permutations, out of which, rite smaller * (i-1)!
     find count n on the rite of pos is smaller, n * pos!, with dup, n*pos!/d[i]
 """
 from collections import defaultdict
@@ -2408,18 +2431,20 @@ def permRankNoDup(s):
         count = [0]*26
         for i in xrange(len(arr)-1, -1, -1):
             cord = ordchar(arr[i])
-            count[cord] += 1
-            for j in xrange(cord):
+            count[cord] += 1  # count char.
+            for j in xrange(cord):  # for char in [a,b,..cord], sum count
                 smallcnt[cord] += count[j]
         return smallcnt
+    sz = len(arr)
     arr = list(s)
     smallcnt = riteSmaller(arr)
-    permu = fact(len(arr))
+    permu = fact(len(arr))  # from hd, # of perm = len(arr)!
     rank = 1
+    # tot fact(n), i=[0,1,..n], n!/n-1, perm/=sz!/[n..1]
     for i in xrange(len(arr)-1):
         c = arr[i]
         ritesmaller = smallcnt[ordchar(c)]
-        permu /= (len(arr)-i)
+        permu /= (sz-i)  # 6!/6=5!, 5!/5=4!, ...
         rank += ritesmaller*permu
         print i, c, ritesmaller, permu, rank
     return rank
@@ -2450,7 +2475,7 @@ def permRankDup(s):
         c = arr[i]
         cidx = ordchar(c)
         ritesmaller = smallcnt[cidx]
-        permu = permu / (count[cidx] * (len(arr)-i))
+        permu = permu / (count[cidx] * (sz-i))
         count[cidx] -= 1
         rank += ritesmaller*permu
         print i, c, ritesmaller, permu, rank
