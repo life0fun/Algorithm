@@ -457,9 +457,9 @@ class AVLTree(object):
                 self.rite = self.rite.insert(key)
         # after insersion, rotate if needed.
         self.updateHeightSize()
-        subtree = self.rotate(key)
-        print "insert ", key, " rotated root ", subtree
-        return subtree
+        newroot = self.rotate(key)
+        print "insert ", key, " new root after rotated ", newroot
+        return newroot
     # delete a node.
     def delete(self,key):
         if key < self.key:
@@ -966,6 +966,9 @@ def vertexCover(root):
     excl += 1 + vertexCover(root.rite.left) + vertexCover(root.rite.rite)
     root.vc = min(incl, excl)
     return root.vc
+
+def liss(root):
+    root.liss = max(liss(root.left)+liss(root.rite), 1+liss(root.[left,rite].[left,rite]))
 
 def depth(root):
     if not root:
@@ -2346,7 +2349,7 @@ def coinchange(n, v):
     for i in xrange(n):
         for v in xrange(v):
             c[i,v] = c[i-1,v] + c[i, v-V[i]]
-# order matters
+# order matters, n=4, [112, 121]
 def coinchange(n, v):
     for v in V:
         for i in n:
@@ -2385,7 +2388,6 @@ def powerset(arr, offset, path, result):
         l = path[:]
         l.append(arr[i])
         powerset(arr, i+1, l, result)
-
 
 # [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
 def permutation(arr, path, offset, result):
@@ -2580,6 +2582,27 @@ def wordbreak(word):
                         tab[i].append(tmp)
     return tab[len(word)-1]
 
+""" word wrap, w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j], w
+"""
+def wordWrap(words, m):
+    sz = len(words)
+    #extras[i][j] extra spaces if words from i to j are put in a single line
+    extras = [[0]*sz for i in xrange(sz)]
+    lc = [[0]*sz for i in xrange(sz)] # cost of line with word i:j 
+    pass
+
+""" m faces, n dices, num of ways to get value x """
+def dice(m, n, x):
+    tab = [[0]*n for i in xrange(x+1)]
+    for v in xrange(1,m+1):
+        tab[v][0] = 1
+    for v in xrange(1,x+1):
+        for d in xrange(1, n):
+            for f in xrange(1,m+1):
+                if v > f:
+                    print v, d, f, tab
+                    tab[v][d] += tab[v-f][d-1]
+    return tab[x][n-1]
 
 """ various way for decode """
 def calPack(arr):
@@ -2629,15 +2652,15 @@ def decode(dstr):
 def decode(dstr):
   dp = [1 for i in xrange(len(dstr))]
   for i in xrange(1, len(dstr)):
-    if dstr[i] == '0':
+    v = dstr[i]
+    if v > '0':
       dp[i] = dp[i-1]
-    elif dstr[i-1] == '1' or (dstr[i-1]== '2' and dstr[i] <= '6'):
+    
+    if dstr[i-1] == '1' or (dstr[i-1]== '2' and dstr[i] <= '6'):
       if i < 2:
         dp[i] = 2
       else:
-        dp[i] = dp[i-1] + dp[i-2]
-    else:
-      dp[i] = dp[i-1]
+        dp[i] += dp[i-2]
   return dp[len(dstr)-1]
 
 """ DP with O(1) """
