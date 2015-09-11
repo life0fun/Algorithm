@@ -652,7 +652,7 @@ class IntervalTree(object):
         return val
     def insert(self, intv):  # lo as BST key
         [lo,hi] = intv
-        if not self.lo:  # empty tree
+        if not self.lo:  # cur tree, self node is empty, add.
             self.lo = lo
             self.hi = hi
             self.max = max(self.lo, self.hi)
@@ -806,11 +806,13 @@ class RMQ(object):
         self.heap[heapidx] = n
         return [n,minidx]
     def query(self, root, lo, hi):
+        # out of cur node scope, ret max, as we looking for range min.
         if lo > root.hi or hi < root.lo:
             return sys.maxint, -1
         if lo <= root.lo and hi >= root.hi:
             return root.minval, root.minvalidx
         lmin,rmin = root.minval, root.minval
+        # ret min of both left/rite.
         if root.left:
             lmin,lidx = self.query(root.left, lo, hi)
         if root.rite:
@@ -1559,6 +1561,7 @@ def find_kth(A, m, B, n, k):
     if m > n:
         find_kth(B,n,A,m,k)
     if m == 0: return B[k-1]
+    
     ia = min(k/2, m)
     ib = k-ia
     if A[ia-1] < B[ib-1]:
@@ -2064,28 +2067,27 @@ def triplet(arr):
 
 
 """
-    stock profit: calc diff between two neighbor. diff[i] = l[i] - l[i-1], then find
-    the max subary on diff[] array. [5 2 4 3 5] = [-3 2 -1 2]
-    or scan, compare A.i to both cur_low and cur_high, if A.i set cur_low, re-set, and upbeat.
+    keep track left min, max profit is when bot at min day sell today.
+    keep track rite max, max profit is when bot today and sell at max day.
 """
-def stock_profit(l):
+def stock_profit(arr):
     sz = len(l)
-    diff = [ l[i+1]-l[i] for i in xrange(sz)]
-    maxbeg = maxend = maxval = 0
-    curbeg = curend = curval = 0
-    for i in xrange(1, sz):
-        curend = i
-        if diff[i] > 0:
-            curval += diff[i]
-            upbeat()
-        elif curval > diff[i]:
-            curval += diff[i]
-        elif curval < diff[i]:
-            curbeg = curend = i+1
-            curval = 0
+    maxprofit = 0
+    lmin = arr[0]
+    for i in xrange(1, sz-1):
+        maxprofit = max(maxprofit, arr[i]-lmin)
+        lmin = min(lmin, arr[i])
+    return maxprofit
+def maxprofit(arr):
+    sz = len(l)
+    maxprofit = 0
+    rmax = arr[sz-1]
+    for i in xrange(sz-2,-1,-1):
+        maxprofit = max(maxprofit, rmax-arr[i])
+        rmax = min(rmax, arr[i])
+    return maxprofit
 
-""" allow 2 transactions, use lp[i] = max_profit[0..i], and up[i] = max_profit[i..n]
-    while iterating, fill lp[i] and up[i]
+""" allow 2 transactions, lmin[l], bot on lmin, sell today. rmax[r], bot today, sell rmax.
 """
 def stock_profit(L):
     sz = len(L)
@@ -2097,11 +2099,23 @@ def stock_profit(L):
         j = sz-i-1
         ctx.maxp[j] = max(ctx.maxp[j+1], L.j)
         ctx.up[j] = max(ctx.up[j+1], ctx.maxp[j]-L.j)
-
     for i in xrange(sz):
         tot = max(tot, ctx.lp[i] + ctx.up[i])
-
     return tot
+
+''' can buy sell many times. sum up each trend up segments '''
+def many_profit(arr):
+    s,e,sz = 0,0,len(arr)
+    profit = 0
+    for i in xrange(1,sz-1):
+        if arr[i] < arr[i-1]:
+            if s != i-1:
+                profit += arr[i-1]-arr[s]
+            s = i
+    if s != sz-1:
+        profit += arr[sz-1]-arr[s]
+    return profit
+
 
 """ first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
@@ -2134,14 +2148,16 @@ def maxrep(arr):
       continue
     while arr[i] >= 0 and i != arr[i]:
       v = arr[i]
-      if v < sz and arr[v] >= 0:
-        swap(arr, i, v)
-        arr[v] = -1
+      ival = arr[i]  # val is idx, idx 1 stores value 2.
+      swapval = arr[ival]
+      if ival < sz and swapval >= 0:
+        swap(arr, i, ival)
+        arr[ival] = -1  # flip after swap
       else:
-        if v < sz:
-          arr[v] -= 1
-          print "no swap at ", i, v, arr[v]
-          arr[i] = 999
+        if ival < sz:
+          arr[ival] -= 1
+          print "no swap at ", i, ival, arr[ival]
+          arr[i] = 999 # chg to max to indicate skip this.
         break
   return arr
 
