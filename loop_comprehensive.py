@@ -422,6 +422,20 @@ class AVLTree(object):
                 return self.rite.search(key)
             else:
                 return False, self
+    def largestSmaller(self, parent, k):
+        if k < self.key:
+          if not self.left:
+            if parent and k > parent.key:
+              return parent
+            else:
+              return None
+          else:
+            return self.left.largestSmaller(k, self)
+        else:
+          if not self.rite:
+            return self
+          else:
+            return self.rite.largestSmaller(k,self)
     ''' rank is num of node smaller than key '''
     def getRank(self,key):
         if key == self.key:
@@ -484,7 +498,7 @@ class AVLTree(object):
         self.updateHeightSize()
         subtree = self.rotate(key)
         return subtree
-
+# rite Smaller, and left smaller, the same.
 def riteSmaller(arr):
     sz = len(arr)
     root = AVLTree(arr[-1])
@@ -2064,7 +2078,39 @@ def triplet(arr):
         v = arr[i]
         if lmin[i] < v and v < rmax[i]:
             print lmin[i], v, rmax[i]
-
+""" 
+find left largest smaller and rite largest. when ai is largest, skip it.
+# [7, 6, 8, 1, 2, 3, 9, 10]
+# [15, 7, 12, 9, 10]
+"""
+def triplet_maxprod(arr):
+  sz = len(arr)
+  rmax = arr[sz-1]
+  rmaxarr = [0]*sz
+  rmaxarr[sz-1] =arr[sz-1]
+  for i in xrange(sz-1,-1,-1):
+    v = arr[i]
+    rmax = max(rmax, v)
+    rmaxarr[i] = rmax
+  lsmallarr = [0]*sz
+  lsmallarr[0] = arr[0]
+  s = []
+  for i in xrange(1,sz):
+    v = arr[i]
+    if rmaxarr[i] == v: # largest rite wont be in result.
+      lsmallarr[i] = v
+      continue
+    lsm = v
+    while len(s)>0 and s[-1] < v:
+      lsm = s.pop()
+    lsmallarr[i] = lsm
+    s.append(v)
+  print lsmallarr, rmaxarr
+  maxprod = 0
+  for i in xrange(1,sz-1):
+    if lsmallarr[i] != arr[i] and arr[i] != rmaxarr[i]:
+      maxprod = max(maxprod, lsmallarr[i]*arr[i]*rmaxarr[i])
+  return maxprod
 
 """
     keep track left min, max profit is when bot at min day sell today.
@@ -2820,6 +2866,34 @@ def palindromMincut(s):
     # expand to full string by the end
     return tab[n-1]
 
+""" next permutation """
+def nextPalindrom(v):
+  def copyleft(arr, li, ri):
+    left = arr[:li+1]
+    left.reverse()
+    arr[ri:] = left
+  arr = list(str(v))
+  sz = len(arr)
+  leftSmaller = False
+  if sz % 2:
+    l,r = (sz-1)/2, sz/2
+  else:
+    l,r = (sz-1)/2, (sz+1)/2
+  while l >= 0 and r < sz and arr[l] == arr[r]:
+    l -= 1
+    r += 1
+  if l > 0 and arr[l] < arr[r]:
+    leftSmaller = True
+  copyleft(arr, l, r)
+  if leftSmaller:
+    if sz % 2 == 1:
+      mid = (sz-1)/2
+      arr[mid] = str(int(arr[mid])+1)
+    else:
+      ml,mr = (sz-1)/2, sz/2
+      arr[ml] = str(int(arr[ml])+1)
+      arr[mr] = str(int(arr[mr])+1)
+  return int(''.join(arr))
 
 if __name__ == '__main__':
     #qsort([363374326, 364147530 ,61825163 ,1073065718 ,1281246024 ,1399469912, 428047635, 491595254, 879792181 ,1069262793], 0, 9)
