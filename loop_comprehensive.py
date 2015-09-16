@@ -1330,11 +1330,25 @@ def sieve(l):
 def sortdigit(l, startoffset, endoffset):
     l = sorted(l, key=lambda k: int(k[startoffset:endoffset]) if len(k) > endoffset else 0)
 
-def radixsort(l):
-    strl = map(lambda x: str(x), l)
-    for i in xrange(5): # should be for each 2 bytes(0xFF)
-        strl = sorted(strl, key=lambda k: int(k[len(k)-1-i]) if len(k)>i else 0)
-        print strl
+def radix(arr):
+  def countsort(arr, keyidx):
+    strarr = map(lambda x: str(x), arr)
+    karr = map(lambda x: x[len(x)-1-keyidx] if keyidx < len(x) else '0', strarr)
+    out = [0]*len(arr)
+    count = [0]*10
+    for i in xrange(len(karr)):
+      count[int(karr[i])] += 1
+    for i in xrange(1,10):
+      count[i] += count[i-1]
+    # must go from end to start, as ranki-1.
+    for i in xrange(len(karr)-1, -1, -1):
+      ranki = count[int(karr[i])]
+      out[ranki-1] = int(strarr[i])
+      count[int(karr[i])] -= 1
+    return out
+  for kidx in xrange(3):
+    arr = countsort(arr, kidx)
+  return arr
 
 # radix sort use counting sort O(n) to sort each idx
 def radixsort(arr):
@@ -1647,27 +1661,6 @@ def medianmedian(A, beg, end, k):
         return medianmedian(A, pivotidx+1, end, k-rank)
 
 
-""" 3sum, a list of integer, 3 of them sum to 0, or 2 of them sum to another.
-    to avoid binary search, insert each item into hashtable, and for each pair,
-    hash lookup any pair sum, found mean there exists.
-""" 
-def 3sum(l):
-    l = sorted(l)
-    for i in xrange(0, len(l)-3):
-        a = l[i]
-        k = i+1
-        j = len(l)-1
-        while k < j:
-            b = l[k]
-            c = l[j]
-            if a+b+c == 0:
-                print a,b,c
-                return
-            else if a+b+c < 0:
-                k += 1
-            else:
-                l -= 1
-
 '''
 Huffman coding: sort freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
 http://en.nerdaholyc.com/huffman-coding-on-a-string/
@@ -1711,7 +1704,7 @@ however, you can not locate an item in heap, you can only extract min/max.
 with skiplist, list is sorted, insert is lgn, min/max is o1, del is lgn.
 '''
 class SkipNode:
-    def __init__(self, height=0, elem = None):   # [ele, next[ [l1], [l2], ... ]
+    def __init__(self, height=0, elem=None):   # [ele, next[ [l1], [l2], ... ]
         self.elem = elem             # each skip node has an ele, and a list of next pointers
         self.next = [None] * height  # next is a list of header at each level pts to next node
 
@@ -1762,6 +1755,80 @@ class SkipList:
                 node = node.next[level]
         return node.value
 
+
+""" hash time table. map entry is linked list. inside each entry of k, list of [v,ts] tuple.
+"""
+from collections import defaultdict
+class HashTimeTable:
+    class Entry:
+        def __init__(self, k, v, ts):
+            self.key = k
+            self.next = None
+            # value list is tuple of [v,ts]
+            self.valueList = [[v,ts]]
+        def bisect(self, arr, ts=None):
+            if not ts:
+                return True, len(arr)-1
+            l,r = 0, len(arr)-1
+            while l != r:
+                m = l + (r-l)/2
+                if ts > arr[m][1]:
+                    l = m+1
+                else:
+                    r = m
+            if arr[l][1] == ts:
+                return True, l
+            elif ts > arr[l][1]:
+                return False, l+1
+            else:
+                return False, l
+        def getValue(self,k, ts=None):
+            found, idx = self.bisect(self.valueList, ts)
+            if found:
+                return self.valueList[idx][0]
+            return False
+        def insert(self, k, v, ts):
+            found, idx = self.bisect(self.valueList, ts)
+            if found:
+                self.valueList[idx][0] = v
+            else:
+                self.valueList.insert(idx, [v,ts])
+                    
+    def __init__(self, size):
+        self.size = size
+        self.bucket = [None]*size
+    def search(self, k, ts=None):
+        h = hash(k) % self.size
+        entry = self.bucket[h]
+        while entry:
+            if entry.key == k:
+                return entry, entry.getValue(k,ts)
+            entry = entry.next
+        return None, None
+    def insert(self, k, v, ts):
+        h = hash(k) % self.size
+        if not self.bucket[h]:
+            self.bucket[h] = HashTimeTable.Entry(k,v,ts)
+            return self.bucket[h]
+        else:
+            entry,value = self.search(k,ts)
+            if entry:
+                return entry.insert(k,v,ts)
+            else:
+                entry = HashTimeTable.Entry(k,v,ts)
+                entry.next = self.bucket[h]
+                self.bucket[h] = entry
+                return entry
+    
+htab = HashTimeTable(1)
+htab.insert("a", "va1", 1)
+htab.insert("a", "va2", 2)
+htab.insert("b", "vb1", 1)
+htab.insert("b", "vb2", 2)
+htab.insert("b", "vb3", 3)
+print htab.search("a")
+print htab.search("a", 1)
+print htab.search("b", 3)
 
 """ 
 list scan comprehension compute sub seq min/max, upbeat global min/max for each next item.
