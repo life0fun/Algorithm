@@ -110,45 +110,6 @@ def convert(num, src, trg):
     return res
 
 
-"""
-when building a list, describe the first typical element,
-then cons it onto the nature recursion.
-tail recursion: compiler helps to avoid stackoverflow
-"""
-def mergeSort(p, q, l):
-    if not len(p) or not len(q):
-        l.extend(p)
-        l.extend(q)
-        return
-    if p[0] == q[0]:
-        l.append(p[0])
-        return mergeSort(p[1:], q[1:], l)
-    elif p[0] > q[0]:
-        l.append(q[0])
-        return mergeSort(p, q[1:], l)
-    else:
-        l.append(p[0])
-        return mergeSort(p[1:], q, l)
-
-'''
-merge sort with while i j loop
-Note that for loop is for list iteration, not suitable here.
-'''
-def merge(p, q, o):
-    i,j = 0, 0
-    while i<len(p) and j<len(q):
-        if p[i] < q[j]:
-            o.append(p[i])
-            i += 1
-        else:
-            o.append(q[j])
-            j += 1
-
-    if i != len(p):
-        o.extend(p[i:])
-    if j != len(q):
-        o.extend(q[j:])
-
 '''
 in-place merge use while ij loop, example, [1 3 9] [2 4 5 11]
 the key is, when l[i] > l[j], need to shift j subary until the one > l[i]
@@ -1929,44 +1890,6 @@ def maxSumWrap(arr):
     return max(maxsum, maxWrap)
 
 
-""" max sub arr product with pos and neg ints 
-    mps([-2,-3,4,5]), maxproduct(-2,-3,4,-5)
-"""
-def maxproduct(arr):
-  pos,neg,maxsofar = 1,1,1
-  for i in xrange(len(arr)):
-    cur = arr[i]
-    if cur == 0:
-      pos = 1
-      neg = 1
-    elif cur < 0:
-      tmp = pos
-      pos = max(neg*cur, 1)
-      neg = tmp*cur
-    else:
-      pos *= cur
-      neg = min(cur*neg, 1)
-    if pos > maxsofar:
-      maxsofar = pos
-  return maxsofar
-
-''' as negative sign can twist, need to keep track both max[] and min[].
-p[i] = max(pmin[i-1]*l.i, pmax[i-1]*l.i, l.i),
-'''
-def max_product(a):
-    ans = pre_max = pre_min = a[0]
-    cur_beg, cur_end, max_beg, max_end = 0,0,0,0
-    for elem in a[1:]:
-        new_min = pre_min*elem
-        new_max = pre_max*elem
-        pre_min = min([elem, new_max, new_min])
-        pre_max = max([elem, new_max, new_min])
-        ans = max([ans, pre_max])
-        if ans is pre_max:
-            cur_end, max_end = i,i
-            #upbeat(max_beg, max_end)
-    return ans
-
 """ nlgn LIS, only compute length """
 def lis(arr):
   def bisectUpdate(l, val):
@@ -2147,6 +2070,7 @@ def triplet(arr):
             print lmin[i], v, rmax[i]
 """ 
 find left largest smaller and rite largest. when ai is largest, skip it.
+keep a stk, pop stk while cur > stk. if sth < cur, it is cared by when stk top.
 # [7, 6, 8, 1, 2, 3, 9, 10]
 # [15, 7, 12, 9, 10]
 """
@@ -2168,9 +2092,10 @@ def triplet_maxprod(arr):
       lsmallarr[i] = v
       continue
     lsm = v
+    # is some left k small than cur, b/c stk top big than cur,
     while len(s)>0 and s[-1] < v:
       lsm = s.pop()
-    lsmallarr[i] = lsm
+      lsmallarr[i] = max(lsm, lsmallarr[i])
     s.append(v)
   print lsmallarr, rmaxarr
   maxprod = 0
@@ -2178,6 +2103,44 @@ def triplet_maxprod(arr):
     if lsmallarr[i] != arr[i] and arr[i] != rmaxarr[i]:
       maxprod = max(maxprod, lsmallarr[i]*arr[i]*rmaxarr[i])
   return maxprod
+
+""" max sub arr product with pos and neg ints 
+    mps([-2,-3,4,5]), maxproduct(-2,-3,4,-5)
+"""
+def maxproduct(arr):
+  pos,neg,maxsofar = 1,1,1
+  for i in xrange(len(arr)):
+    cur = arr[i]
+    if cur == 0:
+      pos = 1
+      neg = 1
+    elif cur < 0:
+      tmp = pos
+      pos = max(neg*cur, 1)
+      neg = tmp*cur
+    else:
+      pos *= cur
+      neg = min(cur*neg, 1)
+    if pos > maxsofar:
+      maxsofar = pos
+  return maxsofar
+
+''' at every point, keep track both max[i] and min[i].
+p[i] = max(pmin[i-1]*l.i, pmax[i-1]*l.i, l.i),
+'''
+def max_product(a):
+    ans = pre_max = pre_min = a[0]
+    cur_beg, cur_end, max_beg, max_end = 0,0,0,0
+    for elem in a[1:]:
+        new_min = pre_min*elem
+        new_max = pre_max*elem
+        pre_min = min([elem, new_max, new_min])
+        pre_max = max([elem, new_max, new_min])
+        ans = max([ans, pre_max])
+        if ans is pre_max:
+            cur_end, max_end = i,i
+            #upbeat(max_beg, max_end)
+    return ans
 
 """
     keep track left min, max profit is when bot at min day sell today.
@@ -2398,29 +2361,6 @@ def convert_to_sort(l):
         gmin = min(costi, gmin)
     return gmin
 
-"""
-   three number sum to zero
-   sort first, two point at both end, i, k, the j moving in between.
-   for i in 0..sz to try all possibilities.
-"""
-def three_sum_zero():
-    for i in xrange(1, n-2):
-        j = i  # Start where i is.
-        k = n  # Start at the end of the array.
-
-        while k >= j:
-            if A[i] + A[j] + A[k] == 0: 
-                return (A[i], A[j], A[k])
-
-            #We didn't match. Let's try to get a little closer:
-            # If the sum was too big, decrement k.
-            # If the sum was too small, increment j.
-            if A[i] + A[j] + A[k] > 0: 
-                k--
-            else: j++
-      
-    # When the while-loop finishes, j and k have passed each other and there's
-    # no more useful combinations that we can try with this i.
 
 """ integer partition problem. break to subproblem, recur equation, start from boundary.
     for item in [0..n], so the first for will solve single item case, then bottom up.
@@ -2517,6 +2457,47 @@ def powerset(arr, offset, path, result):
         l = path[:]
         l.append(arr[i])
         powerset(arr, i+1, l, result)
+
+""" for each possibility, strategy should have 1 hit
+check whether strategy has cover of all cases, any day n on any idx k.
+dp[n][k] == true if dp[n - 1][k - 1] == true || dp[n - 1][k + 1] == true
+traverse strategy, as dp[n][k] only rely on dp[n-1], O(n) space.
+"""
+def alibaba(ncaves, strategy):
+  def posperm(ncaves, pos, days):
+    presult = []
+    presult.append([pos])
+    for i in xrange(1,days):
+      tmp = []
+      for e in presult:
+        lastpos = e[-1]
+        if lastpos == ncaves-1 or lastpos == 0:
+          if lastpos == 0:
+            e.append(1)
+          else:
+            e.append(lastpos-1)
+          tmp.append(e)
+        else:
+          ne = e[:]
+          ne.append(lastpos+1)
+          tmp.append(ne)
+          e.append(lastpos-1)
+          tmp.append(e)
+      presult = tmp
+    return presult
+  days = len(strategy)
+  result = []
+  for i in xrange(ncaves):
+    preslt = posperm(ncaves, i, days)
+    result.extend(preslt)
+  for e in result:
+    found = False
+    for i in xrange(days):
+      if strategy[i] == e[i]:
+          found = True
+    if not found:
+        print "wrong....", i, strategy, e
+  return result
 
 # [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
 def permutation(arr, path, offset, result):
@@ -2717,8 +2698,15 @@ def wordWrap(words, m):
     sz = len(words)
     #extras[i][j] extra spaces if words from i to j are put in a single line
     extras = [[0]*sz for i in xrange(sz)]
-    lc = [[0]*sz for i in xrange(sz)] # cost of line with word i:j 
-    pass
+    lc = [[0]*sz for i in xrange(sz)] # cost of line with word i:j
+    for linewords in xrange(sz/m):
+        for st in xrange(sz-linewords):
+            ed = st + linewords
+            extras[st][ed] = abs(m-sum(words, st, ed))
+    for i in xrange(sz):
+        for j in xrange(i):
+            lc[i] = min(lc[i] + extras[j][i])
+    return lc[sz-1]
 
 """ m faces, n dices, num of ways to get value x """
 def dice(m, n, x):
@@ -2732,6 +2720,16 @@ def dice(m, n, x):
                     print v, d, f, tab
                     tab[v][d] += tab[v-f][d-1]
     return tab[x][n-1]
+def dice(m,n,x):
+    tab = [[0]*n for i in xrange(x+1)]
+    for f in xrange(m):
+        tab[1][f] = 1
+    for i in xrange(n):
+        for v in xrange(x):
+            for f in xrange(m):
+                if f < v:
+                    tab[i,v] += tab[i-1][v-f]
+    return tab[n,x] 
 
 """ various way for decode """
 def calPack(arr):
@@ -2891,6 +2889,36 @@ def subsetsum(l, val):
     return tab[len(l)-1][val]
 
 
+''' digitSum(2,5) = 14, 23, 32, 41 and 50 '''
+def digitSum(n, s):
+  tab = [[0]*max(s+1,9) for i in xrange(n)]
+  for i in xrange(1,9):
+    tab[0][i] = 1
+  for i in xrange(1,n):
+    for v in xrange(1,s+1):
+      for d in xrange(9):
+        if v >= d:
+          tab[i][v] += tab[i-1][v-d]
+  print tab
+  return tab[n-1][s]
+
+assert(digitSum(2,5), 5)
+assert(digitSum(3,6), 21)
+
+''' sum of odd and even digit diff by one '''
+def digitSumDiffOne(n):
+    odd = [[0]*18 for i in xrange(n)]
+    even = [[0]*18 for i in xrange(n)]
+    for l in xrange(n):
+        for k in xrange(2*9)
+            for d in xrange(9):
+                if l%2 == 0:
+                    even[l][k] += odd[l-1][k-d]
+                else:
+                    odd[l][k] += even[l-1][k-d]
+
+
+
 def palindromMincut(s, offset):
     ''' partition s into sets of palindrom substrings, with min # of cuts 
         mincut[offset] = 1 + min(mincut[k] for k in [offset+1..n] where s[offset:k] is palindrom)
@@ -2961,6 +2989,38 @@ def nextPalindrom(v):
       arr[ml] = str(int(arr[ml])+1)
       arr[mr] = str(int(arr[mr])+1)
   return int(''.join(arr))
+
+''' bfs search on Matrix '''
+from collections import deque
+def bfs(G):
+  q = deque()
+  for i in xrange(m):
+    for j in xrange(n):
+      if G[i,j] == 1:
+        G[i,j] = 0
+        q.append([i,j])
+      else:
+        G[i,j] = sys.maxint  # unknow space
+  while len(q) > 0:
+    [i,j] = q.pop()
+    if G[i,j] < k:
+      if G[i+1,j] == sys.maxint:
+        G[i+1,j] = G[i,j] + 1
+        q.append([i+1,j])
+      if G[i-1,j] == sys.maxint:
+        G[i-1,j] = G[i,j] + 1
+        q.append([i+1,j])    
+      if G[i,j+1] == sys.maxint:
+        G[i,j+1] = G[i,j] + 1
+        q.append([i,j+1])
+      if G[i,j-1] == sys.maxint:
+        G[i,j-1] = G[i,j] + 1
+        q.append([i,j-1])
+  for i in xrange(m):
+    for j in xrange(n):
+      if G[i,j] < k:
+        G[i,j] = 1
+
 
 if __name__ == '__main__':
     #qsort([363374326, 364147530 ,61825163 ,1073065718 ,1281246024 ,1399469912, 428047635, 491595254, 879792181 ,1069262793], 0, 9)
