@@ -300,7 +300,30 @@ def serdePreBst(val, parent, leftchild, minv, maxv):
             serdePreBst(nextv, node, True, -sys.maxint-1, val)
             serdePreBst(nextv, node, False, val, sys.maxint)
 
+""" no same char shall next to each other """
+from collections import defaultdict
+def noAdj(text):
+    cnt = defaultdict(lambda: 0)
+    sz = len(text)
+    for i in xrange(sz):
+        cnt[text[i]] += 1
+    l = sorted(cnt.items(), key=lambda x: x[1], reverse=True)
+    start = 0
+    out = [None]*sz
+    for e in l:
+        gap = sz/e[1]
+        for s in xrange(e[1]):
+            pos = start + s*gap
+            while out[pos]:
+                pos += 1
+                if pos >= sz:
+                return False, out
+            out[pos] = e[0]
+        start += 1
+    return True, out
 
+print noAdj("abacbcdc")
+print noAdj("aabbc")
 
 """ AVL tree with rank, getRank ret num node smaller. left/rite rotate.
     Ex: count smaller ele on the right, find bigger on the left, max(a[i]*a[j]*a[k])
@@ -887,6 +910,94 @@ def test():
 
     print kd, kd.rite, kd.left
     print kd.find([80,40])[1].left
+
+""" 
+    node contains only 3 pointers, left < eq < rite, always descend down along eq pointer.
+"""
+class TernaryTree(object):
+    def __init__(self, key=None):
+        self.left = self.rite = self.eq = None
+        self.key = key
+        self.leaf = False
+    def insert(self, word):
+        hd = word[0]
+        if not self.key:
+            self.key = hd
+        if hd == self.key:
+            if len(word) == 1:
+                self.leaf = True
+                return self.eq
+            else:  # more keys, advance and descend
+                if not self.eq:
+                    self.eq = TernaryTree(word[1])  # new eq point to next char.
+                self.eq.insert(word[1:])
+        elif hd < self.key:
+            if not self.left:
+                self.left = TernaryTree(hd)
+            self.left.insert(word)
+        else:
+            if not self.rite:
+                self.rite = TernaryTree(hd)
+            self.rite.insert(word)
+    def search(self, word):   # return parent where eq originated
+        if not len(word):
+            return False, self
+        hd = word[0]
+        if hd == self.key:
+            if len(word) == 1:
+                return True, self # when leaf flag is set
+            elif self.eq:
+                return self.eq.search(word[1:])
+            else:
+                return False, self
+        elif hd < self.key:
+            if self.left:
+                return self.left.search(word)
+            else:
+                return False, self
+        elif hd > self.key:
+            if self.rite:
+                return self.rite.search(word)
+            else:
+                return False, self
+    def all(self, prefix):
+        result = set()
+        found, node = self.search(prefix)
+        if not found:
+            return result
+        if node.leaf:
+            result.add(prefix)
+        if node.eq:   # dfs on eq branch of prefix parent only.
+            node.eq.dfs(prefix, result)
+        return result
+    def dfs(self, prefix, result):
+        if self.leaf:
+            result.add(prefix+self.key)
+        if self.left:
+            self.left.dfs(prefix, result)
+        if self.eq:
+            self.eq.dfs(prefix+self.key, result)
+        if self.rite:
+            self.rite.dfs(prefix, result)
+        return result
+
+def test():
+    t = TernaryTree()
+    t.insert("af")
+    t.insert("ab")
+    t.insert("abd")
+    t.insert("abe")
+    t.insert("standford")
+    t.insert("stace")
+    t.insert("cpq")
+    t.insert("cpq")
+    found, node = t.search("b") 
+    print found, node.key
+    print t.all("abc")
+    print t.all("ab")
+    print t.all("af")
+    print t.all("sta")
+    print t.all("c")
 
 
 '''
@@ -2499,6 +2610,35 @@ def alibaba(ncaves, strategy):
         print "wrong....", i, strategy, e
   return result
 
+''' theft wont be caught at i when pre-day i-1,i+1, and strategy predict day k not i 
+  survive[i] means whether theft wont be caught at slot i, at cur day k.
+'''
+def alibaba(n, strategy):
+  k = len(strategy)
+  survive = [True]*n  # at cur day, survive[i] = whether theft wont be caught at slot i
+  survive[strategy[0]] = False  # will be caught when strategy[i] indicate it.
+  for d in xrange(1,k):
+    slot = strategy[d]
+    survive[slot] = False
+    canSurvive,pre = False, False
+    for i in xrange(n):
+      if i == 0:
+        a = False
+      else:
+        a = pre
+      if i == n-1:
+        b = False
+      else:
+        b = survive[i+1]   # theft was at pos i+1 on pre day
+      pre = survive[i]  # store pre day's pos i
+      if strategy[d] != i and (a or b):
+        survive[i] == True
+      if survive[i] == True:
+        canSurvive = True
+    if not canSurvive:
+      return False
+  return True
+
 # [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
 def permutation(arr, path, offset, result):
     if offset == len(arr)-1:
@@ -2917,6 +3057,39 @@ def digitSumDiffOne(n):
                 else:
                     odd[l][k] += even[l-1][k-d]
 
+""" adding + in between. [1,2,0,6,9] and target 81 """
+def sumcut(arr, offset, target):
+  def toInt(arr, st, ed):
+    return int("".join(str(i) for i in arr[st:ed+1]))
+  sz = len(arr)
+  # each [offset..i] as head.
+  for i in xrange(offset,sz):
+    hd = toInt(arr,offset,i)
+    if hd == target and i == sz-1:
+        return True
+    if hd < target:
+      if sumcut(arr, i+1, target-hd):
+        return True
+  return False
+print sumcut([1,2,3], 0, 6)
+print sumcut([1,2,0,6,9], 0, 81)
+
+def plusbetween(arr, target):
+  def toInt(arr, st, ed):
+    return int("".join(str(i) for i in arr[st:ed+1]))
+  sz = len(arr)
+  tab = [[False]*(target+1) for i in xrange(sz)]
+  for i in xrange(sz):
+    ival = toInt(arr,0,i)
+    if ival <= target:
+        tab[i][ival] = True
+    for j in xrange(i,0,-1):
+      jiv = toInt(arr, j, i)
+      for v in xrange(target):
+        if tab[j-1][v] == True and v+jiv<=target:
+          tab[i][v+jiv] = True
+  return tab[sz-1][target]
+print plusbetween([1,2,0,6,9], 81)
 
 
 def palindromMincut(s, offset):
