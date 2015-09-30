@@ -1966,31 +1966,8 @@ def max_subarray(A):
         max_so_far = max(max_so_far, max_ending_here)
     return max_so_far
 
-''' for each i, either belong to prev seq, or starts its own, deps on whether prev can include it.
+''' for each i, either belong to prev seq, or starts its own.
     s[i] = max(s[i-1]+A.i, A.i), either expand sum, or start new win from cur '''
-def kadane(l):
-    max_beg = max_end = max_val = 0
-    cur_beg = cur_end = cur_val = 0
-    for i in xrange(len(l)):
-        cur_end = i
-        if l[i] > 0:
-            cur_val += l[i]
-            upbeat()
-        else:
-            if l[i] + cur_val > 0:
-                cur_val += l[i]
-            else:
-                cur_val = 0
-                cur_start = i + 1
-def kadan(arr):
-  curmax, maxsum = 0,0
-  for i in xrange(len(arr)):
-    curmax += arr[i]
-    if curmax < 0:
-      curmax = 0
-    maxsum = max(maxsum, curmax)
-  return maxsum
-
 # arr=[-1, 40, -14, 7, 6, 5, -4, -1]
 def maxSumWrap(arr):
     maxsum = kadan(arr)
@@ -1999,6 +1976,36 @@ def maxSumWrap(arr):
         arr[i] = -arr[i]
     maxWrap = wrapsum - kadan(arr)
     return max(maxsum, maxWrap)
+
+def maxcircular(arr):
+  si,isum,maxi,maxsum = 0,0,0,0
+  rsi,irsum,maxrsi,maxrsum = 0,0,0,0
+  totsum = 0
+  # kadane
+  for i in xrange(len(arr)):
+    v = arr[i]
+    isum += v
+    maxsum = max(maxsum, isum)
+    if maxsum == isum:
+        maxi = si
+    if isum < 0:
+      isum = 0
+      si = i+1
+    # reverse sum
+    rv = -v
+    irsum += rv
+    maxrsum = max(maxrsum, irsum)
+    if maxrsum == irsum:
+        maxrsi = rsi
+    if irsum <= 0:
+      irsum = 0
+      rsi = i+1
+    totsum += v
+  return maxi, maxsum, maxrsi, maxrsum, totsum, totsum+maxrsum
+
+print maxcircular([8, -9, 9, -4, 10, -11, 12])
+print maxcircular([8, -8, 9, -9, 10, -11, 12])
+print maxcircular([10, -3, -4, 7, 6, 5, -4, -1])
 
 
 """ nlgn LIS, only compute length """
@@ -2216,10 +2223,11 @@ def triplet_maxprod(arr):
   return maxprod
 
 """ max sub arr product with pos and neg ints 
-    mps([-2,-3,4,5]), maxproduct(-2,-3,4,-5)
+    mps([-2,3,-4,-5]), maxproduct(-2,-3,4,-5)
+    at every i, track both imax and imin.
 """
 def maxproduct(arr):
-  pos,neg,maxsofar = 1,1,1
+  iprod,maxp,minp = 1,1,1
   for i in xrange(len(arr)):
     cur = arr[i]
     if cur == 0:
@@ -2252,6 +2260,22 @@ def max_product(a):
             cur_end, max_end = i,i
             #upbeat(max_beg, max_end)
     return ans
+
+''' at each idx, either it starts a new seq, or it join prev sum '''
+def maxprod(arr):
+  nmax,nmin,imax,imin = 1,1,1,1
+  for i in xrange(len(arr)):
+    v = arr[i]
+    if v == 0:
+      imax,imin = 1,1
+      continue
+    tmax = imax*v
+    tmin = imin*v
+    imax = max(tmax, tmin, v) # start my own, or join prev.
+    imin = min(tmax, tmin, v)
+    nmax = max(nmax,imax)
+    nmin = min(nmin,imin)
+  return nmax
 
 """
     keep track left min, max profit is when bot at min day sell today.
@@ -2515,15 +2539,100 @@ def regMatch(T, P, offset):
 Dynamic programming, divide and conquer the problem space from minimal, then recursion. F[i,j] = {F[i-1, j-1]}
 You can do recursion fn with reducing the space to the leaf. or tabular F[i,j] from i-1,j-1, etc.
 """ """ """ """ """
+''' question is deduce ? or dependent ?
+ depend: tab[i] is min from i->end. = min(tab[i+k]+1), tab[0]
+ deduce: expand arr, tab[j] is min from 0->i, tab[j] = tab[j-k]+1
+'''
+# tab[i] : min cost from start->i
+def minjp(arr):
+  tab[0] = 1
+  for i in xrange(1,len(arr)):
+    for k in xrange(i):
+      if arr[k] + k > i:
+        tab[i] = min(tab[k] + 1)
+  return tab[len(arr)-1]
+# tab[i] : min cost from i->dst
+def minjp(arr):
+    tab[i] = sys.maxint
+    for i in xrange(len(arr)-1, -1, -1):
+        for j in xrange(i+1, len(arr)-1):
+            if arr[i] + i > j:  # from i can reach j
+                tab[i] = min(tab[i], tab[j] + 1)
+    return tab[0]
+''' Graph, min cost from src to dst.
+recursive, topsort, 
+'''
+def minpath(G, src, dst, path):
+    mincost = sys.maxint
+    # only consider cur node's neighbor, VS. enum each as intermediate
+    for v in neighbor(src):
+        if not v in path:
+            p = path[:]
+            p.append(v)
+            mincost = min(mincost, minpath(G,v,dst,p) + G[src][v])
+    return mincost
+''' enum each intermediate node '''
+def minpath(G,src,dst,cost,tab):
+    mincost = cost[src][dst]
+    # for each intermediate node
+    for v in G.vertices():
+      if v != src and v != dst:
+        mincost = min(mincost,
+            minpath(G,src,v) +
+            minpath(G,v,dst))
+        tab[src][dst] = mincost
+    return tab[src][dst]
+''' enum each station as intermediate 
+tab[i] = min cost to reach i from src 0
+'''
+def minpath(G, src, dst):
+    tab = [sys.maxint]*szie
+    tab[0] = 0
+    for i in xrange(n):
+      for j in xrange(n):
+        if i != j:
+          tab[i] = min(tab[j]+cost[i][j], tab[i])
+    return tab[n-1]
+''' mobile pad k edge '''
+def minpath(G, src, dst, k):
+    for gap in xrange(k):
+      for s in G.vertices():
+        for d in G.vertices():
+          tab[s][d][gap] = 0
+          if gap == 1 and G[s][d] != sys.maxint:
+            tab[s][d][gap] = G[s][d]
+          elif s == d and gap == 0:
+            tab[s][d][gap] = 0
+          if s != d and gap > 1:
+            for k in src.neighbor():
+              tab[s][d][gap] = min(tab[k][d][gap-1]+G[src][k])
+    return tab[src][dst][k]
+
+''' topology sort, tab[i] = min cost to reach dst from i'''
+def minpath(G, src, dst):
+    toplist = topsort(G)
+    for i in g.vertices():
+      tab[i] = sys.maxint
+    # after topsort, leave at the end of the list.
+    tab[d] = 0
+    for nb in d.neighbor():
+        tab[nb] = cost[nb][d]
+    for i in xrange(len(toplist)-1,-1,-1):
+        for j in i.neighbor():
+            tab[j] = min(tab[i]+cost[i][j], tab[j])
+    return tab[src]
+
+
+''' start from minimal, only item 0, i loop items, w loops weights at each item. 
+v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
+v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
+'''
 def knapsack(maxw, W, V):
-    ''' start from minimal, only item 0, i loop items, w loops weights at each item. 
-        v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
-        v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
-    '''
     for i in xrange(n):
         for w in xrange(maxw):
             tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i-1]] + V[i])
     return tab[n, maxw]
+
 # order does not matter, exclu current i, and incl cuurent i
 def coinchange(n, v):
     for i in xrange(n):
@@ -2535,7 +2644,7 @@ def coinchange(n, v):
         for i in n:
             tab[v] += tab[v-V[i]]
 
-# 2 boundary checks: sz, and offset.
+# comb can exam head, branch at header incl and excl
 def combination(arr, path, sz, offset, result):
     if sz == 0:
         result.append(path)  # add to result only when sz
@@ -2550,16 +2659,37 @@ def combination(arr, path, sz, offset, result):
 """
    result = []; combinationIter(["a","b","c","d"], [], 2, 0, result); print result;
 """
-def combinationIter(arr, path, sz, offset, result):
-    if sz == 0:
-        result.append(path)
-        return result
-    if offset >= len(arr):
-        return
-    for i in xrange(offset, len(arr)):
-        l = path[:]
-        l.append(arr[i])
-        combinationIter(arr, l, sz-1, i+1, result)
+def comb(arr,r):
+  res = []
+  if r == 1:  # leaf, need ret a list, wrap leaf as first element.
+    for e in arr:
+        res.append([e])
+    return res
+  for i in xrange(len(arr)-r+1):
+    hd = arr[i]
+    narr = arr[i+1:]
+    for e in comb(narr, r-1):
+      e.append(hd)
+      res.append(e)
+  return res
+print comb("abc", 2)
+
+""" combination with partial result """
+res = []
+def combIter(arr, offset, r, path, res):
+    for i in xrange(offset, len(arr)-r+1):
+        v = arr[i]
+        if r == 1:  # stop recursion when r = 1
+            cp = path[:]
+            cp.append(v)
+            res.append(cp)
+        else:
+            path.append(v)
+            combIter(arr, i+1, r-1, path, res)
+            path.pop()
+    return res
+print combIter([1,2,3,4],0,2,[],res)
+
 
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
 def powerset(arr, offset, path, result):
@@ -2568,6 +2698,102 @@ def powerset(arr, offset, path, result):
         l = path[:]
         l.append(arr[i])
         powerset(arr, i+1, l, result)
+
+# [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
+def permutation(arr, offset, path, result):
+    if offset == len(arr)-1:
+        path.append(arr[offset])
+        result.append(path)
+        return
+    for i in xrange(offset, len(arr)):
+        l = path[:]
+        # swap for each rite, append to path, recur, undo
+        arr[offset], arr[i] = arr[i], arr[offset]
+        l.append(arr[offset])
+        permutation(arr, offset+1, l, result)
+        arr[offset], arr[i] = arr[i], arr[offset]
+
+def perm(arr):
+    result = []
+    if len(arr) == 1:
+        result.append([arr[0]])
+        return result
+    for i in xrange(len(arr)):
+        hd = arr[i]
+        l = arr[:]
+        del l[i]
+        for e in perm(l):
+            e.insert(0,hd)
+            result.append(e)
+    return result
+
+""" permutation rank. at pos i, tot i! permutations, out of which, rite smaller * (i-1)!
+    find count n on the rite of pos is smaller, n * pos!, with dup, n*pos!/d[i]
+"""
+from collections import defaultdict
+def permRankNoDup(s):
+    def ordchar(c):
+        return ord(c)-ord('a')
+    def fact(n):
+        f = 1
+        for i in xrange(1,n+1):
+            f = f*i
+        return f
+    def riteSmaller(arr):
+        smallcnt = [0]*26
+        count = [0]*26
+        for i in xrange(len(arr)-1, -1, -1):
+            cord = ordchar(arr[i])
+            count[cord] += 1  # count char.
+            for j in xrange(cord):  # for smaller char to [a,b,.c], sum count
+                smallcnt[cord] += count[j]
+        return smallcnt
+    sz = len(arr)
+    arr = list(s)
+    smallcnt = riteSmaller(arr)
+    permu = fact(len(arr))  # from hd, # of perm = len(arr)!
+    rank = 1
+    # tot fact(n), i=[0,1,..n], n!/n-1, perm/=sz!/[n..1]
+    for i in xrange(len(arr)-1):
+        c = arr[i]
+        ritesmaller = smallcnt[ordchar(c)]
+        permu /= (sz-i)  # 6!/6=5!, 5!/5=4!, ...
+        rank += ritesmaller*permu
+        print i, c, ritesmaller, permu, rank
+    return rank
+
+from collections import defaultdict
+def permRankDup(s):
+    def ordchar(c):
+        return ord(c)-ord('a')
+    def fact(n):
+        f = 1
+        for i in xrange(1,n+1):
+            f = f*i
+        return f
+    def riteSmaller(arr):
+        smallcnt = [0]*26
+        count = [0]*26
+        for i in xrange(len(arr)-1, -1, -1):
+            cord = ordchar(arr[i])
+            count[cord] += 1
+            for j in xrange(cord):
+                smallcnt[cord] += count[j]
+        return smallcnt, count
+    arr = list(s)
+    smallcnt, count = riteSmaller(arr)
+    permu = fact(len(arr))
+    rank = 1
+    for i in xrange(len(arr)-1):
+        c = arr[i]
+        cidx = ordchar(c)
+        ritesmaller = smallcnt[cidx]
+        permu = permu / (count[cidx] * (sz-i))
+        count[cidx] -= 1
+        rank += ritesmaller*permu
+        print i, c, ritesmaller, permu, rank
+    return rank
+
 
 """ for each possibility, strategy should have 1 hit
 check whether strategy has cover of all cases, any day n on any idx k.
@@ -2638,100 +2864,6 @@ def alibaba(n, strategy):
     if not canSurvive:
       return False
   return True
-
-# [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
-def permutation(arr, path, offset, result):
-    if offset == len(arr)-1:
-        path.append(arr[offset])
-        result.append(path)
-        return
-    for i in xrange(offset, len(arr)):
-        l = path[:]
-        arr[offset], arr[i] = arr[i], arr[offset]
-        l.append(arr[offset])
-        permutation(arr, l, offset+1, result)
-        arr[offset], arr[i] = arr[i], arr[offset]
-
-def perm(arr):
-    result = []
-    if len(arr) == 1:
-        result.append([arr[0]])
-        return result
-    for i in xrange(len(arr)):
-        hd = arr[i]
-        l = arr[:]
-        del l[i]
-        for e in perm(l):
-            e.insert(0,hd)
-            result.append(e)
-    return result
-
-""" permutation rank. at pos i, tot i! permutations, out of which, rite smaller * (i-1)!
-    find count n on the rite of pos is smaller, n * pos!, with dup, n*pos!/d[i]
-"""
-from collections import defaultdict
-def permRankNoDup(s):
-    def ordchar(c):
-        return ord(c)-ord('a')
-    def fact(n):
-        f = 1
-        for i in xrange(1,n+1):
-            f = f*i
-        return f
-    def riteSmaller(arr):
-        smallcnt = [0]*26
-        count = [0]*26
-        for i in xrange(len(arr)-1, -1, -1):
-            cord = ordchar(arr[i])
-            count[cord] += 1  # count char.
-            for j in xrange(cord):  # for char in [a,b,..cord], sum count
-                smallcnt[cord] += count[j]
-        return smallcnt
-    sz = len(arr)
-    arr = list(s)
-    smallcnt = riteSmaller(arr)
-    permu = fact(len(arr))  # from hd, # of perm = len(arr)!
-    rank = 1
-    # tot fact(n), i=[0,1,..n], n!/n-1, perm/=sz!/[n..1]
-    for i in xrange(len(arr)-1):
-        c = arr[i]
-        ritesmaller = smallcnt[ordchar(c)]
-        permu /= (sz-i)  # 6!/6=5!, 5!/5=4!, ...
-        rank += ritesmaller*permu
-        print i, c, ritesmaller, permu, rank
-    return rank
-
-from collections import defaultdict
-def permRankDup(s):
-    def ordchar(c):
-        return ord(c)-ord('a')
-    def fact(n):
-        f = 1
-        for i in xrange(1,n+1):
-            f = f*i
-        return f
-    def riteSmaller(arr):
-        smallcnt = [0]*26
-        count = [0]*26
-        for i in xrange(len(arr)-1, -1, -1):
-            cord = ordchar(arr[i])
-            count[cord] += 1
-            for j in xrange(cord):
-                smallcnt[cord] += count[j]
-        return smallcnt, count
-    arr = list(s)
-    smallcnt, count = riteSmaller(arr)
-    permu = fact(len(arr))
-    rank = 1
-    for i in xrange(len(arr)-1):
-        c = arr[i]
-        cidx = ordchar(c)
-        ritesmaller = smallcnt[cidx]
-        permu = permu / (count[cidx] * (sz-i))
-        count[cidx] -= 1
-        rank += ritesmaller*permu
-        print i, c, ritesmaller, permu, rank
-    return rank
 
 
 """
@@ -2848,28 +2980,6 @@ def wordWrap(words, m):
             lc[i] = min(lc[i] + extras[j][i])
     return lc[sz-1]
 
-""" m faces, n dices, num of ways to get value x """
-def dice(m, n, x):
-    tab = [[0]*n for i in xrange(x+1)]
-    for v in xrange(1,m+1):
-        tab[v][0] = 1
-    for v in xrange(1,x+1):
-        for d in xrange(1, n):
-            for f in xrange(1,m+1):
-                if v > f:
-                    print v, d, f, tab
-                    tab[v][d] += tab[v-f][d-1]
-    return tab[x][n-1]
-def dice(m,n,x):
-    tab = [[0]*n for i in xrange(x+1)]
-    for f in xrange(m):
-        tab[1][f] = 1
-    for i in xrange(n):
-        for v in xrange(x):
-            for f in xrange(m):
-                if f < v:
-                    tab[i,v] += tab[i-1][v-f]
-    return tab[n,x] 
 
 """ various way for decode """
 def calPack(arr):
@@ -2879,6 +2989,27 @@ def calPack(arr):
         maxv = max(maxv, curmaxv)
         prepre, pre = pre, curmaxv
 
+def decode(dstr):
+    tab = [0]*(len(dstr)+1)
+    tab[0] = 1
+    tab[1] = 1
+    for i in xrange(1,len(dstr)):
+        tab[i] = tab[i-1]
+        if dstr[i-1] == "1" or (dstr[i-1] == "2" and dstr[i] <= "6"):
+            tab[i] += tab[i-2]
+    return tab[len(dstr)]
+
+""" DP with O(1) """
+def decode(dstr):
+  if len(dstr) == 1:
+    return 1
+  prepre, pre = 1, 1
+  for i in xrange(1, len(dstr)):
+    cur = pre
+    if dstr[i-1] == '1' or (dstr[i-1]=='2' and dstr[i]<='6'):
+      cur += prepre  # fib seq here.
+    prepre, pre = pre, cur
+  return cur
 
 """ recursion, bottom up, forward, from 0..n-1 """
 def decode(dstr, pos):
@@ -2908,73 +3039,6 @@ def decode(dstr, pos):
   else:
     return decode(dstr, pos-1)
 
-""" recursive build a tree, then print all leaf """
-def decode(dstr):
-    root = Node(dstr)
-    root.left = decode(dstr[1:])
-    root.rite = decode(dstr[2:])
-    return root
-
-""" DP, with O(n) ary """
-def decode(dstr):
-  dp = [1 for i in xrange(len(dstr))]
-  for i in xrange(1, len(dstr)):
-    v = dstr[i]
-    if v > '0':
-      dp[i] = dp[i-1]
-    
-    if dstr[i-1] == '1' or (dstr[i-1]== '2' and dstr[i] <= '6'):
-      if i < 2:
-        dp[i] = 2
-      else:
-        dp[i] += dp[i-2]
-  return dp[len(dstr)-1]
-
-""" DP with O(1) """
-def decode(dstr):
-  if len(dstr) == 1:
-    return 1
-  prepre, pre = 1, 1
-  for i in xrange(1, len(dstr)):
-    if dstr[i] == '0':
-      cur = pre
-    elif dstr[i-1] == '1' or (dstr[i-1]=='2' and dstr[i]<='6'):
-      cur = prepre + pre  # fib seq here.
-    else:
-      cur = pre
-    prepre, pre = pre, cur
-  return cur
-
-def decode(dstr):
-  if len(dstr) == 1:
-    return 1
-  prepre = 1
-  if int(dstr[0:2]) <= 26 and dstr[1] != '0':
-    pre = 2
-  else:
-    pre = 1
-  cur = pre   # in case only 2 digit
-  for i in xrange(2, len(dstr)):
-    cur = pre
-    if dstr[i-1] is '1' or dstr[i-1] is '2' and dstr[i] <= '6':
-      cur = prepre + pre
-    prepre, pre = pre, cur
-  return cur
-
-def decode(dstr):
-    if len(dstr) == 1:
-        return 1
-    pre,cur = 0, 1
-    for i in xrange(1, len(dstr)+1):
-        if dstr[i-1] == '0':
-            cur = 0
-        if i < 2 or not (dstr[i-2] == '1' or (dstr[i-2]=='2' and dstr[i-1]<='6')):
-            pre = 0
-        tmp = cur
-        cur = pre + cur
-        pre = tmp
-    return cur
-
 """ if dup not allowed, shift offset when dfs inclusion branch """
 # path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 def subsetsum(l, offset, n, path, result):
@@ -2987,7 +3051,7 @@ def subsetsum(l, offset, n, path, result):
     if n > l[offset]:  # branch incl when when l.i smaller
         p.append(l[offset])
         # dup allowed, offset stay when include, incl 1+ times.
-        subsetsum(l, offset,   n-l[offset], p, result)
+        # subsetsum(l, offset,   n-l[offset], p, result)
         subsetsum(l, offset-1, n-l[offset], p, result)
     # always reduce when excl current, with excl l[i] path.
     subsetsum(l, offset-1, n, path, result)
@@ -3016,6 +3080,7 @@ def subsetsum(l, val):
             tab[i][v] = []
         v = l[i]
         tab[i][v].append([v])
+    # row iterate items, col enum vals.
     for r in xrange(1,len(l)):
         rv = l[r]
         for v in xrange(val+1):
@@ -3045,6 +3110,22 @@ def digitSum(n, s):
 assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
 
+# tab[i,v] = tot non descreasing at ith digit, end with value v
+# tab[i,v] = tab[i-1,0..v]
+def nondescreasing(n):
+  tab = [[0]*10 for i in xrange(n)]
+  for v in xrange(10):
+    tab[0][v] = 1
+  for i in xrange(1,n):
+    for v in xrange(10):
+      for d in xrange(10):
+        if d <= v:
+          tab[i][v] += tab[i-1][d]
+  tot = 0
+  for v in xrange(10):
+    tot += tab[n-1][v]
+  return tot
+
 ''' sum of odd and even digit diff by one '''
 def digitSumDiffOne(n):
     odd = [[0]*18 for i in xrange(n)]
@@ -3056,6 +3137,32 @@ def digitSumDiffOne(n):
                     even[l][k] += odd[l-1][k-d]
                 else:
                     odd[l][k] += even[l-1][k-d]
+
+""" m faces, n dices, num of ways to get value x """
+def dice(m, n, x):
+    tab = [[0]*n for i in xrange(x+1)]
+    for v in xrange(1,m+1):
+        tab[v][0] = 1
+    for v in xrange(1,x+1):
+        for d in xrange(1, n):
+            for f in xrange(1,m+1):
+                if v > f:
+                    print v, d, f, tab
+                    tab[v][d] += tab[v-f][d-1]
+    return tab[x][n-1]
+
+# tab[i,v] 0-i dices, ways to get value v.
+# tab[i,v] += tab[i-1,v], tab[i-1, v-m]
+def dice(m,n,x):
+    tab = [[0]*n for i in xrange(x+1)]
+    for f in xrange(m):
+        tab[1][f] = 1
+    for i in xrange(n):
+        for v in xrange(x):
+            for f in xrange(m):
+                if f < v:
+                    tab[i,v] += tab[i-1][v-f]
+    return tab[n,x] 
 
 """ adding + in between. [1,2,0,6,9] and target 81 """
 def sumcut(arr, offset, target):
@@ -3074,6 +3181,8 @@ def sumcut(arr, offset, target):
 print sumcut([1,2,3], 0, 6)
 print sumcut([1,2,0,6,9], 0, 81)
 
+
+""" if get v at j, get v+jiv at i """
 def plusbetween(arr, target):
   def toInt(arr, st, ed):
     return int("".join(str(i) for i in arr[st:ed+1]))
@@ -3087,10 +3196,9 @@ def plusbetween(arr, target):
       jiv = toInt(arr, j, i)
       for v in xrange(target):
         if tab[j-1][v] == True and v+jiv<=target:
-          tab[i][v+jiv] = True
+          tab[i][v+jiv] = True  # we can get v at j-1, then get v+jiv at i
   return tab[sz-1][target]
 print plusbetween([1,2,0,6,9], 81)
-
 
 def palindromMincut(s, offset):
     ''' partition s into sets of palindrom substrings, with min # of cuts 
@@ -3165,7 +3273,7 @@ def nextPalindrom(v):
 
 ''' bfs search on Matrix '''
 from collections import deque
-def bfs(G):
+def MahattonK(G):
   q = deque()
   for i in xrange(m):
     for j in xrange(n):
@@ -3175,7 +3283,7 @@ def bfs(G):
       else:
         G[i,j] = sys.maxint  # unknow space
   while len(q) > 0:
-    [i,j] = q.pop()
+    [i,j] = q.popleft()
     if G[i,j] < k:
       if G[i+1,j] == sys.maxint:
         G[i+1,j] = G[i,j] + 1
