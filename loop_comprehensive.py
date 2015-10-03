@@ -2665,6 +2665,7 @@ def comb(arr,r):
     for e in arr:
         res.append([e])
     return res
+  # incl/excl each hd
   for i in xrange(len(arr)-r+1):
     hd = arr[i]
     narr = arr[i+1:]
@@ -2674,7 +2675,7 @@ def comb(arr,r):
   return res
 print comb("abc", 2)
 
-""" combination with partial result """
+""" recur with partial result, when path in, iter each, incl/excl each """
 res = []
 def combIter(arr, offset, r, path, res):
     for i in xrange(offset, len(arr)-r+1):
@@ -3271,22 +3272,22 @@ def nextPalindrom(v):
       arr[mr] = str(int(arr[mr])+1)
   return int(''.join(arr))
 
-''' bfs search on Matrix '''
+''' bfs search on Matrix for min dist '''
 from collections import deque
-def MahattonK(G):
+def bfsk(G):
   q = deque()
   for i in xrange(m):
     for j in xrange(n):
-      if G[i,j] == 1:
+      if G[i,j] == 1:  # start from cell val 1
         G[i,j] = 0
         q.append([i,j])
       else:
-        G[i,j] = sys.maxint  # unknow space
+        G[i,j] = sys.maxint  # unknow space init dist to max
   while len(q) > 0:
     [i,j] = q.popleft()
     if G[i,j] < k:
-      if G[i+1,j] == sys.maxint:
-        G[i+1,j] = G[i,j] + 1
+      if G[i+1,j] == sys.maxint:  # cell not explored yet
+        G[i+1,j] = G[i,j] + 1     # set dist+1
         q.append([i+1,j])
       if G[i-1,j] == sys.maxint:
         G[i-1,j] = G[i,j] + 1
