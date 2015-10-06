@@ -241,12 +241,15 @@ def clone(root, cloned):
   return nroot
 
 """ serde tree with arbi # of children """
-def serdeTree(root):
+def serdeTree(root, out):
     print root
+    out.append(root)
     for c in root.children:
-        serdeTree(c)
+        serdeTree(c, out)
     print "$"
+    out.append("$")
 
+""" tree traverse, stk top always is parent """
 # 1 [2 [4 $] $] [3 [5 $] $] $
 from collections import deque
 def deserTree(l):
@@ -259,8 +262,67 @@ def deserTree(l):
             if count(s) == 0:
                 s.append(n)
             else:
-                s[-1].children.append(n)
+                parent = s[-1]
+                parent.children.append(n)
                 s.append(n)
+''' lgn stack as cur node parent when tree traverse'''
+def morris(root):
+    pre, cur = None, root
+    while cur:
+        if not cur.left:
+            out.append(cur)
+            pre,cur = cur,cur.rite
+        else:
+            leftmax = cur.left
+            while leftmax.rite and leftmax.rite != cur:
+                leftmax = leftmax.rite
+            if not leftmax.rite:
+                leftmax.rite = cur
+                cur = cur.left
+            else:
+                out.append(cur)
+                leftmax.rite = None
+                pre,cur = cur, cur.rite
+
+''' find pair node in bst tree sum to a given value, lgn 
+like loop ary, start from both end, in order traverse, and reverse in order
+'''
+def pairNode(root, target):
+    lstk,rstd = deque(),deque()  # use lgn stk to store tree path parent
+    lstop,rstop = False,False
+    lcur,rcur = root,root
+    while True:
+        while not lstop:
+            if lcur:
+                lstk.append(lcur)
+                lcur = lcur.left
+            else:
+                if not len(lstk):
+                    lstop = 1
+                else:
+                    lcur = lstk.pop()
+                    lval = lcur
+                    lcur = lcur.rite
+                    lstop = 1
+        while not rstop:
+            if rcur:
+                rstk.append(rcur)
+                rcur = rcur.rite
+            else:
+                if not len(rstk):
+                    rstop = 1
+                else:
+                    rcur = lstk.pop()
+                    rval = rcur
+                    rcur = rcur.left
+        if lval + rval == target:
+            return lcur,rcur
+        if lval + rval > target:
+            rstop = False
+        else:
+            lstop = False
+    return lcur,rcur
+
 
 """ serde of bin tree with l/r child, no lchild and rchild, append $ $"""
 def serdeBtree(root):
@@ -299,6 +361,8 @@ def serdePreBst(val, parent, leftchild, minv, maxv):
         if nextv: 
             serdePreBst(nextv, node, True, -sys.maxint-1, val)
             serdePreBst(nextv, node, False, val, sys.maxint)
+
+
 
 """ no same char shall next to each other """
 from collections import defaultdict
@@ -502,7 +566,8 @@ class Interval(object):
     def __init__(self):
         self.arr = []
         self.size = 0
-    # bisect ret prev_slot + 1 where arr[prev_slot] < target, or 0.
+    # bisect find first idx of ele who is greater or equal to val, i.e, insertion point.
+    # if used to find high end, idx-1 is the first ele smaller than val.
     def bisect(self, arr, val):
         lo,hi = 0, len(self.arr)-1
         while lo != hi:
@@ -545,7 +610,7 @@ class Interval(object):
         print "insert ", sted, stslot, edslot
         if stslot >= len(self.arr):
             self.arr.insert(stslot, [st, ed])
-        elif stslot > edslot:  # no overlap
+        elif stslot > edslot:  # find ed slot is ed slot-1
             self.arr.insert(stslot, [st, ed])
         else:
             minst = min(self.arr[stslot][0], st)
@@ -626,8 +691,8 @@ def testInterval():
     intv.insertToggle([5, 15])
     intv.dump()
 
-""" bst with lo as the bst search key
-    interval tree annotate with max. Augmented search tree with # of children for rank.
+""" bst with lo as the bst search key, augment max to the max of ed of all nodes under root.
+    interval tree annotate with max.
 """
 class IntervalTree(object):
     def __init__(self, lo=None, hi=None):
@@ -661,15 +726,15 @@ class IntervalTree(object):
         if lo < self.lo:
             if not self.left:
                 self.left = IntervalTree(lo, hi)
-                return self.left
             else:
-                self.left.insert(intv)
+                self.left = self.left.insert(intv)
+            return self.left
         else:
             if not self.rite:
                 self.rite = IntervalTree(lo, hi)
-                return self.rite
             else:
-                self.rite.insert(intv)
+                self.rite = self.rite.insert(intv)
+            return self.rite
     def search(self, intv):
         [lo,hi] = intv
         if self.overlap(intv):
@@ -770,7 +835,25 @@ def test():
     intvtree.dfs([9,24], result)
     for e in result:
         print e.toString()
-    
+
+''' find max val from overlapping intervals '''
+def maxIntervals(arr):
+    edarr = sorted(arr, key=lambda x:x[1])
+    root = IntervalTree(edarr[0])
+    mx = edarr[0][2]
+    for i in xrange(1, len(arr)):
+        out = []
+        root.search(edarr[i], out)
+        s = 0
+        for oi in xrange(len(out)):
+            s += out[oi][2]
+        s += edarr[i][2]
+        mx = max(mx,s)
+        root.insert(edarr[i])
+    return mx
+print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
+
+ 
 """ segment tree, two version, tree and heap """
 import math
 import sys
@@ -1557,12 +1640,18 @@ def testKthMaxSum():
 """ min heap for priority queue """
 from collections import defaultdict
 class MinHeap(object):
-    def __init__(self, size=10):
+    def __init__(self, mxSize=10):
         self.arr = []
         self.size = 0
+        self.mxSize = mxSize
         self.val2idx = defaultdict()
     def get(self, idx):
-        return self.arr[idx][0]
+        if idx >= 0 and idx < self.size:
+            return self.arr[idx][0]
+        return None
+    def getByVal(self, val):
+        idx = self.val2idx[val]
+        return self.get(idx)
     def lchild(self, idx):
         if idx*2+1 < self.size:
             return idx*2+1
@@ -1581,24 +1670,24 @@ class MinHeap(object):
         self.arr[src], self.arr[dst] = [dstv], [srcv]
         self.val2idx[srcv] = dst
         self.val2idx[dstv] = src
-    def insert(self, val):
-        entry = [val]
+    def insert(self, key, val):
+        entry = [key, val]
         self.arr.append(entry)
         self.val2idx[val] = self.size
         self.size += 1
-        self.siftup(self.size-1)
+        return self.siftup(self.size-1)
     def siftup(self, idx):
         parent = self.parent(idx)
-        if parent >= 0 and self.get(parent) > self.get(idx):
+        if parent >= 0 and self.get(parent)[0] > self.get(idx)[0]:
             self.swap(parent, idx)
             return self.siftup(parent)
         return parent
     def siftdown(self, idx):
         l,r = self.lchild(idx), self.rchild(idx)
         minidx = idx
-        if l and self.get(l) < self.get(minidx):
+        if l and self.get(l)[0] < self.get(minidx)[0]:
             minidx = l
-        if r and self.get(r) < self.get(minidx):
+        if r and self.get(r)[0] < self.get(minidx)[0]:
             minidx = r
         if minidx != idx:
             self.swap(idx, minidx)
