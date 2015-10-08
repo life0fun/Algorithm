@@ -853,7 +853,32 @@ def maxIntervals(arr):
     return mx
 print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
 
- 
+""" Binary indexed tree, Each node in BI[] stores sum of a range.
+the key is idx in BI, its parent is by removing the last set bit. 
+idx = idx - (idx & (-idx))
+"""
+class BITree:
+    def __init__(self, arr):
+        self.arr = arr
+        self.bi = [0]*len(arr) 
+    # ret the sum of arr[0:idx]
+    def getSum(self, idx):
+        s = 0
+        # idx in BITree[] is 1 more than the idx in arr[]
+        idx += 1
+        while idx > 0:
+            s += self.bi[idx]
+            idx -= idx & (-idx)
+        return s
+    def update(self, idx, val):
+        idx += 1
+        while idx < len(self.arr):
+            self.bi[idx] += val
+            idx -= idx & (-idx)
+    def build(self):
+        for i in xrange(len(self.arr)):
+            self.update(i, self.arr[i])
+
 """ segment tree, two version, tree and heap """
 import math
 import sys
@@ -1002,6 +1027,7 @@ class TernaryTree(object):
         self.left = self.rite = self.eq = None
         self.key = key
         self.leaf = False
+        self.cnt = 1  # when leaf is true, the cnt, freq of the node
     def insert(self, word):
         hd = word[0]
         if not self.key:
