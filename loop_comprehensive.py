@@ -230,6 +230,42 @@ def insertCircle(l, val):
             return
     return minnode
 
+""" walk """
+(defn walk
+  [f form]
+  (let [pf (partial walk f)]
+    (if (coll? form)
+      (f (into (empty form) (map pf form)))
+      (f form))))
+
+(defn walk
+  "Traverses form, an arbitrary data structure.  inner and outer are
+  functions.  Applies inner to each element of form, building up a
+  data structure of the same type, then applies outer to the result.
+  Recognizes all Clojure data structures. Consumes seqs as with doall."
+  
+  [inner outer form]
+  (cond
+   (list? form) (outer (apply list (map inner form)))
+   (instance? clojure.lang.IMapEntry form) (outer (vec (map inner form)))
+   (seq? form) (outer (doall (map inner form)))
+   (instance? clojure.lang.IRecord form)
+     (outer (reduce (fn [r x] (conj r (inner x))) form form))
+   (coll? form) (outer (into (empty form) (map inner form)))
+   :else (outer form)))
+
+(defn postwalk
+  "Performs a depth-first, post-order traversal of form.  Calls f on
+  each sub-form, uses f's return value in place of the original.
+  Recognizes all Clojure data structures. Consumes seqs as with doall."
+  [f form]
+  (walk (partial postwalk f) f form))
+
+(defn prewalk
+  "Like postwalk, but does pre-order traversal."
+  {:added "1.1"}
+  [f form]
+  (walk (partial prewalk f) identity (f form)))
 
 """ dfs clone """
 def clone(root, cloned):
@@ -248,6 +284,18 @@ def serdeTree(root, out):
         serdeTree(c, out)
     print "$"
     out.append("$")
+def serde(l):
+    hd = l.pop()
+    if hd == "$":
+        return True, None  # done
+    node = Node(val)
+    for i in xrange(n):  # do not know how many child, loop until done.
+        done, child = serde(l)
+        if done:
+            return node
+        else:
+            node.child[i] = child
+    return node
 
 """ tree traverse, stk top always is parent """
 # 1 [2 [4 $] $] [3 [5 $] $] $
@@ -269,16 +317,17 @@ def deserTree(l):
 def morris(root):
     pre, cur = None, root
     while cur:
-        if not cur.left:
+        if not cur.left:  # no left, down to rite directly
             out.append(cur)
             pre,cur = cur,cur.rite
         else:
+        ''' if cur has left, setup thread of cur.left.max before descend to left'''
             leftmax = cur.left
             while leftmax.rite and leftmax.rite != cur:
                 leftmax = leftmax.rite
             if not leftmax.rite:
                 leftmax.rite = cur
-                cur = cur.left
+                cur = cur.left  # setup thread before descend to left
             else:
                 out.append(cur)
                 leftmax.rite = None
@@ -566,7 +615,7 @@ class Interval(object):
     def __init__(self):
         self.arr = []
         self.size = 0
-    # bisect find first idx of ele who is greater or equal to val, i.e, insertion point.
+    # bisect ret first pos where val shall be inserted.
     # if used to find high end, idx-1 is the first ele smaller than val.
     def bisect(self, arr, val):
         lo,hi = 0, len(self.arr)-1
@@ -590,10 +639,10 @@ class Interval(object):
         return idx
     # the last slot in the arr that this new interval may overlap
     def findEndSlot(self, st, ed):
-        """ pre-st < ed < next-st, bisect ret insert pos, pre-st+1, so left shift"""
+        """ pre-start < ed < next-start, bisect ret insert pos, pre-start +1, so left shift"""
         startvals = map(lambda x: x[0], self.arr)
         found, idx = self.bisect(startvals, ed)        
-        return idx-1
+        return idx-1  # to find pre-interval slot less than ed, so ed-1
     def overlap(self, st1, ed1, st2, ed2):
         if st2 > ed1 or ed2 < st1:
             return False
@@ -860,21 +909,26 @@ idx = idx - (idx & (-idx))
 class BITree:
     def __init__(self, arr):
         self.arr = arr
-        self.bi = [0]*len(arr) 
-    # ret the sum of arr[0:idx]
+        self.bi = [0]*len(arr)
+    def parentIdx(self, idx):
+        return idx - (idx & (-idx))
+    def childidx(self, idx):
+        return idx + (idx & (-idx)) 
+    # ret the sum of arr from 0..idx
     def getSum(self, idx):
         s = 0
-        # idx in BITree[] is 1 more than the idx in arr[]
-        idx += 1
+        idx += 1 # idx in BITree[] is 1 more than the idx in arr[]
+        # traverse along parent to root and sum up all values
         while idx > 0:
             s += self.bi[idx]
-            idx -= idx & (-idx)
+            idx = self.parentIdx(idx)
         return s
+    ''' after update bi tree node at idx, traverse along parents to root '''
     def update(self, idx, val):
         idx += 1
         while idx < len(self.arr):
-            self.bi[idx] += val
-            idx -= idx & (-idx)
+            self.bi[idx] += val   # cumulate
+            idx = self.childIdx(idx)
     def build(self):
         for i in xrange(len(self.arr)):
             self.update(i, self.arr[i])
@@ -1177,7 +1231,8 @@ def depth(root):
     we can do bfs, level by level. or do recursion.
 """
 def populateSibling(root):
-    if not root: return root
+    if not root:
+        return root
     if root.lchild:
         root.lchild.sibling = root.rchild
     if root.rchild:
@@ -1185,22 +1240,20 @@ def populateSibling(root):
     populateSibling(root.lchild)
     populateSibling(root.rchild)
 
-def populateNext(root):
-    while root:
-        nextlevelhd = None
-        nextlevelcur = None
-        cur = root
-        while cur:
-            for c in cur.children:
-                if not nextlevelhd:
-                    nextlevelhd = c
-                if not nextlevelcur:
-                    nextlevelcur = c
-                else:
-                    nextlevelcur.next = c
-                    nextlevelcur = c
-            cur = cur.next
-        root = nextlevelhd
+def popNext(root):
+  nexthd, nextpre = None,None
+  cur = root
+  while cur:
+    for c in cur.children:
+      if not nexthd:
+        nexthd = c
+      else:
+        if nextpre:
+          nextpre.next = c
+      nextpre = c
+    cur = cur.next
+  nextpre.next = None
+  popnext(nexthd)
 
 ''' insertion is a procedure of replacing null with new node !'''
 def insertBST(root, node):
@@ -3360,7 +3413,8 @@ def palindromMincut(s):
 
 """ next permutation """
 def nextPalindrom(v):
-  def copyleft(arr, li, ri):
+  # arr[0:li] -> arr[li+1:ri]
+  def copyLeftToRite(arr, li, ri):
     left = arr[:li+1]
     left.reverse()
     arr[ri:] = left
@@ -3376,7 +3430,7 @@ def nextPalindrom(v):
     r += 1
   if l > 0 and arr[l] < arr[r]:
     leftSmaller = True
-  copyleft(arr, l, r)
+  copyLeftToRite(arr, l, r)
   if leftSmaller:
     if sz % 2 == 1:
       mid = (sz-1)/2
