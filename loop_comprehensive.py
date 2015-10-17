@@ -3411,6 +3411,27 @@ def palindromMincut(s):
     # expand to full string by the end
     return tab[n-1]
 
+""" next permutation, from l <- R, find first partition, then find first
+larger, then swap, the reverse right partition.
+"""
+def nextPermutation(txt):
+    for i in xrange(len(txt)-2, -1, -1):
+        if txt[i] < txt[i+1]:
+            break
+    if i < 0:
+        return ''.join(reversed(txt))
+    part = txt[i]
+    for j in xrange(len(txt)-1, i, -1):
+        if txt[j] > part:
+            break
+    txt[i],txt[j] = txt[j],txt[i]
+    l,r = i+1, len(txt)-1
+    while l < r:
+        txt[l],txt[r] = txt[r],txt[l]
+        l += 1
+        r -= 1
+    return txt
+
 """ next permutation """
 def nextPalindrom(v):
   # arr[0:li] -> arr[li+1:ri]
