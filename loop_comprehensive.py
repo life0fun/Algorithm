@@ -230,6 +230,22 @@ def insertCircle(l, val):
             return
     return minnode
 
+''' uniq id generator '''
+insta5.next_id(OUT result bigint)
+    our_epoch bigint := 1314220021721;
+    seq_id bigint;
+    now_millis bigint;
+    shard_id int := 5;
+BEGIN
+    SELECT nextval('insta5.table_id_seq') %% 1024 INTO seq_id;
+
+    SELECT FLOOR(EXTRACT(EPOCH FROM clock_timestamp()) * 1000) INTO now_millis;
+    result := (now_millis - our_epoch) << 23;
+    result := result | (shard_id << 10);
+    result := result | (seq_id);
+END;
+
+
 """ walk """
 (defn walk
   [f form]
@@ -238,6 +254,7 @@ def insertCircle(l, val):
       (f (into (empty form) (map pf form)))
       (f form))))
 
+""" inner is fn need to apply to nested form. outer is fn apply to non-nest form"""
 (defn walk
   "Traverses form, an arbitrary data structure.  inner and outer are
   functions.  Applies inner to each element of form, building up a
@@ -267,7 +284,7 @@ def insertCircle(l, val):
   [f form]
   (walk (partial prewalk f) identity (f form)))
 
-""" dfs clone """
+""" dfs clone, keep track what node has been cloned."""
 def clone(root, cloned):
   nroot = Node(root)
   cloned[root] = nroot
@@ -506,7 +523,7 @@ class AVLTree(object):
         self.updateHeightSize()
         newroot.updateHeightSize()
         return newroot
-    def search(self, key):
+    def searchkey(self, key):
         if self.key == key:
             return True, self
         elif key < self.key:
@@ -534,7 +551,7 @@ class AVLTree(object):
           else:
             return self.rite.largestSmaller(k,self)
     ''' rank is num of node smaller than key '''
-    def getRank(self,key):
+    def getRank(self, key):
         if key == self.key:
             if self.left:
                 return self.left.size + 1
@@ -685,6 +702,7 @@ class Interval(object):
             for i in xrange(0, stslot):
                 output.append(self.arr[i])
             output.append([min(st, self.arr[stslot][0]), max(st, self.arr[stslot][0])])
+            # toggle to create [ed->st]
             for i in xrange(stslot+1, edslot+1):
                 output.append([self.arr[i-1][1], self.arr[i][0]])
             output.append([min(ed, self.arr[edslot][1]), max(ed, self.arr[edslot][1])])
@@ -1247,9 +1265,9 @@ def popNext(root):
     for c in cur.children:
       if not nexthd:
         nexthd = c
+        nextpre = c
       else:
-        if nextpre:
-          nextpre.next = c
+        nextpre.next = c
       nextpre = c
     cur = cur.next
   nextpre.next = None
@@ -1902,13 +1920,13 @@ def medianmedian(A, beg, end, k):
 
 
 '''
-Huffman coding: sort freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
-http://en.nerdaholyc.com/huffman-coding-on-a-string/
-'''
+Huffman coding: sor
 class HuffmanCode(object):
-    def __init__(self):
-        self.minheap = MinHeap()
-        self.freq = {}
+    def __init__(selt freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
+http://en.nerdaholyc.com/huffman-coding-on-a-string/
+'''f):
+        self.minfreqheap = MinHeap()
+        self. = {}
 
     def initValue(self):
         self.minheap.insert('b', 3, None, None)
@@ -3464,13 +3482,13 @@ def nextPalindrom(v):
 
 ''' bfs search on Matrix for min dist '''
 from collections import deque
-def bfsk(G):
+def matrixBFSk(G):
   q = deque()
   for i in xrange(m):
     for j in xrange(n):
       if G[i,j] == 1:  # start from cell val 1
         G[i,j] = 0
-        q.append([i,j])
+        q.append([i,j])  # can do bfs from this cell
       else:
         G[i,j] = sys.maxint  # unknow space init dist to max
   while len(q) > 0:
