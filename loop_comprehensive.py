@@ -42,6 +42,8 @@ think of using pre-scan to fill out aux tables for o(1) look-up.
 
 ''' recursive, one line print int value bin string'''
 int2bin = lambda n: n>0 and int2bin(n>>1)+str(n&1) or ''
+bin2int = lambda x: int(x,2)
+twopower = lambda x: x & x-1
 
 bstr_nonneg = lambda n: n>0 and bstr_nonneg(n>>1).lstrip('0')+str(n&1) or '0'
 
@@ -171,7 +173,6 @@ def testMergeSort():
 def qsort3(l, beg, end):
     def swap(i,j):
         l[i], l[j] = l[j], l[i]
-
     # always check loop boundary first!
     if(beg >= end):   # single ele, done.
         return
@@ -185,7 +186,6 @@ def qsort3(l, beg, end):
     pivot = l[beg]
     i = beg+1
     j = end
-
     # while loop, execute when i=j, as long as left <= right
     while i<=j:   # = is two ele, put thru logic
         while l[i] <= pivot and i < end:  # i points to first ele > pivot, left half <= pivot
@@ -202,11 +202,134 @@ def qsort3(l, beg, end):
 
     # i,j must be within [beg, i, j, end]
     swap(beg, j)  # use nature j as i been +1 from head
-
     qsort3(l, beg, i-1)   # left half <= pivot
     qsort3(l, j+1, end)     # right half > pivot
-
     print 'final:', l
+
+def qsort(arr, lo, hi):
+  def swap(arr, i, j):
+    arr[i],arr[j] = arr[j],arr[i]
+  if lo >= hi:
+    return
+  pivot = arr[hi]
+  wi = lo
+  for i in xrange(lo,hi):
+    v = arr[i]
+    if v <= pivot:  # must have = for dup element.
+      swap(arr, wi, i)
+      wi += 1
+  swap(arr, wi, hi)
+  qsort(arr, lo, wi-1)
+  qsort(arr, wi, hi)
+  return arr
+
+"""
+find kth smallest ele in a union of two sorted list
+two index at A, B array, and inc smaller array's index each step for k steps.
+(lgm + lgn) solution: binary search. keep two index on A, B so that i+j=k-1.
+  i, j are the index that we can chop off from A[i]+B[j] = k, then we found k.
+  if Ai falls in B[j-1, j], found, as A[0..i-1] and B[0..j-1] is smaller.
+  otherwise, A[0..i] must less than B[j-1], chop off smaller A and larger B.
+  recur A[i+1..m], B[0..j]
+"""
+def findKth(A, m, B, n, k):
+    # ensure index i + j = k -1, so next index is kth element.
+    i = int(float(m)/(m+n) * (k-1))
+    j = (k-1)-i
+    ai_1 = A[i-1] if i is not 0 else -sys.maxint
+    bj_1 = B[j-1] if j is not 0 else -sys.maxint
+    ai = A[i] if i is not m else sys.maxint  # if reach end of ary, max value
+    bj = B[j] if j is not n else sys.maxint  
+    # if either of i, j index falls in others.
+    if ai > bj_1 and ai < bj:
+        #print "ai ", ai
+        return ai
+    elif bj > ai_1 and bj < ai:
+        #print "bi ", bj
+        return bj
+
+    # recur 
+    if ai < bj:
+        return findKth( A[i+1:], m-i-1, B[:j], j, k-i-1)
+    else: # ai > bj case
+        return findKth( A[:i], i, B[j+1:], n-j-1, k-j-1)
+
+def find_kth(A, m, B, n, k):
+    if m > n:
+        find_kth(B,n,A,m,k)
+    if m == 0: return B[k-1]
+    
+    ia = min(k/2, m)
+    ib = k-ia
+    if A[ia-1] < B[ib-1]:
+        find_kth(A, ia, B, n, k-ia)
+    else:
+        find_kth(A, m, B+ib, n-ib, k-ib)
+    else:
+        return A[ia-1]
+
+def testFindKth():
+    A = [1, 5, 10, 15, 20, 25, 40]
+    B = [2, 4, 8, 17, 19, 30]
+    Z = sorted(A + B)
+    assert(Z[7] == findKth(A, len(A), B, len(B), 8))
+    print "9th of :", Z[9], findKth(A, len(A), B, len(B), 10)
+    assert(Z[9] == findKth(A, len(A), B, len(B), 10))
+    
+
+""" 
+  selection algorithm, find the kth largest element with worst case O(n)
+  http://www.ardendertat.com/2011/10/27/programming-interview-questions-10-kth-largest-element-in-array/
+"""
+def selectKth(A, beg, end, k):
+    def partition(A, l, r, pivotidx):
+        A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
+        widx = l   # all ele smaller than pivot, stored in left, started from begining
+        for i in xrange(l, r):
+            if A.i < pivot:   # smaller than pivot, put it to left where swap idx
+                A.widx, A.i = A.i, A.widx
+                widx += 1
+        A.r, A.widx = A.widx, A.r
+        return widx
+
+    if beg == end: return A.beg
+    if not 1 <= k < (end-beg): return None
+
+    while True:   # continue to loop 
+        pivotidx = random.randint(l, r)
+        rank = partition(A, l, r, pivotidx)
+        if rank == k: return A.rank
+        if rank < k: return selectKth(A, l, rank, k-rank)
+        else: return selectKth(A, rank, r, k-rank)
+
+# median of median of divide to n groups with each group has 5 items,
+def medianmedian(A, beg, end, k):
+    def partition(A, l, r, pivot):
+        widx = l
+        for i in xrange(l, r+1):
+            if A.i < pivot:
+                A.widx, A.i = A.i, A.widx
+                widx += 1
+        # i will park at last item that is < pivot
+        return widx-1   # left shift as we always right shift after swap.
+
+    sz = end - beg + 1  # beg, end is idx
+    if not 1<= k <= sz: return None     # out of range, None.
+    # ret the median for this group of 5 items
+    if end-beg <= 5:
+        return sorted(A[beg:end])[k-1]  # sort and return k-1th item
+    # divide into groups of 5, ngroups, recur median of each group, pivot = median of median
+    ngroups = sz/5
+    medians = [medianmedian(A, beg+5*i, beg+5*(i+1)-1, 3) for i in xranges(ngroups)]
+    pivot = medianmedian(medians, 0, len(medians)-1, len(medians)/2+1)
+    pivotidx = partition(A, beg, end, pivot)  # scan from begining to find pivot idx.
+    rank = pivotidx - beg + 1
+    if k <= rank:
+        return medianmedian(A, beg, pivotidx, k)
+    else:
+        return medianmedian(A, pivotidx+1, end, k-rank)
+
+
 
 """ insert into circular link list 
     1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
@@ -638,7 +761,7 @@ class Interval(object):
         lo,hi = 0, len(self.arr)-1
         while lo != hi:
             md = (lo+hi)/2
-            if val > arr[md]:
+            if val > arr[md]:  # lift lo only when absolutely big
                 lo = md+1
             else:
                 hi = md
@@ -1812,112 +1935,6 @@ def testMinHeap():
     h.decreaseKey(9, 2)
     print h.arr[0][0], h.arr[1][0], h.arr[2][0]
 
-"""
-find kth smallest ele in a union of two sorted list
-two index at A, B array, and inc smaller array's index each step for k steps.
-(lgm + lgn) solution: binary search. keep two index on A, B so that i+j=k-1.
-  i, j are the index that we can chop off from A[i]+B[j] = k, then we found k.
-  if Ai falls in B[j-1, j], found, as A[0..i-1] and B[0..j-1] is smaller.
-  otherwise, A[0..i] must less than B[j-1], chop off smaller A and larger B.
-  recur A[i+1..m], B[0..j]
-"""
-def findKth(A, m, B, n, k):
-    # ensure index i + j = k -1, so next index is kth element.
-    i = int(float(m)/(m+n) * (k-1))
-    j = (k-1)-i
-    ai_1 = A[i-1] if i is not 0 else -sys.maxint
-    bj_1 = B[j-1] if j is not 0 else -sys.maxint
-    ai = A[i] if i is not m else sys.maxint  # if reach end of ary, max value
-    bj = B[j] if j is not n else sys.maxint  
-    # if either of i, j index falls in others.
-    if ai > bj_1 and ai < bj:
-        #print "ai ", ai
-        return ai
-    elif bj > ai_1 and bj < ai:
-        #print "bi ", bj
-        return bj
-
-    # recur 
-    if ai < bj:
-        return findKth( A[i+1:], m-i-1, B[:j], j, k-i-1)
-    else: # ai > bj case
-        return findKth( A[:i], i, B[j+1:], n-j-1, k-j-1)
-
-def find_kth(A, m, B, n, k):
-    if m > n:
-        find_kth(B,n,A,m,k)
-    if m == 0: return B[k-1]
-    
-    ia = min(k/2, m)
-    ib = k-ia
-    if A[ia-1] < B[ib-1]:
-        find_kth(A, ia, B, n, k-ia)
-    else:
-        find_kth(A, m, B+ib, n-ib, k-ib)
-    else:
-        return A[ia-1]
-
-def testFindKth():
-    A = [1, 5, 10, 15, 20, 25, 40]
-    B = [2, 4, 8, 17, 19, 30]
-    Z = sorted(A + B)
-    assert(Z[7] == findKth(A, len(A), B, len(B), 8))
-    print "9th of :", Z[9], findKth(A, len(A), B, len(B), 10)
-    assert(Z[9] == findKth(A, len(A), B, len(B), 10))
-    
-
-""" 
-  selection algorithm, find the kth largest element with worst case O(n)
-  http://www.ardendertat.com/2011/10/27/programming-interview-questions-10-kth-largest-element-in-array/
-"""
-def selectKth(A, beg, end, k):
-    def partition(A, l, r, pivotidx):
-        A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
-        widx = l   # all ele smaller than pivot, stored in left, started from begining
-        for i in xrange(l, r):
-            if A.i < pivot:   # smaller than pivot, put it to left where swap idx
-                A.widx, A.i = A.i, A.widx
-                widx += 1
-        A.r, A.widx = A.widx, A.r
-        return widx
-
-    if beg == end: return A.beg
-    if not 1 <= k < (end-beg): return None
-
-    while True:   # continue to loop 
-        pivotidx = random.randint(l, r)
-        rank = partition(A, l, r, pivotidx)
-        if rank == k: return A.rank
-        if rank < k: return selectKth(A, l, rank, k-rank)
-        else: return selectKth(A, rank, r, k-rank)
-
-# median of median of divide to n groups with each group has 5 items,
-def medianmedian(A, beg, end, k):
-    def partition(A, l, r, pivot):
-        widx = l
-        for i in xrange(l, r+1):
-            if A.i < pivot:
-                A.widx, A.i = A.i, A.widx
-                widx += 1
-        # i will park at last item that is < pivot
-        return widx-1   # left shift as we always right shift after swap.
-
-    sz = end - beg + 1  # beg, end is idx
-    if not 1<= k <= sz: return None     # out of range, None.
-    # ret the median for this group of 5 items
-    if end-beg <= 5:
-        return sorted(A[beg:end])[k-1]  # sort and return k-1th item
-    # divide into groups of 5, ngroups, recur median of each group, pivot = median of median
-    ngroups = sz/5
-    medians = [medianmedian(A, beg+5*i, beg+5*(i+1)-1, 3) for i in xranges(ngroups)]
-    pivot = medianmedian(medians, 0, len(medians)-1, len(medians)/2+1)
-    pivotidx = partition(A, beg, end, pivot)  # scan from begining to find pivot idx.
-    rank = pivotidx - beg + 1
-    if k <= rank:
-        return medianmedian(A, beg, pivotidx, k)
-    else:
-        return medianmedian(A, pivotidx+1, end, k-rank)
-
 
 '''
 Huffman coding: sor
@@ -2351,9 +2368,9 @@ def max_distance(l):
             i += 1
     return maxdiff
 
-""" Lmin[i] contains idx in the left whose value is < cur, or -1
-        Rmax[i] contain idx in the rite whose value > cur. or -1
-        then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
+""" Lmin[i] contains idx in the left arr[i] < cur, or -1
+    Rmax[i] contains idx in the rite arr[i] > cur. or -1
+    then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
 """
 def triplet(arr):
     sz = len(arr)
@@ -2373,39 +2390,39 @@ def triplet(arr):
         if lmin[i] < v and v < rmax[i]:
             print lmin[i], v, rmax[i]
 """ 
-find left largest smaller and rite largest. when ai is largest, skip it.
-keep a stk, pop stk while cur > stk. if sth < cur, it is cared by when stk top.
+for each i, left max smaller and rite max. when ai is largest, skip it.
+stk to track lmaxsmaller. max lmaxsmaller while popping stk, until top big.
 # [7, 6, 8, 1, 2, 3, 9, 10]
 # [15, 7, 12, 9, 10]
 """
 def triplet_maxprod(arr):
   sz = len(arr)
   rmax = arr[sz-1]
-  rmaxarr = [0]*sz
-  rmaxarr[sz-1] =arr[sz-1]
+  rmaxlarge = [0]*sz
+  rmaxlarge[sz-1] =arr[sz-1]
   for i in xrange(sz-1,-1,-1):
     v = arr[i]
     rmax = max(rmax, v)
-    rmaxarr[i] = rmax
-  lsmallarr = [0]*sz
-  lsmallarr[0] = arr[0]
+    rmaxlarge[i] = rmax
+  lmaxsmall = [0]*sz
+  lmaxsmall[0] = arr[0]
   s = []
   for i in xrange(1,sz):
     v = arr[i]
-    if rmaxarr[i] == v: # largest rite wont be in result.
-      lsmallarr[i] = v
+    if rmaxlarge[i] == v: # largest rite wont be in result.
+      lmaxsmall[i] = v
       continue
     lsm = v
     # is some left k small than cur, b/c stk top big than cur,
     while len(s)>0 and s[-1] < v:
       lsm = s.pop()
-      lsmallarr[i] = max(lsm, lsmallarr[i])
+      lmaxsmall[i] = max(lsm, lmaxsmall[i])
     s.append(v)
-  print lsmallarr, rmaxarr
+  print lmaxsmall, rmaxlarge
   maxprod = 0
   for i in xrange(1,sz-1):
-    if lsmallarr[i] != arr[i] and arr[i] != rmaxarr[i]:
-      maxprod = max(maxprod, lsmallarr[i]*arr[i]*rmaxarr[i])
+    if lmaxsmall[i] != arr[i] and arr[i] != rmaxlarge[i]:
+      maxprod = max(maxprod, lmaxsmall[i]*arr[i]*rmaxlarge[i])
   return maxprod
 
 """ max sub arr product with pos and neg ints 
@@ -2705,6 +2722,31 @@ def integer_partition(A, n, k):
                 if m[i][j] > cost:
                     m[i][j] = cost
                     d[i][j] = x     # divide at pos x
+
+""" min number left after remove triplet.
+[2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
+tab[i,j] track the min left in subary i..j
+"""
+def minLeft(arr, k):
+    tab = [[0]*len(arr) for i in len(arr)]
+    def minLeftSub(arr, lo, hi, k):
+        if tab[lo][hi] != 0:
+            return tab[lo][hi]
+        if hi-lo+1 < 3:  # can not remove ele less than triplet
+            return hi-lo+1
+        ret = 1 + minLeftSub(arr, lo+1, hi, k)
+
+        for i in xrange(lo+1,hi-1):
+            for j in xrange(i+1, hi):
+                if arr[i] == arr[lo] + k and
+                   arr[j] == arr[lo] + 2*k and
+                   # both lo..i-1 and i+1..j-1 remove, tripelt lo,i,j
+                   minLeftSub(arr, lo+1, i-1, k) == 0 and 
+                   minLeftSub(arr, i+1, j-1, k) == 0:
+                   # now triplet lo,i,j also can be removed
+                   ret = min(ret, minLeftSub(arr, j+1, hi, k))
+        tab[lo][hi] = ret
+        return ret
 
 
 """ reg match . *. recursion, loop try 0,1,2...times for *. """
@@ -3510,7 +3552,9 @@ def matrixBFSk(G):
     for j in xrange(n):
       if G[i,j] < k:
         G[i,j] = 1
-
+"""
+http://www.geeksforgeeks.org/find-the-largest-rectangle-of-1s-with-swapping-of-columns-allowed/
+"""
 
 if __name__ == '__main__':
     #qsort([363374326, 364147530 ,61825163 ,1073065718 ,1281246024 ,1399469912, 428047635, 491595254, 879792181 ,1069262793], 0, 9)
