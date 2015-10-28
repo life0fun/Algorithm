@@ -2547,6 +2547,24 @@ def firstMissingPos(L):
             return i+1
     return len(L)+1
 
+""" toggle arr[i] -= 1 for count """
+def bucketsort_count(arr):
+  def swap(arr, i,j):
+    arr[i],arr[j] = arr[j],arr[i]
+  for i in xrange(len(arr)):
+    if arr[i] == i+1:
+        arr[i] = -1
+        continue
+    while arr[i] != i+1 and arr[i] > 0:
+      v = arr[i]
+      if arr[v-1] < 0:
+        arr[v-1] -= 1
+        arr[i] = 0
+      else:
+        swap(arr, i, v-1)
+        arr[v-1] = -1
+  return arr
+
 """ max repetition num, bucket sort. change val to -1, dec on every reptition.
     bucket sort, when arr[i] is neg, means it has correct pos. when hit again, inc neg.
     when dup processed, set it to max num to avoid process it again.
@@ -3212,11 +3230,14 @@ def wordWrap(words, m):
 
 """ various way for decode """
 def calPack(arr):
-    prepre, pre = arr[0], arr[1]
-    for i in xrange(2,len(arr)):
-        curmaxv = max(prepre + arr[i], pre)
-        maxv = max(maxv, curmaxv)
-        prepre, pre = pre, curmaxv
+    prepre,pre = 0, arr[0]
+    mx = pre
+    for i in xrange(1,len(arr)):
+        v = arr[i]
+        cur = v + prepre
+        mx = max(mx, cur)
+        prepre,pre = pre, cur
+    return mx
 
 def decode(dstr):
     tab = [0]*(len(dstr)+1)
