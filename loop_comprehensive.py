@@ -111,6 +111,26 @@ def convert(num, src, trg):
     print 'convert', num, ' res:', res
     return res
 
+def multiply(a, b):
+  arra = map(int, list(str(a)))
+  out = [0]*12  # num of digits in final value
+  sz = len(arra)
+  c = 0
+  j = len(out)-1
+  for i in xrange(sz-1,-1,-1):
+    iv = arra[i]
+    prod = iv*b + c
+    res = prod%10
+    c = prod/10
+    out[j] = res
+    j -= 1
+  while c > 0:
+    out[j] = c%10
+    j -= 1
+    c /= 10
+  return out
+
+print multiply(345, 678)
 
 '''
 in-place merge use while ij loop, example, [1 3 9] [2 4 5 11]
@@ -192,14 +212,12 @@ def qsort3(l, beg, end):
             i += 1
         while l[j] > pivot and j > beg:   # j points to first ele < pivot, right half > pivot
             j -= 1
-
         if(i < j):     # if i=j, swap not effect, but want move i,j actually.
             swap(i,j)
             i += 1
             j -= 1
         else:
             break
-
     # i,j must be within [beg, i, j, end]
     swap(beg, j)  # use nature j as i been +1 from head
     qsort3(l, beg, i-1)   # left half <= pivot
@@ -1074,7 +1092,9 @@ class BITree:
         for i in xrange(len(self.arr)):
             self.update(i, self.arr[i])
 
-""" segment tree, two version, tree and heap """
+""" segment tree. segment 0 cover 0-n, segment 1 covers 0-mid, seg 2, mid+1..n
+search always starts from seg 0, and found which segment [lo,hi] lies.
+"""
 import math
 import sys
 class RMQ(object):
@@ -1084,7 +1104,7 @@ class RMQ(object):
             self.hi = hi
             self.minval = minval
             self.minvalidx = minvalidx  # idx in origin val arr
-            self.heapidx = heapidx      # idx in rmq heap tree.
+            self.heapidx = heapidx      # segment idx in rmq heap tree.
             self.left = self.rite = None
     def __init__(self, arr=[]):
         self.arr = arr  # original arr
@@ -1106,6 +1126,7 @@ class RMQ(object):
         n.rite = rite
         self.heap[heapidx] = n
         return [n,minidx]
+    # segment tree in bst, search always from root.
     def query(self, root, lo, hi):
         # out of cur node scope, ret max, as we looking for range min.
         if lo > root.hi or hi < root.lo:
@@ -1120,6 +1141,7 @@ class RMQ(object):
             rmin,ridx = self.query(root.rite, lo, hi)
         minidx = lidx if lmin < rmin else ridx
         return min(lmin,rmin),minidx
+    # segment tree in heap tree. always search from root, idx=0
     def queryIdx(self, idx, lo, hi):
         node = self.heap[idx]
         if lo > node.hi or hi < node.lo:
