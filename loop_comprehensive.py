@@ -774,7 +774,7 @@ class Interval(object):
         self.arr = []
         self.size = 0
     # bisect ret first pos where val shall be inserted.
-    # if used to find high end, idx-1 is the first ele smaller than val.
+    # when find high end, idx-1 is the first ele smaller than searching val.
     def bisect(self, arr, val):
         lo,hi = 0, len(self.arr)-1
         while lo != hi:
@@ -1161,11 +1161,11 @@ def test():
     print r.queryIdx(0,0,5)
 
 
-""" 2d tree """
+""" 2d tree, key=[x,y] """
 class KdTree(object):
     def __init__(self, xy, level=0):
         self.xy = xy
-        self.level = level
+        self.level = level  # each node at a level.
         self.left = self.rite = None
     def __repr__(self):
         return "[" + str(self.xy) + "] L" + str(self.level)
@@ -2901,12 +2901,13 @@ def knapsack(maxw, W, V):
             tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i-1]] + V[i])
     return tab[n, maxw]
 
-# order does not matter, exclu current i, and incl cuurent i
+# diff order NOT count, excl current i, and incl cuurent i
+# tab[3,2] = [12],[21] t(3,2) = [111]+[[2]]+[[1]]
 def coinchange(n, v):
-    for i in xrange(n):
-        for v in xrange(v):
-            c[i,v] = c[i-1,v] + c[i, v-V[i]]
-# order matters, n=4, [112, 121]
+    for v in xrange(v):
+        for i in xrange(n):
+            c[v,i] = c[v,i-1] + c[v-V[i],i]
+# diff order counts, n=4, [112, 121]
 def coinchange(n, v):
     for v in V:
         for i in n:
@@ -2918,12 +2919,31 @@ def combination(arr, path, sz, offset, result):
         result.append(path)  # add to result only when sz
         return result
     if offset >= len(arr):
-        return
-    l = path[:]
+        result.append(path)
+        return result
+    l = path[:]  # deep copy path before recursion
     l.append(arr[offset])
-    combination(arr, l, sz-1, offset+1, result)
+    combination(arr, l,    sz-1, offset+1, result)
     combination(arr, path, sz, offset+1, result)
     return
+
+""" recur with partial result, when path in, iter each, incl/excl each """
+res = []
+def combIter(arr, offset, r, path, res):
+    # a new combination can be formed by each ele in rest as head.
+    for i in xrange(offset, len(arr)-r+1):
+        v = arr[i]
+        if r == 1:  # stop recursion when r = 1
+            cp = path[:]
+            cp.append(v)
+            res.append(cp)
+        else:
+            path.append(v)
+            combIter(arr, i+1, r-1, path, res)
+            path.pop()   # deep copy path for each recursion, or pop path after recursion
+    return res
+print combIter([1,2,3,4],0,2,[],res)
+
 """
    result = []; combinationIter(["a","b","c","d"], [], 2, 0, result); print result;
 """
@@ -2943,21 +2963,32 @@ def comb(arr,r):
   return res
 print comb("abc", 2)
 
-""" recur with partial result, when path in, iter each, incl/excl each """
-res = []
-def combIter(arr, offset, r, path, res):
-    for i in xrange(offset, len(arr)-r+1):
-        v = arr[i]
-        if r == 1:  # stop recursion when r = 1
-            cp = path[:]
-            cp.append(v)
-            res.append(cp)
-        else:
-            path.append(v)
-            combIter(arr, i+1, r-1, path, res)
-            path.pop()
-    return res
-print combIter([1,2,3,4],0,2,[],res)
+# Generate all possible sorted arrays from alternate eles of two sorted arrays
+def alterCombRecur(a,b,ai,bi,froma,path,out):
+  if froma:
+    v = a[ai]
+    found,bs = bisect(b, v)
+    path.append(v)
+    for j in xrange(bs,len(b)):
+      l = path[:]  # deep cpoy path before each recursion
+      alterCombRecur(a,b,ai,j,False,l,out)
+  else:
+    path.append(b[bi])
+    out.append(path)
+    found,sa = bisect(a,b[bi])
+    for i in xrange(sa, len(a)):
+      l = path[:] # deep copy path before each recursion
+      alterCombRecur(a,b,i,bi,True,l,out)
+def alterComb(a,b):
+  out = []
+  for ai in xrange(len(a)):  # a new recursion seq
+    av = a[ai]
+    found,bi = bisect(b, av)
+    path = []  # empty new path for each recursion
+    if bi < len(b):
+      alterCombRecur(a,b,ai,bi,True,path,out)
+  return out
+print alterComb([10, 15, 25], [1,5,20,30])
 
 
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
@@ -2976,12 +3007,12 @@ def permutation(arr, offset, path, result):
         return
     for i in xrange(offset, len(arr)):
         l = path[:]
-        # swap for each rite, append to path, recur, undo
+        # arr is changed by swapping each rite, append to path, recur, change back arr.
         arr[offset], arr[i] = arr[i], arr[offset]
         l.append(arr[offset])
         permutation(arr, offset+1, l, result)
         arr[offset], arr[i] = arr[i], arr[offset]
-
+# need to pss different arr upon each recursion, vs. different offset.
 def perm(arr):
     result = []
     if len(arr) == 1:
@@ -2990,7 +3021,7 @@ def perm(arr):
     for i in xrange(len(arr)):
         hd = arr[i]
         l = arr[:]
-        del l[i]
+        del l[i]   # change arr for next iteration
         for e in perm(l):
             e.insert(0,hd)
             result.append(e)
@@ -3315,12 +3346,13 @@ def decode(dstr, pos):
 # path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 def subsetsum(l, offset, n, path, result):
     if offset < 0:
-        return
-    p = path[:]
+        return    
     if n == l[offset]:
+        p = path[:]
         p.append(l[offset])
         result.append(p)
     if n > l[offset]:  # branch incl when when l.i smaller
+        p = path[:]   # deep copy new path before recursion.
         p.append(l[offset])
         # dup allowed, offset stay when include, incl 1+ times.
         # subsetsum(l, offset,   n-l[offset], p, result)
@@ -3338,7 +3370,7 @@ def subsetsum(l, offset, n, path, result):
     for i in xrange(offset, -1, -1):
         if n >= l[i]:  # only include l[i]
             p = path[:]
-            p.append(l[i])
+            p.append(l[i])  # deep copy before recursion.
             subsetsum(l, i, n-l[i], p, result)
             # shift offset when no dup allowed, to incl once
             # subsetsum(l, i-1, n-l[i], p, result)
