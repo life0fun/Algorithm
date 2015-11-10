@@ -114,10 +114,10 @@ def convert(num, src, trg):
 def multiply(a, b):
   arra = map(int, list(str(a)))
   out = [0]*12  # num of digits in final value
-  sz = len(arra)
   c = 0
   j = len(out)-1
-  for i in xrange(sz-1,-1,-1):
+  # go from a[n..1]
+  for i in xrange(len(arra)-1,-1,-1):
     iv = arra[i]
     prod = iv*b + c
     res = prod%10
@@ -129,7 +129,6 @@ def multiply(a, b):
     j -= 1
     c /= 10
   return out
-
 print multiply(345, 678)
 
 '''
@@ -280,7 +279,7 @@ def find_kth(A, m, B, n, k):
     ia = min(k/2, m)
     ib = k-ia
     if A[ia-1] < B[ib-1]:
-        find_kth(A, ia, B, n, k-ia)
+        find_kth(A+ia, m-ia, B, n, k-ia)
     else:
         find_kth(A, m, B+ib, n-ib, k-ib)
     else:
@@ -346,8 +345,6 @@ def medianmedian(A, beg, end, k):
         return medianmedian(A, beg, pivotidx, k)
     else:
         return medianmedian(A, pivotidx+1, end, k-rank)
-
-
 
 """ insert into circular link list 
     1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
@@ -725,10 +722,10 @@ class AVLTree(object):
             else:
                 self.rite = self.rite.insert(key)
         # after insersion, rotate if needed.
-        self.updateHeightSize()
+        self.updateHeightSize()  # rotation may changed left. re-calculate
         newroot = self.rotate(key)
         print "insert ", key, " new root after rotated ", newroot
-        return newroot
+        return newroot  # ret rotated new root
     # delete a node.
     def delete(self,key):
         if key < self.key:
@@ -782,7 +779,7 @@ class Interval(object):
             if val > arr[md]:  # lift lo only when absolutely big
                 lo = md+1
             else:
-                hi = md
+                hi = md   # drag down hi to mid when equal to find begining.
         if arr[lo] == val:
             return True, lo
         elif val > arr[lo]:
@@ -2901,14 +2898,14 @@ def knapsack(maxw, W, V):
             tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i-1]] + V[i])
     return tab[n, maxw]
 
-# diff order NOT count, excl current i, and incl cuurent i
-# tab[3,2] = [12],[21] t(3,2) = [111]+[[2]]+[[1]]
-def coinchange(n, v):
+# Set. excl current i, and incl cuurent i
+# tab[3,2] = [12],[21] t(3,2) = [111]+[[2,(1,2)]=[2][1]]+[[1,2]]
+def coinchangeSet(n, v):
     for v in xrange(v):
         for i in xrange(n):
             c[v,i] = c[v,i-1] + c[v-V[i],i]
 # diff order counts, n=4, [112, 121]
-def coinchange(n, v):
+def coinchangePerm(n, v):
     for v in V:
         for i in n:
             tab[v] += tab[v-V[i]]
@@ -3342,7 +3339,7 @@ def decode(dstr, pos):
   else:
     return decode(dstr, pos-1)
 
-""" if dup not allowed, shift offset when dfs inclusion branch """
+""" top down offset n -> 1 when dfs inclusion branch """
 # path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 def subsetsum(l, offset, n, path, result):
     if offset < 0:
@@ -3361,7 +3358,7 @@ def subsetsum(l, offset, n, path, result):
     subsetsum(l, offset-1, n, path, result)
 
 """
- when for loop enum next items in parallel, effectively as exclude current item branch.
+ for loop try each item, form a tree with each item as top rite tree node.
 """
 def subsetsum(l, offset, n, path, result):
     if n == 0:
@@ -3385,10 +3382,10 @@ def subsetsum(l, val):
         v = l[i]
         tab[i][v].append([v])
     # row iterate items, col enum vals.
-    for r in xrange(1,len(l)):
+    for r in xrange(1,len(l)):  # re-use smaller result 1..n
         rv = l[r]
         for v in xrange(val+1):
-            if len(tab[r-1][v]) > 0:
+            if len(tab[r-1][v]) > 0:  # not incl current
                 tab[r][v].append(list(tab[r-1][v]))
             if len(tab[r-1][v-rv]) > 0:
                 p = list(tab[r-1][v-rv])
