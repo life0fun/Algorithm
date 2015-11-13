@@ -1060,7 +1060,7 @@ print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
 
 """ Binary indexed tree, Each node in BI[] stores sum of a range.
 the key is idx in BI, its parent is by removing the last set bit. 
-idx = idx - (idx & (-idx))
+idx = idx - (idx & (-idx)), (n&-n),ritemost set bit. n&n-1, clr ritemost set bit.
 """
 class BITree:
     def __init__(self, arr):
@@ -1089,7 +1089,7 @@ class BITree:
         for i in xrange(len(self.arr)):
             self.update(i, self.arr[i])
 
-""" segment tree. segment 0 cover 0-n, segment 1 covers 0-mid, seg 2, mid+1..n
+""" segment tree. first segment 0 cover 0-n, segment 1 covers 0-mid, seg 2, mid+1..n
 search always starts from seg 0, and found which segment [lo,hi] lies.
 """
 import math
@@ -1244,7 +1244,7 @@ class TernaryTree(object):
         self.cnt = 1  # when leaf is true, the cnt, freq of the node
     def insert(self, word):
         hd = word[0]
-        if not self.key:
+        if not self.key:  # at first, root does not have key.
             self.key = hd
         if hd == self.key:
             if len(word) == 1:
@@ -1332,16 +1332,12 @@ diameter = max(diameter(ltree, rtree) = max( depth(ltree) + depth(rtree) )
 def diameter(root):
     if not root:
         return [0, 0]  # first is diameter, second is ht
-
     [ldiameter, ldepth] = diameter(root.lchild)
     [rdiameter, rdepth] = diameter(root.rchild)
-
     return [max(ldepth+rdepth+1, max(ldiameter, rdiameter)), max(ldepth, rdepth)+1]
-
 def diameter(root):
     if not root.lchild and not root.rchild:
         return 0, [root, root], [root] # first diameter, second diamter leaf, last ht path
-    
     ldiameter, ldialeaves, lhtpath = diameter(root.lchild)
     rdiameter, rdialeaves, rhtpath = diameter(root.rchild)
     if max(ldiameter, rdiameter)) > max(ldepth+rdepth)+1:
@@ -1377,14 +1373,8 @@ def vertexCover(root):
     excl += 1 + vertexCover(root.rite.left) + vertexCover(root.rite.rite)
     root.vc = min(incl, excl)
     return root.vc
-
 def liss(root):
     root.liss = max(liss(root.left)+liss(root.rite), 1+liss(root.[left,rite].[left,rite]))
-
-def depth(root):
-    if not root:
-        return 0
-    return 1 + max(depth(root.lchild), depth(root.rchild))
 
 
 """ populate next right pointer to point sibling in each node
@@ -2050,7 +2040,7 @@ class SkipList:
         return node.value
 
 
-""" hash time table. map entry is linked list. inside each entry of k, list of [v,ts] tuple.
+""" hash map entry is linked list. entry value is list of [v,ts] tuple.
 """
 from collections import defaultdict
 class HashTimeTable:
@@ -2387,6 +2377,22 @@ def max_distance(l):
             i += 1
     return maxdiff
 
+''' max prod exclude a[i] '''
+def productExcl(arr):
+  prod = [1]*len(arr)
+  lp = 1
+  e = arr[0]
+  for i in xrange(1,len(arr)):
+    lp *= e
+    prod[i] *= lp
+    e = arr[i]
+  rp = 1
+  for i in xrange(len(arr)-2,-1,-1):
+    rp *= e
+    prod[i] *= rp
+    e = arr[i]
+  return prod
+
 """ Lmin[i] contains idx in the left arr[i] < cur, or -1
     Rmax[i] contains idx in the rite arr[i] > cur. or -1
     then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
@@ -2431,11 +2437,12 @@ def triplet_maxprod(arr):
     if rmaxlarge[i] == v: # largest rite wont be in result.
       lmaxsmall[i] = v
       continue
-    lsm = v
-    # is some left k small than cur, b/c stk top big than cur,
+    lms = v
+    # we just need to keep a decreasing left max stk.
+    # as any bigger val later will deprecate previous smaller candidate.
     while len(s)>0 and s[-1] < v:
-      lsm = s.pop()
-      lmaxsmall[i] = max(lsm, lmaxsmall[i])
+      lms = s.pop()
+    lmaxsmall[i] = max(lms, lmaxsmall[i])
     s.append(v)
   print lmaxsmall, rmaxlarge
   maxprod = 0
@@ -2467,37 +2474,23 @@ def maxproduct(arr):
   return maxsofar
 
 ''' at every point, keep track both max[i] and min[i].
-p[i] = max(pmin[i-1]*l.i, pmax[i-1]*l.i, l.i),
+mx[i] = max(mx[i-1]*v, mn[i-1]*v, v),
+at each idx, either it starts a new seq, or it join prev sum
 '''
 def max_product(a):
-    ans = pre_max = pre_min = a[0]
+    maxProd = cur_max = cur_min = a[0]  # first el as cur_max/min
     cur_beg, cur_end, max_beg, max_end = 0,0,0,0
     for elem in a[1:]:
-        new_min = pre_min*elem
-        new_max = pre_max*elem
-        pre_min = min([elem, new_max, new_min])
-        pre_max = max([elem, new_max, new_min])
-        ans = max([ans, pre_max])
-        if ans is pre_max:
+        new_min = cur_min*elem
+        new_max = cur_max*elem
+        # both max/min val * cur val, then update as cur_max/min
+        cur_min = min([elem, new_max, new_min])
+        cur_max = max([elem, new_max, new_min])
+        maxProd = max([maxProd, cur_max])
+        if maxProd is cur_max:
             cur_end, max_end = i,i
             #upbeat(max_beg, max_end)
-    return ans
-
-''' at each idx, either it starts a new seq, or it join prev sum '''
-def maxprod(arr):
-  nmax,nmin,imax,imin = 1,1,1,1
-  for i in xrange(len(arr)):
-    v = arr[i]
-    if v == 0:
-      imax,imin = 1,1
-      continue
-    tmax = imax*v
-    tmin = imin*v
-    imax = max(tmax, tmin, v) # start my own, or join prev.
-    imin = min(tmax, tmin, v)
-    nmax = max(nmax,imax)
-    nmin = min(nmin,imin)
-  return nmax
+    return maxProd
 
 """
     keep track left min, max profit is when bot at min day sell today.
@@ -2611,6 +2604,22 @@ def maxrep(arr):
           arr[i] = 999 # chg to max to indicate skip this.
         break
   return arr
+
+def maxrep(arr):
+    i = 0
+    while i < n:
+        if arr[i] > 0 and arr[i] == i+1:
+            arr[i] = -1
+            i += 1
+            continue
+        while arr[i] > 0 and arr[i] != i+1:
+            v = arr[i]
+            if arr[v-1] > 0:
+                swap(arr, v-1, i)
+                arr[v-1] = -1
+            else:
+                arr[v-1] -= 1
+        i += 1
 
 def repmiss(arr):
   def swap(arr, i, j):
@@ -2925,25 +2934,18 @@ def combination(arr, path, sz, offset, result):
     return
 
 """ recur with partial result, when path in, iter each, incl/excl each """
-res = []
 def combIter(arr, offset, r, path, res):
-    # a new combination can be formed by each ele in rest as head.
-    for i in xrange(offset, len(arr)-r+1):
-        v = arr[i]
-        if r == 1:  # stop recursion when r = 1
-            cp = path[:]
-            cp.append(v)
-            res.append(cp)
-        else:
-            path.append(v)
-            combIter(arr, i+1, r-1, path, res)
-            path.pop()   # deep copy path for each recursion, or pop path after recursion
+    if len(path) == r:  # stop recursion when r = 1
+        cp = path[:]
+        res.append(cp)
+        return res
+    for i in xrange(offset, len(arr)-r+1+1):
+        path.append(arr[i])
+        combIter(arr, i+1, r, path, res)
+        path.pop()   # deep copy path for each recursion, or pop path after recursion
     return res
-print combIter([1,2,3,4],0,2,[],res)
+res = [];combIter(["a","b","c","d"],0,2,[],res);print res;
 
-"""
-   result = []; combinationIter(["a","b","c","d"], [], 2, 0, result); print result;
-"""
 def comb(arr,r):
   res = []
   if r == 1:  # leaf, need ret a list, wrap leaf as first element.
