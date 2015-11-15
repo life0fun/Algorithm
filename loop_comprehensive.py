@@ -226,18 +226,18 @@ def qsort3(l, beg, end):
 def qsort(arr, lo, hi):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
-  if lo >= hi:
-    return
-  pivot = arr[hi]
-  wi = lo
-  for i in xrange(lo,hi):
-    v = arr[i]
-    if v <= pivot:  # must have = for dup element.
-      swap(arr, wi, i)
-      wi += 1
-  swap(arr, wi, hi)
-  qsort(arr, lo, wi-1)
-  qsort(arr, wi, hi)
+  def partition(arr, l, r):
+    pivot = arr[r]
+    wi = l
+    for i in xrange(l,r):
+      if arr[i] <= pivot:
+        swap(arr, wi, i)
+        wi += 1
+    swap(arr, wi, r)
+    return wi
+  p = partition(arr, lo, hi)
+  qsort(arr, lo, p)
+  qsort(arr, p+1, hi)
   return arr
 
 """
@@ -2708,6 +2708,22 @@ def largestRectangle(l):
     this is how you remove node from heap. O(nlgW)
     To get rid of logW, squeeze w to single, upon new item, shadow/pop medium items.
 """
+def slideWin(arr,m):
+  win,l,r,mx=0,0,0,0
+  while r < len(arr):
+    # branch on window size, mov rite when win <= size.
+    if win <= m:
+      if arr[r] == 0:  # always try to mov win size rite edge
+        win += 1
+      r += 1
+    # mov left edge when win > size.
+    if win > m:
+      if arr[l] == 0:  # always try to mov win size left edge.
+        win -= 1
+      l += 1
+    mx = max(mx, r-l)
+  return mx
+print slideWin([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
 """
     convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
@@ -3280,17 +3296,17 @@ def wordWrap(words, m):
     return lc[sz-1]
 
 
-""" various way for decode """
+""" keep track of 2 thing, incl cur ele, excl cur ele """
 def calPack(arr):
-    prepre,pre = 0, arr[0]
-    mx = pre
-    for i in xrange(1,len(arr)):
-        v = arr[i]
-        cur = v + prepre
-        mx = max(mx, cur)
-        prepre,pre = pre, cur
-    return mx
+  incl,excl=arr[0],0
+  for i in xrange(1,len(arr)):
+    curincl = excl+arr[i]
+    curexcl = max(incl,excl)
+    incl = max(curincl,curexcl)
+    excl = curexcl
+  return max(incl,excl)
 
+""" various way for decode """
 def decode(dstr):
     tab = [0]*(len(dstr)+1)
     tab[0] = 1
