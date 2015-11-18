@@ -111,6 +111,7 @@ def convert(num, src, trg):
     print 'convert', num, ' res:', res
     return res
 
+""" a[0..n]*b, c[i]=a[i]*b % 10 """
 def multiply(a, b):
   arra = map(int, list(str(a)))
   out = [0]*12  # num of digits in final value
@@ -229,16 +230,63 @@ def qsort(arr, lo, hi):
   def partition(arr, l, r):
     pivot = arr[r]
     wi = l
-    for i in xrange(l,r):
+    for i in xrange(l,r):  # not incl r
       if arr[i] <= pivot:
         swap(arr, wi, i)
         wi += 1
     swap(arr, wi, r)
     return wi
-  p = partition(arr, lo, hi)
-  qsort(arr, lo, p)
-  qsort(arr, p+1, hi)
+  if lo < hi:  # only recursion when lo < hi.
+    p = partition(arr, lo, hi)
+    qsort(arr, lo, p-1)  # split into 3 segs, [0..p-1, p, p+1..n]
+    qsort(arr, p+1, hi)
   return arr
+
+# bisect ret first pos where val shall be inserted.
+# when find high end, idx-1 is the first ele smaller than searching val.
+def bisect(arr, val):
+    lo,hi = 0, len(arr)-1
+    while lo != hi:
+        md = (lo+hi)/2
+        if val > arr[md]:  # lift lo only when absolutely big
+            lo = md+1
+        else:
+            hi = md   # drag down hi to mid when equal to find begining.
+    if arr[lo] == val:
+        return True, lo
+    elif val > arr[lo]:
+        return False, lo+1
+    else:
+        return False, lo
+
+def peak(arr):
+  l,r = 0, len(arr)-1
+  while l < r:
+    m = (l+r)/2
+    if arr[m] < arr[m+1]:
+        l = m+1
+    else:
+        r = m
+  return arr[l]
+print peak([1, 3, 50, 10, 9, 7, 6])
+
+
+""" inverse count with merge sort """
+def mergesort(arr, lo, hi):
+    def merge(arr, ai, bi, hi):
+        i,j,k=ai,bi,hi
+        cnt = 0
+        while i < bi and j < hi:
+            if arr[i] > arr[j]:
+                cnt += j-i
+        return cnt
+    inv = 0
+    if lo < hi:
+        mid = (lo+hi)/2
+        inv = mergesort(arr, lo, mid)
+        inv += mergesort(arr, mid+1, hi)
+        inv += merge(arr, lo, mid+1, hi)
+    return inv
 
 """
 find kth smallest ele in a union of two sorted list
@@ -2377,22 +2425,6 @@ def max_distance(l):
             i += 1
     return maxdiff
 
-''' max prod exclude a[i] '''
-def productExcl(arr):
-  prod = [1]*len(arr)
-  lp = 1
-  e = arr[0]
-  for i in xrange(1,len(arr)):
-    lp *= e
-    prod[i] *= lp
-    e = arr[i]
-  rp = 1
-  for i in xrange(len(arr)-2,-1,-1):
-    rp *= e
-    prod[i] *= rp
-    e = arr[i]
-  return prod
-
 """ Lmin[i] contains idx in the left arr[i] < cur, or -1
     Rmax[i] contains idx in the rite arr[i] > cur. or -1
     then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
@@ -2450,6 +2482,21 @@ def triplet_maxprod(arr):
     if lmaxsmall[i] != arr[i] and arr[i] != rmaxlarge[i]:
       maxprod = max(maxprod, lmaxsmall[i]*arr[i]*rmaxlarge[i])
   return maxprod
+
+''' max prod exclude a[i] '''
+def productExcl(arr):
+  prod = [1]*len(arr)
+  pre,lp = arr[0],1
+  for i in xrange(1,len(arr)):
+    lp *= pre
+    prod[i] *= lp
+    pre = arr[i]
+  nxt,rp = arr[n-1],1
+  for i in xrange(len(arr)-2,-1,-1):
+    rp *= nxt
+    prod[i] *= rp   # XXX prod[i] *= prod[i+1]
+    nxt = arr[i]
+  return prod
 
 """ max sub arr product with pos and neg ints 
     mps([-2,3,-4,-5]), maxproduct(-2,-3,4,-5)
@@ -3296,7 +3343,7 @@ def wordWrap(words, m):
     return lc[sz-1]
 
 
-""" keep track of 2 thing, incl cur ele, excl cur ele """
+""" keep track of 2 thing, max of incl cur ele, excl cur ele """
 def calPack(arr):
   incl,excl=arr[0],0
   for i in xrange(1,len(arr)):
