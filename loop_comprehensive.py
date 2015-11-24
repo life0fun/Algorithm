@@ -3,43 +3,6 @@ import sys
 import math
 from collections import defaultdict
 
-
-"""
-struct list *merge(list *left, list *right, int (*compare)(list *, list*)){
-    list *new, **np;
-    np = &new;
-    while(left != null && right != null){
-        if(compare(left,right) > 0)
-            *np = right; right = ->next; np = &right;
-        }
-    *np = left != null ? left : right;
-    return new;
-}
-list * mergesort(list* list){
-    list * left, *right;
-    split(list, &left, &right);
-    return merge(mergesort(left), mergesort(right));
-}
-"""
-
-"""
-Linear scan an array: context to store max/min/len seen so far and upbeat on each scan.
-think of using pre-scan to fill out aux tables for o(1) look-up. 
-1. max distance.
-    http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
-1. max conti sum: use max start/end/len to record max seen so far.
-2. segment with start-end overlap, sort by start, update min with smallest x value.
-3. max sum: a ary with ary[i] = sum(l[0:i]). so sum[l[i:j]) = ary[j] - ary[i]
-4. when combination, if at each pos, could have 2 choice, f(n) = f(n-1) + f(n-2)
-5. for bit operation, find one bit to partition the set; repeat the iteration.
-6. for string s[..], build suffix ary A[..] sorted in O(n) space O(n), s[A[i]] = start-pos-of-substring.
-7. For int[range-known], find even occur of ints in place: toggle a[a[i]] sign. even occur will be + and odd will be -.
-8. max dist when l[j] > l[j], shadow LMin[] and RMax[], merge sort scan.
-9. stock profit. max(ctx.maxprofit, l.i - ctx.min), ctx.min = min(ctx.min, l.i)
-   update each p[i] with max profit of l[0..i] from ctx.minp, or ctx.peak from n->1.
-10. first missing positve int, bucket sort: l.0 shall store 1, l.1 stores 2. for each pos, while l.pos!=pos+1 : swap(l.pos, l[l.pos-1])
-"""
-
 ''' recursive, one line print int value bin string'''
 int2bin = lambda n: n>0 and int2bin(n>>1)+str(n&1) or ''
 bin2int = lambda x: int(x,2)
@@ -197,11 +160,6 @@ def qsort3(l, beg, end):
     if(beg >= end):   # single ele, done.
         return
 
-    #swap((beg+end)/2, end)   # now pivot is at the end
-    #pivot = l[end]
-    #i = beg
-    #j = end -1
-
     swap((beg+end)/2, beg)   # now pivot is at the beg
     pivot = l[beg]
     i = beg+1
@@ -242,6 +200,29 @@ def qsort(arr, lo, hi):
     qsort(arr, p+1, hi)
   return arr
 
+""" Arrange given numbers to form the biggest number """
+def qsort(arr,l,r):
+    def comparator(arr, i, j):
+        return int(str(arr[i])+str(arr[j])) - int(str(arr[j])+str(arr[i]))
+    def swap(arr, i, j):
+        arr[i],arr[j] = arr[j],arr[i]
+    def partition(arr, l, r):
+        wi,pidx,pval = l,r,arr[r]
+        for i in xrange(l,r):
+            if comparator(arr, i, pidx) <= 0:
+                swap(arr, wi, i)
+                wi += 1
+        swap(arr, wi, pidx)
+        return wi
+    if l < r:
+        p = partition(arr, l, r)
+        qsort(arr, l, p-1)
+        qsort(arr, p+1, r)
+    return arr
+arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
+print int("".join(map(str, list(reversed(arr)))))
+
+
 # bisect ret first pos where val shall be inserted.
 # when find high end, idx-1 is the first ele smaller than searching val.
 def bisect(arr, val):
@@ -258,18 +239,6 @@ def bisect(arr, val):
         return False, lo+1
     else:
         return False, lo
-
-def peak(arr):
-  l,r = 0, len(arr)-1
-  while l < r:
-    m = (l+r)/2
-    if arr[m] < arr[m+1]:
-        l = m+1
-    else:
-        r = m
-  return arr[l]
-print peak([1, 3, 50, 10, 9, 7, 6])
-
 
 """ inverse count with merge sort """
 def mergesort(arr, lo, hi):
@@ -323,7 +292,6 @@ def find_kth(A, m, B, n, k):
     if m > n:
         find_kth(B,n,A,m,k)
     if m == 0: return B[k-1]
-    
     ia = min(k/2, m)
     ib = k-ia
     if A[ia-1] < B[ib-1]:
@@ -2037,30 +2005,31 @@ with skiplist, list is sorted, insert is lgn, min/max is o1, del is lgn.
 '''
 class SkipNode:
     def __init__(self, height=0, elem=None):   # [ele, next[ [l1], [l2], ... ]
-        self.elem = elem             # each skip node has an ele, and a list of next pointers
+        '''each node has an ele, and a list of next pointers'''
+        self.elem = elem             
         self.next = [None] * height  # next is a list of header at each level pts to next node
 
 class SkipList:
-    def __inti__(self):
-        self.head = SkipNode()  # head has
-    def findExpressStopAtEachLevel(self, ele):   # find list of express stop node at each level whose greatest value smaller than ele
+    def __init__(self):
+        self.head = SkipNode()  # list is a head node with n next ptrs
+    def nextNodeAtEachLevel(self, ele):   # find list of express stop node at each level whose greatest value smaller than ele
         """ find q, we begin from the top-most level, go thru the list down, until find node with largest ele le q
         then go level below, begin search from the node found at prev level, and search again for node with largest ele le q
         when found, go down again, repeat until to the bottom.
         keep the node found at each level right before go down the level.
         """
-        expressEachLevel = [None]*len(self.head.next)
+        levelNextNode = [None]*len(self.head.next)
         levelhd = self.head
         #  for each level top down, inside each level, while until stop on boundary.
         for level in reversed(xrange(len(self.head.next))):  # for each level down: park next node just before node >= ele.(insertion ponit).
             while levelhd.next[level] != None and levelhd.next[level].ele < ele:  # advance skipNode till to node whose next[level] >= ele, then down level
-                levelhd = levelhd.next[level]
-            expressEachLevel[level] = levelhd
-        return expressEachLevel
+                levelhd = levelhd.next[level]  # store skip node(ele, next[...])
+            levelNextNode[level] = levelhd
+        return levelNextNode
     def find(self, ele):
-        expressList = findExpressStopAtEachLevel(self, ele)
-        if len(expressList) > 0:
-            candidate = expressList[0].next[0]  # the final bottom level.
+        nextNode = nextNodeAtEachLevel(self, ele)
+        if len(nextNode) > 0:
+            candidate = nextNode[0].next[0]  # the final bottom level.
             if candidate != None and candidate.ele == ele:
                 return candidate
         return None
@@ -2071,7 +2040,7 @@ class SkipList:
         # first, populate head next all level with None
         while len(self.head.next) < len(node.next):
             self.head.next.append(None)
-        expressList = self.findExpressStopAtEachLevel(ele)
+        expressList = self.nextNodeAtEachLevel(ele)
         if self.find(ele, expressList) == None :
             # did not find ele, start insert
             for level in range(len(node.next)):
@@ -2483,19 +2452,19 @@ def triplet_maxprod(arr):
       maxprod = max(maxprod, lmaxsmall[i]*arr[i]*rmaxlarge[i])
   return maxprod
 
-''' max prod exclude a[i] '''
+''' max prod exclude a[i], keep track of pre prod excl cur '''
 def productExcl(arr):
   prod = [1]*len(arr)
   pre,lp = arr[0],1
   for i in xrange(1,len(arr)):
     lp *= pre
-    prod[i] *= lp
+    prod[i] = lp
     pre = arr[i]
   nxt,rp = arr[n-1],1
   for i in xrange(len(arr)-2,-1,-1):
-    rp *= nxt
-    prod[i] *= rp   # XXX prod[i] *= prod[i+1]
-    nxt = arr[i]
+    rp *= nxt       # cumulate prod from rite side
+    prod[i] *= rp   # NOT prod[i] *= prod[i+1]
+    nxt = arr[i]    # current i as i-1's next
   return prod
 
 """ max sub arr product with pos and neg ints 
@@ -2527,17 +2496,35 @@ at each idx, either it starts a new seq, or it join prev sum
 def max_product(a):
     maxProd = cur_max = cur_min = a[0]  # first el as cur_max/min
     cur_beg, cur_end, max_beg, max_end = 0,0,0,0
-    for elem in a[1:]:
-        new_min = cur_min*elem
-        new_max = cur_max*elem
-        # both max/min val * cur val, then update as cur_max/min
-        cur_min = min([elem, new_max, new_min])
-        cur_max = max([elem, new_max, new_min])
+    for cur in a[1:]:
+        new_min = cur_min*cur
+        new_max = cur_max*cur
+        # update max/min of cur after applying cur el
+        cur_min = min([cur, new_max, new_min])
+        cur_max = max([cur, new_max, new_min])
         maxProd = max([maxProd, cur_max])
         if maxProd is cur_max:
             cur_end, max_end = i,i
             #upbeat(max_beg, max_end)
     return maxProd
+
+''' track prepre, pre, cur idx of zeros '''
+def maxones(arr):
+  mx,mxpos = 0,0
+  prepre,pre,cur = -1,-1,-1
+  for i in xrange(len(arr)):
+    if arr[i] == 1:
+      continue
+    cur = i
+    if cur-prepre-1 > mx:
+        mx = cur-prepre-1
+        mxpos = pre
+    prepre,pre = pre,cur
+  if i-prepre > mx:
+    mxpos = pre
+  return mxpos
+print maxones([1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1])
+print maxones([1, 1, 1, 1, 0])
 
 """
     keep track left min, max profit is when bot at min day sell today.
@@ -2618,7 +2605,7 @@ def bucketsort_count(arr):
       v = arr[i]
       if arr[v-1] < 0:
         arr[v-1] -= 1
-        arr[i] = 0
+        arr[i] = 0  # set to 0 indicate processed.
       else:
         swap(arr, i, v-1)
         arr[v-1] = -1
@@ -2628,45 +2615,22 @@ def bucketsort_count(arr):
     bucket sort, when arr[i] is neg, means it has correct pos. when hit again, inc neg.
     when dup processed, set it to max num to avoid process it again.
 """
-# maxrep([1, 2, 2, 2, 0, 2, 0, 2, 3, 8, 0, 9, 2, 3])
-def maxrep(arr):
+# maxrepeat([1, 2, 2, 2, 0, 2, 0, 2, 3, 8, 0, 9, 2, 3])
+def maxrepeat(arr):
   def swap(arr, i, j):
     arr[i], arr[j] = arr[j], arr[i]
-  sz = len(arr)
-  for i in xrange(sz):
-    if arr[i] >= 0 and i == arr[i]:
-      arr[i] = -1
-      continue
-    while arr[i] >= 0 and i != arr[i]:
+  for i in xrange(len(arr)):
+    while arr[i] >= 0 and arr[i] != i:
       v = arr[i]
-      ival = arr[i]  # val is idx, idx 1 stores value 2.
-      swapval = arr[ival]
-      if ival < sz and swapval >= 0:
-        swap(arr, i, ival)
-        arr[ival] = -1  # flip after swap
-      else:
-        if ival < sz:
-          arr[ival] -= 1
-          print "no swap at ", i, ival, arr[ival]
-          arr[i] = 999 # chg to max to indicate skip this.
+      if v == sys.maxint:  # skip repeat node.
         break
+      if arr[v] > 0:  # first time swapped to.
+        swap(arr, i, v)
+        arr[v] = -1
+      else:           # target already swapped, it is repeat. incr.
+        arr[v] -= 1
+        arr[i] = sys.maxint  # i is repeat node. mark it.
   return arr
-
-def maxrep(arr):
-    i = 0
-    while i < n:
-        if arr[i] > 0 and arr[i] == i+1:
-            arr[i] = -1
-            i += 1
-            continue
-        while arr[i] > 0 and arr[i] != i+1:
-            v = arr[i]
-            if arr[v-1] > 0:
-                swap(arr, v-1, i)
-                arr[v-1] = -1
-            else:
-                arr[v-1] -= 1
-        i += 1
 
 def repmiss(arr):
   def swap(arr, i, j):
@@ -2674,11 +2638,13 @@ def repmiss(arr):
   for i in xrange(len(arr)):
     while arr[i] > 0 and arr[i] != i+1:
       v = arr[i]
-      if arr[v-1] < 0:
+      if arr[v-1] > 0:
+        swap(arr, i, v-1)
+        arr[v-1] = -arr[v-1]  # flip to mark as present.
+      else:         # arr[v-1] < 0:
         print "dup at ", i, arr
         break
-      swap(arr, i, v-1)
-      arr[v-1] = -arr[v-1]
+  return arr
 
 # largest subary with equal 0s and 1s
 # change 0 to -1, reduce to largest subary sum to 0.
@@ -2882,20 +2848,23 @@ You can do recursion fn with reducing the space to the leaf. or tabular F[i,j] f
 '''
 # tab[i] : min cost from start->i
 def minjp(arr):
-  tab[0] = 1
+  tab = [sys.maxint]*len(arr) 
   for i in xrange(1,len(arr)):
     for k in xrange(i):
-      if arr[k] + k > i:
-        tab[i] = min(tab[k] + 1)
+      if k + arr[k] >= i:
+        tab[i] = min(tab[i], tab[k] + 1)
   return tab[len(arr)-1]
 # tab[i] : min cost from i->dst
 def minjp(arr):
-    tab[i] = sys.maxint
-    for i in xrange(len(arr)-1, -1, -1):
-        for j in xrange(i+1, len(arr)-1):
-            if arr[i] + i > j:  # from i can reach j
+    tab = [sys.maxint]*len(arr)
+    tab[len(arr)-1] = 0
+    for i in xrange(len(arr)-1-1, -1, -1):
+        for j in xrange(i+1, i+arr[i]+1):
+            if j < len(arr):
                 tab[i] = min(tab[i], tab[j] + 1)
     return tab[0]
+print minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9])
+
 ''' Graph, min cost from src to dst.
 recursive, topsort, 
 '''
@@ -2998,16 +2967,32 @@ def combination(arr, path, sz, offset, result):
 
 """ recur with partial result, when path in, iter each, incl/excl each """
 def combIter(arr, offset, r, path, res):
-    if len(path) == r:  # stop recursion when r = 1
+    if r == 0:  # stop recursion when r = 1
         cp = path[:]
         res.append(cp)
         return res
-    for i in xrange(offset, len(arr)-r+1+1):
+    for i in xrange(offset, len(arr)-r+1):
         path.append(arr[i])
-        combIter(arr, i+1, r, path, res)
+        combIter(arr, i+1, r-1, path, res)  # iter from cur idx+1, not offset+1
         path.pop()   # deep copy path for each recursion, or pop path after recursion
     return res
-res = [];combIter(["a","b","c","d"],0,2,[],res);print res;
+res = [];combIter([1,2,3,4],0,2,[],res);print res;
+
+""" print all perm with len k """
+def perm(arr,offset,r,path):
+  def swap(i,j):
+    arr[i],arr[j] = arr[j],arr[i]
+  if r == 0:
+    print "perm:",path
+    return
+  for i in xrange(offset,len(arr)):  # here need to iter all elements
+    swap(offset,i)
+    hd = arr[offset]
+    p = path[:]
+    p.append(hd)
+    perm(arr,offset+1,r-1,p)  # iter from offset+1
+    swap(offset,i)
+perm([1,2,3,4],0,2,[])
 
 def comb(arr,r):
   res = []
@@ -3024,6 +3009,23 @@ def comb(arr,r):
       res.append(e)
   return res
 print comb("abc", 2)
+
+def incseq(n,k,p,out):
+  if len(p) == k:
+    cp = p[:]
+    out.append(cp)
+    return out
+  if len(p) == 0:
+    start = 1
+  else:
+    start = p[-1]+1
+  for i in xrange(start,n):
+    p.append(i)
+    incseq(n,k,p,out)
+    p.pop()
+  return out
+out = []
+print incseq(5,2,[],out)
 
 # Generate all possible sorted arrays from alternate eles of two sorted arrays
 def alterCombRecur(a,b,ai,bi,froma,path,out):
@@ -3689,6 +3691,44 @@ def matrixBFSk(G):
     for j in xrange(n):
       if G[i,j] < k:
         G[i,j] = 1
+
+""" word ladder, bfs, at each word, for each position, get new char """
+from collections import deque
+import string
+def wordladder(start, end, dict):
+  def getNext(wd):
+    nextwds = []
+    for i in xrange(len(list(wd))):
+      for c in list(string.ascii_lowercase):
+        l = list(wd)
+        l[i] = c
+        nextwd = "".join(l)
+        if nextwd == end or (nextwd in dict and not nextwd in seen):
+          nextwds.append(nextwd)
+    return nextwds
+  ladder = []
+  seen = set()
+  if start == end:
+    return
+  q = deque()
+  q.append([start,[]])
+  while len(q) > 0:
+    [wd,path] = q.popleft()
+    for nextwd in getNext(wd):
+      if nextwd == end:
+        path.append(nextwd)
+        ladder.append(path)
+      else:
+        seen.add(nextwd)
+        npath = path[:]
+        npath.append(wd)
+        q.append([nextwd, npath])
+  return ladder
+start = "hit"
+end = "cog"
+dict = set(["hot","dot","dog","lot","log"])
+print wordladder(start, end, dict)
+
 """
 http://www.geeksforgeeks.org/find-the-largest-rectangle-of-1s-with-swapping-of-columns-allowed/
 """
