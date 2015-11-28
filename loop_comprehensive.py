@@ -1889,13 +1889,13 @@ class MinHeap(object):
         self.arr = []
         self.size = 0
         self.mxSize = mxSize
-        self.val2idx = defaultdict()
+        self.key2idx = defaultdict()
     def get(self, idx):
         if idx >= 0 and idx < self.size:
             return self.arr[idx][0]
         return None
     def getByVal(self, val):
-        idx = self.val2idx[val]
+        idx = self.key2idx[val]
         return self.get(idx)
     def lchild(self, idx):
         if idx*2+1 < self.size:
@@ -1913,12 +1913,12 @@ class MinHeap(object):
         srcv = self.get(src)
         dstv = self.get(dst)
         self.arr[src], self.arr[dst] = [dstv], [srcv]
-        self.val2idx[srcv] = dst
-        self.val2idx[dstv] = src
+        self.key2idx[srcv] = dst
+        self.key2idx[dstv] = src
     def insert(self, key, val):
         entry = [key, val]
         self.arr.append(entry)
-        self.val2idx[val] = self.size
+        self.key2idx[key] = self.size
         self.size += 1
         return self.siftup(self.size-1)
     def siftup(self, idx):
@@ -1937,7 +1937,7 @@ class MinHeap(object):
         if minidx != idx:
             self.swap(idx, minidx)
             return self.siftdown(minidx)
-        return mindix
+        return minidx
     def heapify(self):
         mid = (len(self.arr)-1)/2
         while mid >= 0:
@@ -1948,7 +1948,7 @@ class MinHeap(object):
         self.size -= 1
         self.siftdown(0)
     def decreaseKey(self, v, newv):
-        idx = self.val2idx[v]
+        idx = self.key2idx[v]
         self.arr[idx] = [newv]
         self.siftup(idx)
 def testMinHeap():
@@ -2040,12 +2040,12 @@ class SkipList:
         # first, populate head next all level with None
         while len(self.head.next) < len(node.next):
             self.head.next.append(None)
-        expressList = self.nextNodeAtEachLevel(ele)
-        if self.find(ele, expressList) == None :
+        nextList = self.nextNodeAtEachLevel(ele)
+        if self.find(ele, nextList) == None :
             # did not find ele, start insert
             for level in range(len(node.next)):
-                node.next[level] = expressList[level].next[level]
-                expressList[level].next[level] = node
+                node.next[level] = nextList[level].next[level]
+                nextList[level].next[level] = node
     ''' lookup for ith ele, for every link, store the width(span)(the no of bottom layer links) of the link.
     '''
     def findIthEle(self, i):
@@ -2066,7 +2066,7 @@ class HashTimeTable:
             self.key = k
             self.next = None
             # value list is tuple of [v,ts]
-            self.valueList = [[v,ts]]
+            self.valueList = [[v,ts]]   # volatile
         def bisect(self, arr, ts=None):
             if not ts:
                 return True, len(arr)-1
