@@ -223,8 +223,9 @@ arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
 
-# bisect ret first pos where val shall be inserted.
+# bisect ret the starting pos where val shall be inserted, even with dups.
 # when find high end, idx-1 is the first ele smaller than searching val.
+# [1 1 3 5 7]
 def bisect(arr, val):
     lo,hi = 0, len(arr)-1
     while lo != hi:
@@ -235,7 +236,7 @@ def bisect(arr, val):
             hi = md   # drag down hi to mid when equal to find begining.
     if arr[lo] == val:
         return True, lo
-    elif val > arr[lo]:
+    elif val > arr[lo]:  # this is the case when key > arr[n]
         return False, lo+1
     else:
         return False, lo
@@ -1962,13 +1963,13 @@ def testMinHeap():
 
 
 '''
-Huffman coding: sor
-class HuffmanCode(object):
-    def __init__(selt freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
+Huffman coding: sort freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
 http://en.nerdaholyc.com/huffman-coding-on-a-string/
-'''f):
+'''
+class HuffmanCode(object):
+    def __init__(self):
         self.minfreqheap = MinHeap()
-        self. = {}
+        self.minheap = {}
 
     def initValue(self):
         self.minheap.insert('b', 3, None, None)
@@ -2160,7 +2161,7 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
    http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
    pre-scan, Lmin[0..n]   store min see so far. so min[i] is mono descrease.
              Rmax[n-1..0] store max see so far from left <- right. so mono increase.
-   the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
+   the observation here is, A[i-1] nullified by A[i] when A[i-1] < A[i], the same as A[j-1] by A[j].
    after we have Lmin and Rmax, scan both from left to right, stretch Rmax to the farest right.
 
 6. slide window w in an array, find max at each position.
@@ -2292,8 +2293,8 @@ def noConsecutive(text):
 """ 
 loop each char, note down expected count and fount cnt. squeeze left edge.
 """
+''' find min substring in S that contains all chars from T'''
 def minWindow(S, T):
-    ''' find min substring in S that contains all chars from T'''
     ctx.found_chars = 0     # matched char len
     ctx.expected_cnt = defaultdict(int)    # need to match dict keyed by char
     ctx.found_cnt = defaultdict(int)
@@ -2323,37 +2324,68 @@ def minWindow(S, T):
     return min_beg, min_end
 
 """ max value in sliding window """
-def maxValueSlidingWin(A, w):
-    maxheap = MaxHeap();
-    for i in xrange(w):
-        maxheap.add(Node(A.i, i))
-    maxWin[i-w] = maxheap.top()
-    for i in xrange(w, sz):
-        if maxheap.top.idx > i-w:
-            maxheap.add(A.i, i)
-        else:
-            top = maxheap.pop()
-            while top.idx < i-w:
-                top = maxheap.pop()
-        maxWin[i-w] = maxheap.top()
+def slideMaxWin(arr, m):
+  stk = []
+  maxw = [0]*len(arr)
+  for i in xrange(len(arr)):
+    if i < m:
+      if len(stk) > 0 and arr[i] > stk[-1][0]:
+        stk.pop()
+      stk.append([arr[i],i])
+      maxw[i] = stk[0][0]
+    else:
+      if stk[0][1] == i-m:  # 2,3,4, idx 2 out of window 4-2
+        stk.pop(0)
+      while len(stk) > 0 and arr[i] > stk[-1][0]:
+        stk.pop()
+      stk.append([arr[i],i])
+      maxw[i] = stk[0][0]
+  return maxw
+print slideMaxWin([5,3,4,6,9,7,2],2)
 
 
-def maxValueSlidingWin(A, w):
-    Q = collections.deque()
-    for i in xrange(w):
-        while q.tail() < A.i:
-            q.tail.pop()
-        q.append(A.i)
-    maxWind[0] = Q.head()
-    for i in xrange(w, sz):
-        while q.tail() < A.i:
-            q.tail.pop()
-        q.append(A.i)
-        maxWin[i-w] = Q.head if Q.head.idx > i-w
+""" slide window w in an array, find max at each position.
+this equivalent to find max sz of window with m 0s in it.
+"""
+def maxwin(arr,m):
+  l,r,win,mx=0,0,0,0
+  while r < len(arr):
+    if win <= m:
+      while r < len(arr) and arr[r] == 1:
+        r += 1
+      mx = max(mx, r-l)
+      win += 1
+      r += 1    # advance r to item after 0 as next window start.
+    else:   
+      while l < len(arr) and arr[l] == 1:
+        l += 1
+      win -= 1
+      l += 1
+  return mx
+print maxwin([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
+
+''' when sliding, always inc r, and only inc win size when r edge is 0 '''
+def maxWinSizeWithMzero(arr,m):
+  l,r,win,maxWinsize=0,0,0,0
+  # init/set point, test, then mov/loop
+  while r < len(arr):
+    if win <= m:  # mov r even when win size equals, to count end with 1
+      # test current r edge first, then mov r edge.
+      if arr[r] == 0:
+        win += 1
+      r += 1
+    # mov left edge when win > size.
+    if win > m:
+      if arr[l] == 0:  # always try to mov win size left edge.
+        win -= 1
+      l += 1
+    maxWinsize = max(maxWinsize, r-l)  # l/r park at first item after 0.
+  return maxWinsize
+print maxWinSizeWithMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
 
+''' in a seq of nums, find max(Aj - Ai) where j > i '''
 def maxDelta(A):
-    ''' in a seq of nums, find max(Aj - Ai) where j > i '''
     cur_beg = cur_end = max_beg = max_end = 0
     for idx, val in enumerate(A):
         if val < A[cur_beg]:
@@ -2395,7 +2427,7 @@ def max_distance(l):
     return maxdiff
 
 """ Lmin[i] contains idx in the left arr[i] < cur, or -1
-    Rmax[i] contains idx in the rite arr[i] > cur. or -1
+    Rmax[i] contains idx in the rite cur < arr[i]. or -1
     then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
 """
 def triplet(arr):
@@ -2416,78 +2448,59 @@ def triplet(arr):
         if lmin[i] < v and v < rmax[i]:
             print lmin[i], v, rmax[i]
 """ 
-for each i, left max smaller and rite max. when ai is largest, skip it.
-stk to track lmaxsmaller. max lmaxsmaller while popping stk, until top big.
-# [7, 6, 8, 1, 2, 3, 9, 10]
-# [15, 7, 12, 9, 10]
+left < cur < rite, for each i, max smaller on left and max rite. 
+Only need to max left two items which is not max from rite.
+# [7, 6, 8, 1, 2, 3, 9, 10], [5,4,3,10,2,7,8]
+# [5,4,3,2,7,8], [5,4,3,2,7]
 """
 def triplet_maxprod(arr):
-  sz = len(arr)
-  rmax = arr[sz-1]
-  rmaxlarge = [0]*sz
-  rmaxlarge[sz-1] =arr[sz-1]
-  for i in xrange(sz-1,-1,-1):
+  maxl,maxtriplet = -1,1
+  minl,maxr=[1]*len(arr),[1]*len(arr)
+  maxr[-1] = arr[-1]
+  for i in xrange(len(arr)-2,-1,-1):
+    maxr[i] = max(maxr[i+1],arr[i])
+  minl[0] = arr[0]
+  for i in xrange(1,len(arr)):
+    minl[i] = min(minl[i-1], arr[i])
+  for i in xrange(len(arr)):
     v = arr[i]
-    rmax = max(rmax, v)
-    rmaxlarge[i] = rmax
-  lmaxsmall = [0]*sz
-  lmaxsmall[0] = arr[0]
-  s = []
-  for i in xrange(1,sz):
-    v = arr[i]
-    if rmaxlarge[i] == v: # largest rite wont be in result.
-      lmaxsmall[i] = v
+    if v == maxr[i]:
       continue
-    lms = v
-    # we just need to keep a decreasing left max stk.
-    # as any bigger val later will deprecate previous smaller candidate.
-    while len(s)>0 and s[-1] < v:
-      lms = s.pop()
-    lmaxsmall[i] = max(lms, lmaxsmall[i])
-    s.append(v)
-  print lmaxsmall, rmaxlarge
-  maxprod = 0
-  for i in xrange(1,sz-1):
-    if lmaxsmall[i] != arr[i] and arr[i] != rmaxlarge[i]:
-      maxprod = max(maxprod, lmaxsmall[i]*arr[i]*rmaxlarge[i])
-  return maxprod
+    if v == minl[i]:  # update maxl, for case V [5,4,3,7,8]
+      maxl = max(maxl, v)
+      continue
+    if v > maxl:
+      maxtriplet = max(maxtriplet, maxl*v*maxr[i])
+      maxl = v
+  return maxtriplet
+print triplet_maxprod([7, 6, 8, 1, 2, 3, 9, 10])
+print triplet_maxprod([5,4,3,10,2,7,8])
 
 ''' max prod exclude a[i], keep track of pre prod excl cur '''
 def productExcl(arr):
   prod = [1]*len(arr)
-  pre,lp = arr[0],1
+  tot = arr[0]
   for i in xrange(1,len(arr)):
-    lp *= pre
-    prod[i] = lp
-    pre = arr[i]
-  nxt,rp = arr[n-1],1
+    prod[i] = tot
+    tot *= arr[i]
+  tot = arr[len(arr)-1]
   for i in xrange(len(arr)-2,-1,-1):
-    rp *= nxt       # cumulate prod from rite side
-    prod[i] *= rp   # NOT prod[i] *= prod[i+1]
-    nxt = arr[i]    # current i as i-1's next
+    prod[i] *= tot
+    tot *= arr[i]
   return prod
 
-""" max sub arr product with pos and neg ints 
-    mps([-2,3,-4,-5]), maxproduct(-2,-3,4,-5)
-    at every i, track both imax and imin.
+""" max sub arr product with pos and neg ints.
+for each ele, track cur max/min, and upbeat tot max.
 """
-def maxproduct(arr):
-  iprod,maxp,minp = 1,1,1
+def maxProd(arr):
+  totmx,curmx,curmn = 1,1,1
   for i in xrange(len(arr)):
-    cur = arr[i]
-    if cur == 0:
-      pos = 1
-      neg = 1
-    elif cur < 0:
-      tmp = pos
-      pos = max(neg*cur, 1)
-      neg = tmp*cur
-    else:
-      pos *= cur
-      neg = min(cur*neg, 1)
-    if pos > maxsofar:
-      maxsofar = pos
-  return maxsofar
+    v = arr[i]
+    curmx,curmn = max(v,curmx*v, curmn*v), min(v,curmx*v, curmn*v)
+    #curmx,curmn = max(curmx,curmx*v, curmn*v), min(curmn,curmx*v, curmn*v)
+    totmx = max(totmx, curmx)
+  return curmn,curmx,totmx
+print maxProd([-6,3,-4,-5,-2])
 
 ''' at every point, keep track both max[i] and min[i].
 mx[i] = max(mx[i-1]*v, mn[i-1]*v, v),
@@ -2526,6 +2539,23 @@ def maxones(arr):
 print maxones([1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1])
 print maxones([1, 1, 1, 1, 0])
 
+# 1-d array, max length, like slideing wind, track l/r edge.
+def maxWinM(arr,m):
+    l,r,win,maxwinsize = 0,0,0,0
+    while r < len(arr):
+        if win <= m:
+            if arr[r] == 0:
+                win += 1
+            r += 1  # park r to next window rite edge
+        else:
+            if arr[l] == 0:
+                win -= 1
+            l += 1  # park l to next window left edge
+        maxwinsize = max(maxwinsize, r-l)  # dist is half include.
+    return maxwinsize
+print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
+
+
 """
     keep track left min, max profit is when bot at min day sell today.
     keep track rite max, max profit is when bot today and sell at max day.
@@ -2551,17 +2581,31 @@ def maxprofit(arr):
 """
 def stock_profit(L):
     sz = len(L)
+    lp,up=[0]*sz,[0]*sz
+    valley,peak=sys.maxint,0
     for i in xrange(sz):
-        # price valley going down from 0..n
-        ctx.minp = min(ctx.minp, L.i)
-        ctx.lp[i] = max(ctx.lp[i], L.i-ctx.minp)
+        valley = min(valley, L[i])
+        lp[i] = max(lp[i], L[i]-valley)
         # price peak going up from n..0
         j = sz-i-1
-        ctx.maxp[j] = max(ctx.maxp[j+1], L.j)
-        ctx.up[j] = max(ctx.up[j+1], ctx.maxp[j]-L.j)
+        peak = max(peak, L[j])
+        up[j] = max(up[j+1], peak-L[j])
     for i in xrange(sz):
-        tot = max(tot, ctx.lp[i] + ctx.up[i])
+        tot = max(tot, lp[i] + up[i])
     return tot
+
+def profit(arr):
+  sz = len(arr)
+  profit=[0]*sz
+  rmax = arr[-1]
+  for i in xrange(sz-2,0,-1):
+    rmax = max(rmax, arr[i])
+    profit[i] = max(profit[i+1], rmax-arr[i])
+  lmin = arr[0]
+  for i in xrange(1,len(arr)):
+    lmin = min(lmin, arr[i])
+    profit[i] = max(profit[i-1], profit[i]+arr[i]-lmin)
+  return profit[sz-1]
 
 ''' can buy sell many times. sum up each trend up segments '''
 def many_profit(arr):
@@ -2602,13 +2646,13 @@ def bucketsort_count(arr):
         arr[i] = -1
         continue
     while arr[i] != i+1 and arr[i] > 0:
-      v = arr[i]
-      if arr[v-1] < 0:
-        arr[v-1] -= 1
+      v = arr[i]-1
+      if arr[v] < 0:
+        arr[v] -= 1
         arr[i] = 0  # set to 0 indicate processed.
       else:
-        swap(arr, i, v-1)
-        arr[v-1] = -1
+        swap(arr, i, v)
+        arr[v] = -1
   return arr
 
 """ max repetition num, bucket sort. change val to -1, dec on every reptition.
@@ -2637,10 +2681,10 @@ def repmiss(arr):
     arr[i], arr[j] = arr[j], arr[i]
   for i in xrange(len(arr)):
     while arr[i] > 0 and arr[i] != i+1:
-      v = arr[i]
-      if arr[v-1] > 0:
-        swap(arr, i, v-1)
-        arr[v-1] = -arr[v-1]  # flip to mark as present.
+      v = arr[i]-1
+      if arr[v] > 0:
+        swap(arr, i, v)
+        arr[v] = -arr[v]  # flip to mark as present.
       else:         # arr[v-1] < 0:
         print "dup at ", i, arr
         break
@@ -2715,35 +2759,12 @@ def largestRectangle(l):
   return maxrect
 
 
-""" slide window w in an array, find max at each position.
-    a maxheap with w items. when slide out, extract maxnode, if max is not 
-    the left edge, re-insert maxnode, continue extract until we drop left edge.
-    this is how you remove node from heap. O(nlgW)
-    To get rid of logW, squeeze w to single, upon new item, shadow/pop medium items.
 """
-def slideWin(arr,m):
-  win,l,r,mx=0,0,0,0
-  while r < len(arr):
-    # branch on window size, mov rite when win <= size.
-    if win <= m:
-      if arr[r] == 0:  # always try to mov win size rite edge
-        win += 1
-      r += 1
-    # mov left edge when win > size.
-    if win > m:
-      if arr[l] == 0:  # always try to mov win size left edge.
-        win -= 1
-      l += 1
-    mx = max(mx, r-l)
-  return mx
-print slideWin([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
-
-"""
-    convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
-    cost[i], at ary index i, the cost of sorted subary[0..i] with l[i] is the last.
-    l = [5,4,7,3] => 5-1, rm 3. cost[i+1], dp each 1<k<i, 
-    l[i+1] > l[k], cost[i+1] = cost[k] + del l[k] .. l[i+1]
-    l[i+1] < l[k], find the first l[j] < l[i+1], and cost[i+1] = min of make each l[j] to l[i+1], or del l[k]
+convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
+cost[i], at ary index i, the cost of sorted subary[0..i] with l[i] is the last.
+l = [5,4,7,3] => 5-1, rm 3. cost[i+1], dp each 1<k<i, 
+l[i+1] > l[k], cost[i+1] = cost[k] + del l[k] .. l[i+1]
+l[i+1] < l[k], find the first l[j] < l[i+1], and cost[i+1] = min of make each l[j] to l[i+1], or del l[k]
 """
 def convert_to_sort(l):
     dp = [sys.maxint for i in xrange(len(l))]
@@ -2797,31 +2818,6 @@ def integer_partition(A, n, k):
                 if m[i][j] > cost:
                     m[i][j] = cost
                     d[i][j] = x     # divide at pos x
-
-""" min number left after remove triplet.
-[2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
-tab[i,j] track the min left in subary i..j
-"""
-def minLeft(arr, k):
-    tab = [[0]*len(arr) for i in len(arr)]
-    def minLeftSub(arr, lo, hi, k):
-        if tab[lo][hi] != 0:
-            return tab[lo][hi]
-        if hi-lo+1 < 3:  # can not remove ele less than triplet
-            return hi-lo+1
-        ret = 1 + minLeftSub(arr, lo+1, hi, k)
-
-        for i in xrange(lo+1,hi-1):
-            for j in xrange(i+1, hi):
-                if arr[i] == arr[lo] + k and
-                   arr[j] == arr[lo] + 2*k and
-                   # both lo..i-1 and i+1..j-1 remove, tripelt lo,i,j
-                   minLeftSub(arr, lo+1, i-1, k) == 0 and 
-                   minLeftSub(arr, i+1, j-1, k) == 0:
-                   # now triplet lo,i,j also can be removed
-                   ret = min(ret, minLeftSub(arr, j+1, hi, k))
-        tab[lo][hi] = ret
-        return ret
 
 
 """ reg match . *. recursion, loop try 0,1,2...times for *. """
@@ -3090,6 +3086,27 @@ def perm(arr):
             e.insert(0,hd)
             result.append(e)
     return result
+
+""" next permutation, from l <- R, find first partition, then find first
+larger, then swap, the reverse right partition.
+"""
+def nextPermutation(txt):
+    for i in xrange(len(txt)-2, -1, -1):
+        if txt[i] < txt[i+1]:
+            break
+    if i < 0:
+        return ''.join(reversed(txt))
+    part = txt[i]
+    for j in xrange(len(txt)-1, i, -1):
+        if txt[j] > part:
+            break
+    txt[i],txt[j] = txt[j],txt[i]
+    l,r = i+1, len(txt)-1
+    while l < r:
+        txt[l],txt[r] = txt[r],txt[l]
+        l += 1
+        r -= 1
+    return txt
 
 """ permutation rank. at pos i, tot i! permutations, out of which, rite smaller * (i-1)!
     find count n on the rite of pos is smaller, n * pos!, with dup, n*pos!/d[i]
@@ -3406,6 +3423,7 @@ def decode(dstr, pos):
   else:
     return decode(dstr, pos-1)
 
+
 """ top down offset n -> 1 when dfs inclusion branch """
 # path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 def subsetsum(l, offset, n, path, result):
@@ -3461,38 +3479,61 @@ def subsetsum(l, val):
                     tab[r][v].append(e)
     return tab[len(l)-1][val]
 
+""" min number left after remove triplet.
+[2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
+tab[i,j] track the min left in subary i..j
+"""
+def minLeft(arr, k):
+    tab = [[0]*len(arr) for i in len(arr)]
+    def minLeftSub(arr, lo, hi, k):
+        if tab[lo][hi] != 0:
+            return tab[lo][hi]
+        if hi-lo+1 < 3:  # can not remove ele less than triplet
+            return hi-lo+1
+        ret = 1 + minLeftSub(arr, lo+1, hi, k)
 
-''' digitSum(2,5) = 14, 23, 32, 41 and 50 '''
-def digitSum(n, s):
-  tab = [[0]*max(s+1,9) for i in xrange(n)]
-  for i in xrange(1,9):
+        for i in xrange(lo+1,hi-1):
+            for j in xrange(i+1, hi):
+                if arr[i] == arr[lo] + k and
+                   arr[j] == arr[lo] + 2*k and
+                   # both lo..i-1 and i+1..j-1 remove, tripelt lo,i,j
+                   minLeftSub(arr, lo+1, i-1, k) == 0 and 
+                   minLeftSub(arr, i+1, j-1, k) == 0:
+                   # now triplet lo,i,j also can be removed
+                   ret = min(ret, minLeftSub(arr, j+1, hi, k))
+        tab[lo][hi] = ret
+        return ret
+
+""" m faces, n dices, num of ways to get value x
+ tab[i,v] 0-i dices, ways to get value v.
+ tab[i,v] += tab[i-1,v], tab[i-1, v-m]
+"""
+def dice(m,n,x):
+    tab = [[0]*n for i in xrange(x+1)]
+    for f in xrange(m):
+        tab[1][f] = 1
+    for i in xrange(n):
+        for v in xrange(x):
+            for f in xrange(m):
+                if f < v:
+                    tab[i][v] += tab[i-1][v-f]
+    return tab[n,x] 
+
+''' digitSum(2,5) = 14, 23, 32, 41 and 50 
+3 loops, n digits, j sum, and k loop last digit from 0-9
+tab[i,v] = sum(tab[i-1,k] for k in 0..9)
+'''
+def digitSum(n,s):
+  tab = [[0]*max(s+1,10) for i in xrange(n)]
+  for i in xrange(10):
     tab[0][i] = 1
   for i in xrange(1,n):
-    for v in xrange(1,s+1):
-      for d in xrange(9):
-        if v >= d:
-          tab[i][v] += tab[i-1][v-d]
-  print tab
+    for v in xrange(s+1):
+      for d in xrange(v):
+        tab[i][v] += tab[i-1][v-d]
   return tab[n-1][s]
-
 assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
-
-# tab[i,v] = tot non descreasing at ith digit, end with value v
-# tab[i,v] = tab[i-1,0..v]
-def nondescreasing(n):
-  tab = [[0]*10 for i in xrange(n)]
-  for v in xrange(10):
-    tab[0][v] = 1
-  for i in xrange(1,n):
-    for v in xrange(10):
-      for d in xrange(10):
-        if d <= v:
-          tab[i][v] += tab[i-1][d]
-  tot = 0
-  for v in xrange(10):
-    tot += tab[n-1][v]
-  return tot
 
 ''' sum of odd and even digit diff by one '''
 def digitSumDiffOne(n):
@@ -3506,31 +3547,26 @@ def digitSumDiffOne(n):
                 else:
                     odd[l][k] += even[l-1][k-d]
 
-""" m faces, n dices, num of ways to get value x """
-def dice(m, n, x):
-    tab = [[0]*n for i in xrange(x+1)]
-    for v in xrange(1,m+1):
-        tab[v][0] = 1
-    for v in xrange(1,x+1):
-        for d in xrange(1, n):
-            for f in xrange(1,m+1):
-                if v > f:
-                    print v, d, f, tab
-                    tab[v][d] += tab[v-f][d-1]
-    return tab[x][n-1]
-
-# tab[i,v] 0-i dices, ways to get value v.
-# tab[i,v] += tab[i-1,v], tab[i-1, v-m]
-def dice(m,n,x):
-    tab = [[0]*n for i in xrange(x+1)]
-    for f in xrange(m):
-        tab[1][f] = 1
-    for i in xrange(n):
-        for v in xrange(x):
-            for f in xrange(m):
-                if f < v:
-                    tab[i,v] += tab[i-1][v-f]
-    return tab[n,x] 
+"""
+  tab[i,v] = tot non descreasing at ith digit, end with value v
+  tab[i,v] = sum(tab[i-1,k] for k in 0..9
+  count(n, d) = ∑ (count(n-1, i)) where i varies from 0 to d
+  Total count = ∑ count(n-1, d) where d varies from 0 to n-1
+"""
+def nonDecreasingCount(n):
+  tab = [[0]*10 for i in xrange(n)]
+  for v in xrange(10):
+    tab[0][v] = 1
+  for i in xrange(1,n):
+    for v in xrange(10):
+      for k in xrange(v+1):
+        tab[i][v] += tab[i-1][k]
+  tot = 0
+  for v in xrange(10):
+    tot += tab[n-1][v]
+  return tot
+assert(nonDecreasingCount(2), 55)
+assert(nonDecreasingCount(3), 220)
 
 """ adding + in between. [1,2,0,6,9] and target 81 """
 def sumcut(arr, offset, target):
@@ -3610,27 +3646,6 @@ def palindromMincut(s):
     # expand to full string by the end
     return tab[n-1]
 
-""" next permutation, from l <- R, find first partition, then find first
-larger, then swap, the reverse right partition.
-"""
-def nextPermutation(txt):
-    for i in xrange(len(txt)-2, -1, -1):
-        if txt[i] < txt[i+1]:
-            break
-    if i < 0:
-        return ''.join(reversed(txt))
-    part = txt[i]
-    for j in xrange(len(txt)-1, i, -1):
-        if txt[j] > part:
-            break
-    txt[i],txt[j] = txt[j],txt[i]
-    l,r = i+1, len(txt)-1
-    while l < r:
-        txt[l],txt[r] = txt[r],txt[l]
-        l += 1
-        r -= 1
-    return txt
-
 """ next permutation """
 def nextPalindrom(v):
   # arr[0:li] -> arr[li+1:ri]
@@ -3692,7 +3707,9 @@ def matrixBFSk(G):
       if G[i,j] < k:
         G[i,j] = 1
 
-""" word ladder, bfs, at each word, for each position, get new char """
+""" word ladder, bfs, for each intermediate word, at each position, 
+enum all ascii to get new char, recur not visited.
+"""
 from collections import deque
 import string
 def wordladder(start, end, dict):
@@ -3706,6 +3723,7 @@ def wordladder(start, end, dict):
         if nextwd == end or (nextwd in dict and not nextwd in seen):
           nextwds.append(nextwd)
     return nextwds
+  
   ladder = []
   seen = set()
   if start == end:
