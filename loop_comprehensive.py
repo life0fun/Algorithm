@@ -74,7 +74,7 @@ def convert(num, src, trg):
     print 'convert', num, ' res:', res
     return res
 
-""" a[0..n]*b, c[i]=a[i]*b % 10 """
+""" a[0..n]*b, out[i]=a[i]*b % 10 """
 def multiply(a, b):
   arra = map(int, list(str(a)))
   out = [0]*12  # num of digits in final value
@@ -228,6 +228,8 @@ print int("".join(map(str, list(reversed(arr)))))
 # [1 1 3 5 7]
 def bisect(arr, val):
     lo,hi = 0, len(arr)-1
+    if val > arr[-1]:
+        return False, len(arr)
     while lo != hi:
         md = (lo+hi)/2
         if val > arr[md]:  # lift lo only when absolutely big
@@ -236,10 +238,87 @@ def bisect(arr, val):
             hi = md   # drag down hi to mid when equal to find begining.
     if arr[lo] == val:
         return True, lo
-    elif val > arr[lo]:  # this is the case when key > arr[n]
-        return False, lo+1
     else:
         return False, lo
+
+def bisectPivot(arr,t):
+  l,r=0,len(arr)-1
+  while l <= r:     # check l <= r
+    mid = l+(r-l)/2
+    if t == arr[mid]:
+      return True, mid
+    if arr[l] < arr[mid]:
+      if arr[l] <= t and t < arr[mid]:
+        r = mid
+      else:
+        l = mid+1
+    else:
+      if arr[mid] < t and t <= arr[r]:
+        l = mid+1
+      else:
+        r = mid
+  return False, None
+print bisectPivot([3, 4, 5, 1, 2], 2)
+
+def floorceil(arr, t):
+  f,c = -1,-1
+  l,r = 0,len(arr)-1
+  if t < arr[0]:
+    return None,arr[0]
+  if t > arr[-1]:
+    return arr[-1],None
+  while l != r:
+    mid = l + (r-l)/2
+    if t > arr[mid]:
+      l = mid+1
+    else:
+      r = mid
+  if arr[l] == t:
+    f = l
+  else:
+    f = l-1
+
+  l,r = 0,len(arr)-1
+  while l != r:
+    mid = l + (r-l)/2
+    if t >= arr[mid]:
+      l = mid+1
+    else:
+      r = mid
+  if arr[l-1] == t:
+    c = l-1
+  else:
+    c = l
+
+  if f >= 0:
+    f = arr[f]
+  if c >= 0:
+    c = arr[c]
+  return f,c
+print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
+print floorceil([1, 2, 8, 10, 10, 12, 19], 1)
+print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
+
+""" find the max in a ^ ary """
+def maxNum(arr):
+  l,r=0,len(arr)-1
+  while l < r:
+    mid = l+(r-l)/2
+    if l == mid:  # only 2 elements
+      if arr[l] < arr[r]:
+        l = r
+      else:
+        r = l
+    elif arr[mid-1] < arr[mid] > arr[mid+1]:
+      return arr[mid]
+    elif arr[mid-1] < arr[mid]:
+      l = mid+1
+    else:
+      r = mid
+  return arr[l]
+print maxNum([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
+print maxNum([10, 20, 30, 40, 50])
+print maxNum([120, 100, 80, 20, 0])
 
 """ inverse count with merge sort """
 def mergesort(arr, lo, hi):
@@ -267,49 +346,27 @@ two index at A, B array, and inc smaller array's index each step for k steps.
   otherwise, A[0..i] must less than B[j-1], chop off smaller A and larger B.
   recur A[i+1..m], B[0..j]
 """
-def findKth(A, m, B, n, k):
-    # ensure index i + j = k -1, so next index is kth element.
-    i = int(float(m)/(m+n) * (k-1))
-    j = (k-1)-i
-    ai_1 = A[i-1] if i is not 0 else -sys.maxint
-    bj_1 = B[j-1] if j is not 0 else -sys.maxint
-    ai = A[i] if i is not m else sys.maxint  # if reach end of ary, max value
-    bj = B[j] if j is not n else sys.maxint  
-    # if either of i, j index falls in others.
-    if ai > bj_1 and ai < bj:
-        #print "ai ", ai
-        return ai
-    elif bj > ai_1 and bj < ai:
-        #print "bi ", bj
-        return bj
-
-    # recur 
-    if ai < bj:
-        return findKth( A[i+1:], m-i-1, B[:j], j, k-i-1)
-    else: # ai > bj case
-        return findKth( A[:i], i, B[j+1:], n-j-1, k-j-1)
-
 def find_kth(A, m, B, n, k):
     if m > n:
-        find_kth(B,n,A,m,k)
+        return find_kth(B,n,A,m,k)
     if m == 0: return B[k-1]
+    if k == 1: return min(A[0],B[0])
     ia = min(k/2, m)
     ib = k-ia
+
     if A[ia-1] < B[ib-1]:
-        find_kth(A+ia, m-ia, B, n, k-ia)
-    else:
-        find_kth(A, m, B+ib, n-ib, k-ib)
+        return find_kth(A[ia:], m-ia, B, n, k-ia)
+    elif A[ia-1] > B[ib-1]:
+        return find_kth(A, m, B[ib:], n-ib, k-ib)
     else:
         return A[ia-1]
-
 def testFindKth():
     A = [1, 5, 10, 15, 20, 25, 40]
     B = [2, 4, 8, 17, 19, 30]
     Z = sorted(A + B)
-    assert(Z[7] == findKth(A, len(A), B, len(B), 8))
-    print "9th of :", Z[9], findKth(A, len(A), B, len(B), 10)
-    assert(Z[9] == findKth(A, len(A), B, len(B), 10))
-    
+    assert(Z[9] == find_kth(A, len(A), B, len(B), 10))
+    assert(Z[0] == find_kth(A, len(A), B, len(B), 1))
+    assert(Z[12] == find_kth(A, len(A), B, len(B), 13))
 
 """ 
   selection algorithm, find the kth largest element with worst case O(n)
@@ -320,18 +377,18 @@ def selectKth(A, beg, end, k):
         A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
         widx = l   # all ele smaller than pivot, stored in left, started from begining
         for i in xrange(l, r):
-            if A.i < pivot:   # smaller than pivot, put it to left where swap idx
+            if A.i <= A[r]: # r is pivot value
                 A.widx, A.i = A.i, A.widx
                 widx += 1
         A.r, A.widx = A.widx, A.r
-        return widx
+        return widx  # the start idx of all items > than pivot
 
     if beg == end: return A.beg
     if not 1 <= k < (end-beg): return None
 
     while True:   # continue to loop 
         pivotidx = random.randint(l, r)
-        rank = partition(A, l, r, pivotidx)
+        rank = partition(A, l, r, pivotidx)  # the start idx of items grter than pivot.
         if rank == k: return A.rank
         if rank < k: return selectKth(A, l, rank, k-rank)
         else: return selectKth(A, rank, r, k-rank)
@@ -787,10 +844,12 @@ class Interval(object):
     def __init__(self):
         self.arr = []
         self.size = 0
-    # bisect ret first pos where val shall be inserted.
+    # bisect ret the starting index where val shall be inserted.
     # when find high end, idx-1 is the first ele smaller than searching val.
     def bisect(self, arr, val):
         lo,hi = 0, len(self.arr)-1
+        if val > arr[-1]:
+            return False, len(arr)
         while lo != hi:
             md = (lo+hi)/2
             if val > arr[md]:  # lift lo only when absolutely big
@@ -799,8 +858,6 @@ class Interval(object):
                 hi = md   # drag down hi to mid when equal to find begining.
         if arr[lo] == val:
             return True, lo
-        elif val > arr[lo]:
-            return False, lo+1
         else:
             return False, lo
     # which slot in the arr this new interval shall be inserted
@@ -2071,6 +2128,8 @@ class HashTimeTable:
         def bisect(self, arr, ts=None):
             if not ts:
                 return True, len(arr)-1
+            if ts > arr[-1][1]:
+                return False, len(arr)
             l,r = 0, len(arr)-1
             while l != r:
                 m = l + (r-l)/2
@@ -2080,8 +2139,6 @@ class HashTimeTable:
                     r = m
             if arr[l][1] == ts:
                 return True, l
-            elif ts > arr[l][1]:
-                return False, l+1
             else:
                 return False, l
         def getValue(self,k, ts=None):
@@ -2469,7 +2526,7 @@ def triplet_maxprod(arr):
     if v == minl[i]:  # update maxl, for case V [5,4,3,7,8]
       maxl = max(maxl, v)
       continue
-    if v > maxl:
+    if v > maxl: # maxL * cur * maxR
       maxtriplet = max(maxtriplet, maxl*v*maxr[i])
       maxl = v
   return maxtriplet
@@ -2585,7 +2642,7 @@ def stock_profit(L):
     valley,peak=sys.maxint,0
     for i in xrange(sz):
         valley = min(valley, L[i])
-        lp[i] = max(lp[i], L[i]-valley)
+        lp[i] = max(lp[i-1], L[i]-valley)
         # price peak going up from n..0
         j = sz-i-1
         peak = max(peak, L[j])
@@ -2593,33 +2650,36 @@ def stock_profit(L):
     for i in xrange(sz):
         tot = max(tot, lp[i] + up[i])
     return tot
-
+''' max profit i = max_profit of [0..i-1], or sell at day i + profit[i..n]'''
 def profit(arr):
   sz = len(arr)
   profit=[0]*sz
   rmax = arr[-1]
+  # profit[i] carry max profit from [i..n]
   for i in xrange(sz-2,0,-1):
     rmax = max(rmax, arr[i])
     profit[i] = max(profit[i+1], rmax-arr[i])
   lmin = arr[0]
+  # max profit of [0..i] = max(maxprofit of [0..i-1], sell_at_i + maxprofit of [i..n])
   for i in xrange(1,len(arr)):
     lmin = min(lmin, arr[i])
     profit[i] = max(profit[i-1], profit[i]+arr[i]-lmin)
   return profit[sz-1]
 
-''' can buy sell many times. sum up each trend up segments '''
+''' can buy sell many times. sum up every incr segment.(i,j) 
+if pre > cur, profit+=(pre-buy), cur set to new buy. if nxt < cur, nxt will be new buy.
+'''
 def many_profit(arr):
-    s,e,sz = 0,0,len(arr)
+    buy,sell,sz = 0,0,len(arr)
     profit = 0
-    for i in xrange(1,sz-1):
-        if arr[i] < arr[i-1]:
-            if s != i-1:
-                profit += arr[i-1]-arr[s]
-            s = i
-    if s != sz-1:
-        profit += arr[sz-1]-arr[s]
+    for i in xrange(1,sz):
+        if arr[i-1] > arr[i]:  # i-1 peaked locally.
+            profit += arr[i-1]-arr[buy]
+            buy = i
+    if buy != sz-1:
+        profit += arr[sz-1]-arr[buy]
     return profit
-
+print many_profit([2,4,3,5,4,2,8,10])
 
 """ first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
@@ -2843,12 +2903,14 @@ You can do recursion fn with reducing the space to the leaf. or tabular F[i,j] f
  deduce: expand arr, tab[j] is min from 0->i, tab[j] = tab[j-k]+1
 '''
 # tab[i] : min cost from start->i
+import sys
 def minjp(arr):
-  tab = [sys.maxint]*len(arr) 
-  for i in xrange(1,len(arr)):
-    for k in xrange(i):
-      if k + arr[k] >= i:
-        tab[i] = min(tab[i], tab[k] + 1)
+  tab = [sys.maxint]*len(arr)
+  tab[0] = 0
+  for i in xrange(len(arr)):
+    for j in xrange(1,arr[i]+1):
+      if i+j < len(arr):
+        tab[i+j] = min(tab[i+j], tab[i] + 1)
   return tab[len(arr)-1]
 # tab[i] : min cost from i->dst
 def minjp(arr):
@@ -2937,15 +2999,52 @@ def knapsack(maxw, W, V):
 
 # Set. excl current i, and incl cuurent i
 # tab[3,2] = [12],[21] t(3,2) = [111]+[[2,(1,2)]=[2][1]]+[[1,2]]
-def coinchangeSet(n, v):
-    for v in xrange(v):
-        for i in xrange(n):
-            c[v,i] = c[v,i-1] + c[v-V[i],i]
-# diff order counts, n=4, [112, 121]
-def coinchangePerm(n, v):
-    for v in V:
-        for i in n:
-            tab[v] += tab[v-V[i]]
+def coinchangeSet(arr, V):
+    tab = [[0]*len(arr) for i in xrange(V+1)]
+    tab2 = [[0]*len(arr) for i in xrange(V+1)]
+    for c in xrange(len(arr)):
+        tab[0][c] = 1  # when v = coin_value, init pre subproblem tab[0][c] to 1
+        tab2[arr[c]][c] = 1  # or init real tab[arr[c]][c] to 1, the accumulate later.
+
+    for v in xrange(1,V+1):
+        for c in xrange(len(arr)):
+            excl = 0
+            if c >= 1:
+                excl = tab[v][c-1]
+            incl = 0
+            if v >= arr[c]:   # when v = coin value, tab[0][c]
+                incl = tab[v-arr[c]][c]
+            tab[v][c] = excl + incl
+            tab2[v][c] += excl + incl   # accumulate on top, as tab2[0][c]=0 here.
+    return tab[V][len(arr)-1]
+print coinchangeSet([1, 2, 3], 4)
+
+''' outer loop thru all coin, so act as excl/incl the coin '''
+def coinchangePerm(arr, V):
+    tab = [0]*(V+1)
+    tab[0] = 1
+    # when update tab[v] at c, equivalent to accumul tab[v] that incl c
+    # excl c is automatically counted when update other coin values.
+    for c in xrange(len(arr)):
+        for v in xrange(1,V+1):
+            if v >= arr[c]:
+                tab[v] += tab[v-arr[c]]
+    return tab[V]
+print coinchangePerm([1, 2], 3)
+
+''' outer loop thru all value, and inner thru all coin,
+diff order counts, [1,1,1], [1,2], [2,1]
+'''
+def coinchangePerm(arr, V):
+    tab = [0]*(V+1)
+    tab[0] = 1
+    for v in xrange(1,V+1):
+        for c in xrange(len(arr)):
+            if v >= arr[c]:
+                tab[v] += tab[v-arr[c]]
+    return tab[V]
+print coinchangePerm([1, 2], 3)
+
 
 # comb can exam head, branch at header incl and excl
 def combination(arr, path, sz, offset, result):
