@@ -143,17 +143,16 @@ def testMergeSort():
     print q
 
 
-''' this is more readable code.
-    1. pick a pivot, put to end
+''' 1. pick a pivot, put to end
     2. start j one idx less than pivot, which is end-1.
     3. park i,j, i to first > pivot(i++ if l.i <= pivot), j to first <pivot(j-- if l.j > pivot)
     4. swap i,j and continue until i<j breaks
     4. swap pivot to i, the boundary of divide 2 sub string.
     5. 2 substring, without pivot in, recursion.
 '''
-''' qsort3([5,8,5,4,5,1,5], 0, 6)
+''' qsort([5,8,5,4,5,1,5], 0, 6)
 '''
-def qsort3(l, beg, end):
+def qsort(l, beg, end):
     def swap(i,j):
         l[i], l[j] = l[j], l[i]
     # always check loop boundary first!
@@ -178,8 +177,8 @@ def qsort3(l, beg, end):
             break
     # i,j must be within [beg, i, j, end]
     swap(beg, j)  # use nature j as i been +1 from head
-    qsort3(l, beg, i-1)   # left half <= pivot
-    qsort3(l, j+1, end)     # right half > pivot
+    qsort(l, beg, i-1)   # left half <= pivot
+    qsort(l, j+1, end)     # right half > pivot
     print 'final:', l
 
 def qsort(arr, lo, hi):
@@ -225,7 +224,6 @@ print int("".join(map(str, list(reversed(arr)))))
 
 # bisect ret the starting pos where val shall be inserted, even with dups.
 # when find high end, idx-1 is the first ele smaller than searching val.
-# [1 1 3 5 7]
 def bisect(arr, val):
     lo,hi = 0, len(arr)-1
     if val > arr[-1]:
@@ -240,8 +238,9 @@ def bisect(arr, val):
         return True, lo
     else:
         return False, lo
+print bisect([1 1 3 5 7])
 
-def bisectPivot(arr,t):
+def bisectRotated(arr,t):
   l,r=0,len(arr)-1
   while l <= r:     # check l <= r
     mid = l+(r-l)/2
@@ -258,8 +257,9 @@ def bisectPivot(arr,t):
       else:
         r = mid
   return False, None
-print bisectPivot([3, 4, 5, 1, 2], 2)
+print bisectRotated([3, 4, 5, 1, 2], 2)
 
+''' bisect always check l,r boundary first '''
 def floorceil(arr, t):
   f,c = -1,-1
   l,r = 0,len(arr)-1
@@ -300,25 +300,36 @@ print floorceil([1, 2, 8, 10, 10, 12, 19], 1)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
 
 """ find the max in a ^ ary """
-def maxNum(arr):
+def findMax(arr):
   l,r=0,len(arr)-1
   while l < r:
     mid = l+(r-l)/2
-    if l == mid:  # only 2 elements
-      if arr[l] < arr[r]:
-        l = r
-      else:
-        r = l
-    elif arr[mid-1] < arr[mid] > arr[mid+1]:
+    if arr[mid-1] < arr[mid] > arr[mid+1]:
       return arr[mid]
-    elif arr[mid-1] < arr[mid]:
+    if arr[mid] < arr[mid+1]:
       l = mid+1
     else:
       r = mid
-  return arr[l]
-print maxNum([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
-print maxNum([10, 20, 30, 40, 50])
-print maxNum([120, 100, 80, 20, 0])
+  return arr[r]
+print findMax([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
+print findMax([10, 20, 30, 40, 50])
+print findMax([120, 100, 80, 20, 0])
+
+''' find min in a rotated ary '''
+def findminRotated(arr):
+  l,r=0,len(arr)-1
+  while l < r:
+    mid = l+(r-l)/2
+    if arr[mid] > arr[mid+1]:
+      return arr[mid+1]
+    elif arr[l] < arr[mid]:
+      l = mid+1
+    else:
+      r = mid
+  return arr[0]   # not rotated at all
+print findminRotated([5, 6, 1, 2, 3, 4])
+print findminRotated([1, 2, 3, 4])
+print findminRotated([2,1])
 
 """ inverse count with merge sort """
 def mergesort(arr, lo, hi):
@@ -1310,6 +1321,11 @@ def test():
 """ 
     node contains only 3 pointers, left < eq < rite, always descend down along eq pointer.
 """
+class Trie:
+    def __init__(self, val):
+        self.val = val
+        self.children = defaultdict(TrieNode)
+        self.leaf = False
 class TernaryTree(object):
     def __init__(self, key=None):
         self.left = self.rite = self.eq = None
@@ -1783,51 +1799,61 @@ def sieve(l):
     return cons(l[0], sieve(filter(lambda x:x%l[0] != 0, l)))
     #return sieve(filter(lambda x:x%l[0] != 0, l)).insert(0, l[0])
 
-
 ''' recursive call this on each 0xFF '''
 def sortdigit(l, startoffset, endoffset):
     l = sorted(l, key=lambda k: int(k[startoffset:endoffset]) if len(k) > endoffset else 0)
 
-def radix(arr):
+""" map lambda str(x) convert to string for at each offset for comparsion """
+def radixsort(arr):
   def countsort(arr, keyidx):
-    strarr = map(lambda x: str(x), arr)
-    karr = map(lambda x: x[len(x)-1-keyidx] if keyidx < len(x) else '0', strarr)
     out = [0]*len(arr)
     count = [0]*10
+    strarr = map(lambda x: str(x), arr)
+    karr = map(lambda x: x[len(x)-1-keyidx] if keyidx < len(x) else '0', strarr)
     for i in xrange(len(karr)):
       count[int(karr[i])] += 1
     for i in xrange(1,10):
       count[i] += count[i-1]
     # must go from end to start, as ranki-1.
     for i in xrange(len(karr)-1, -1, -1):
-      ranki = count[int(karr[i])]
+      ranki = count[int(karr[i])]  # use key to get rank, and set val with origin ary
+      # ranki starts from 1, -1 to convert to index
       out[ranki-1] = int(strarr[i])
       count[int(karr[i])] -= 1
     return out
   for kidx in xrange(3):
     arr = countsort(arr, kidx)
   return arr
+print radixsort([170, 45, 75, 90, 802, 24, 2, 66])
 
-# radix sort use counting sort O(n) to sort each idx
+""" exp is 10^i where i is current digit offset, (v/exp)%10, the offset value """
 def radixsort(arr):
-    m = getMax(arr, n)
-    exp = 1
-    while m/exp > 0:
-        countingSort(arr, n, exp)
-        exp *= 10
-    def countingSort(arr, n, exp):
-        count = [0]*n
-        output = [0]*n
-        for i in xrange(n):
-            count[(arr[i]/exp)%10] += 1
-        for i in xrange(1,n):
-            count[i] += count[i-1]
-        for i in xrange(n-1,-1,-1):
-            output[count[(arr[i]/exp)%10-1]] = arr[i]
-            count[(arr[i]/exp)%10]--;
-        for i in xrange(n):
-            arr[i] = output[i] 
-
+  def getMax(arr):
+    mx = arr[0]
+    for i in xrange(1,len(arr)):
+      mx = max(mx, arr[i])
+    return mx
+  #exp is 10^i where i is current digit number
+  def countsort(arr, exp):
+    count = [0]*10
+    output =[0]*len(arr)
+    for i in xrange(len(arr)):
+      count[(arr[i]/exp)%10] += 1
+    for i in xrange(1,10):
+      count[i] += count[i-1]
+    for i in xrange(len(arr)-1,-1,-1):
+      d = (arr[i]/exp)%10
+      r = count[d]
+      output[r-1] = arr[i]
+      count[d] -= 1
+    return output
+  mx = getMax(arr)
+  exp = 1
+  while mx/exp > 0:
+    arr = countsort(arr, exp)
+    exp *= 10
+  return arr
+print radixsort([170, 45, 75, 90, 802, 24, 2, 66])
 
 ''' http://stackoverflow.com/questions/5212037/find-the-kth-largest-sum-in-two-arrays
     The idea is, take a pair(i,j), we need to consider both [(i+1, j),(i,j+1)] as next val
@@ -2420,6 +2446,7 @@ def maxwin(arr,m):
       l += 1
   return mx
 print maxwin([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
+print maxwin([1, 1, 1, 0], 1)  # XXX
 
 ''' when sliding, always inc r, and only inc win size when r edge is 0 '''
 def maxWinSizeWithMzero(arr,m):
@@ -2431,7 +2458,7 @@ def maxWinSizeWithMzero(arr,m):
       if arr[r] == 0:
         win += 1
       r += 1
-    # mov left edge when win > size.
+    # Note why else: here is not correct !!!! b/c win+=1 in win<=m
     if win > m:
       if arr[l] == 0:  # always try to mov win size left edge.
         win -= 1
@@ -2553,7 +2580,7 @@ def maxProd(arr):
   totmx,curmx,curmn = 1,1,1
   for i in xrange(len(arr)):
     v = arr[i]
-    curmx,curmn = max(v,curmx*v, curmn*v), min(v,curmx*v, curmn*v)
+    curmx,curmn = max(v,curmx*v, curmn*v), min(v,curmx*v, curmn*v, 1)
     #curmx,curmn = max(curmx,curmx*v, curmn*v), min(curmn,curmx*v, curmn*v)
     totmx = max(totmx, curmx)
   return curmn,curmx,totmx
@@ -2907,7 +2934,7 @@ import sys
 def minjp(arr):
   tab = [sys.maxint]*len(arr)
   tab[0] = 0
-  for i in xrange(len(arr)):
+  for i in xrange(len(arr)):  # bottom up, expand to top. 
     for j in xrange(1,arr[i]+1):
       if i+j < len(arr):
         tab[i+j] = min(tab[i+j], tab[i] + 1)
@@ -2916,7 +2943,7 @@ def minjp(arr):
 def minjp(arr):
     tab = [sys.maxint]*len(arr)
     tab[len(arr)-1] = 0
-    for i in xrange(len(arr)-1-1, -1, -1):
+    for i in xrange(len(arr)-1-1, -1, -1):  # top down
         for j in xrange(i+1, i+arr[i]+1):
             if j < len(arr):
                 tab[i] = min(tab[i], tab[j] + 1)
@@ -3066,7 +3093,7 @@ def combIter(arr, offset, r, path, res):
         cp = path[:]
         res.append(cp)
         return res
-    for i in xrange(offset, len(arr)-r+1):
+    for i in xrange(offset, len(arr)-r+1):  # can be [offset..n]
         path.append(arr[i])
         combIter(arr, i+1, r-1, path, res)  # iter from cur idx+1, not offset+1
         path.pop()   # deep copy path for each recursion, or pop path after recursion
@@ -3086,7 +3113,7 @@ def perm(arr,offset,r,path):
     p = path[:]
     p.append(hd)
     perm(arr,offset+1,r-1,p)  # iter from offset+1
-    swap(offset,i)
+    swap(i, offset)
 perm([1,2,3,4],0,2,[])
 
 def comb(arr,r):
@@ -3563,8 +3590,7 @@ def subsetsum(l, val):
     for i in xrange(len(l)):
         for v in xrange(val+1):
             tab[i][v] = []
-        v = l[i]
-        tab[i][v].append([v])
+        tab[i][l[i]].append([l[i]])  # init tab[i_th][i_th_val] to i_th_val
     # row iterate items, col enum vals.
     for r in xrange(1,len(l)):  # re-use smaller result 1..n
         rv = l[r]
@@ -3846,16 +3872,44 @@ end = "cog"
 dict = set(["hot","dot","dog","lot","log"])
 print wordladder(start, end, dict)
 
+""" consider every cell in borad as start, dfs find all word in dict
+"""
+def boggle(G, dictionary):
+    def isValid(r,c,M,N,seen):
+        if r >= 0 and r < M and c >= 0 and c < N:
+            if G[r][c] not in seen:
+                return True
+        return False
+    def dfs(G, dictionary, r, c, seen, path, out):
+        if "".join(path) in dictionary:
+            out.append("".join(path))
+        for nr,nc in [[-1,-1],[-1,0],[-1,1]...]:
+            if isValid(nr,nc,M,N,seen):
+                path.append(G[nr][nc])
+                seen.add(G[nr][nc])
+                dfs(G, dictionary, nr, nc, seen, path, out)
+                path.pop()
+                seen.remove(G[nr][nc])
+        return out
+    M,N = len(G),len(G[0])
+    out, seen = [], set()
+    for i in xrange(M):
+        for j in xrange(N):
+            seen.add(G[i][j])
+            path = []
+            path.append(G[i][j])
+            dfs(G, dictionary, i, j, seen, path, out)
+            path.pop()
+            seen.remove(G[i][j])
+    return out
+
 """
 http://www.geeksforgeeks.org/find-the-largest-rectangle-of-1s-with-swapping-of-columns-allowed/
 """
 
 if __name__ == '__main__':
     #qsort([363374326, 364147530 ,61825163 ,1073065718 ,1281246024 ,1399469912, 428047635, 491595254, 879792181 ,1069262793], 0, 9)
-    qsort3([1,2,3,4,5,6,7,8,9,10], 0, 9)
-    qsort3([10,9,8,7,6,5,4,3,2,1], 0, 9)
-    qsort3([5,8,2,4,5,1,9], 0, 6)
-    qsort3([5,5,5,5,5,5,5], 0, 6)
+    #qsort3([1,2,3,4,5,6,7,8,9,10], 0, 9)
     #numOfIncrSeq([1,2,4,5,6], 0, [], 3)
     #pascalTriangle(10)
     #pascalTriangle_iter(10)
