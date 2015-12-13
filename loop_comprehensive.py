@@ -1277,7 +1277,7 @@ class KdTree(object):
             return parent.left
     # root.search(q,null,sys.maxint)
     def search(self, q, p, w):
-      if self.left():
+      if self.left:
         if distance(q,self.xy) < w:
           return self.xy
         else:
@@ -3059,6 +3059,20 @@ def coinchangePerm(arr, V):
     return tab[V]
 print coinchangePerm([1, 2], 3)
 
+def coinchange(arr, V):
+    tab = [0]*(V+1)
+    # can not use this. when v=8, iterate 3, will count(5,3), then iterate 5, count(3,5)
+    # for v in xrange(1,V+1):
+    #     tab[v] = 1
+    tab[0] = 1
+    for i in xrange(len(arr)):
+        fv = arr[i]
+        for v in xrange(fv,V+1):
+            tab[v] += tab[v-fv]
+    return tab[V]
+print coinchange([3,5,10], 20)
+
+
 ''' outer loop thru all value, and inner thru all coin,
 diff order counts, [1,1,1], [1,2], [2,1]
 '''
@@ -3100,7 +3114,7 @@ def combIter(arr, offset, r, path, res):
     return res
 res = [];combIter([1,2,3,4],0,2,[],res);print res;
 
-""" print all perm with len k """
+""" print all perm with len k, path served as visited[] ary """
 def perm(arr,offset,r,path):
   def swap(i,j):
     arr[i],arr[j] = arr[j],arr[i]
@@ -3684,7 +3698,7 @@ def nonDecreasingCount(n):
     tab[0][v] = 1
   for i in xrange(1,n):
     for v in xrange(10):
-      for k in xrange(v+1):
+      for k in xrange(v+1): # k is capped by prev digit v
         tab[i][v] += tab[i-1][k]
   tot = 0
   for v in xrange(10):
