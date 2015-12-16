@@ -2373,6 +2373,35 @@ def noConsecutive(text):
       segidx += 1
   return out
 
+"""
+count num of 1s that appear on all numbers less than n. 13=6{1,10,11,12,13}
+idea is: iter at each pos, if pos > 1, higher part can go upto 0~hi+1, times lostreak.
+if pos == 1, higher part only go to 0~hi, and plus remain low part, lovalue.
+"""
+def countDigitOnes(n):
+    hi,lo = n,0
+    lostreak = 1  # 10^low-bits
+    tot = 0
+    while hi > 0:
+        cur = hi % 10
+        hi = hi / 10
+        if cur == 0:
+            # higher part can only gets to 0~hi-1, and no remaining
+            tot += hi*lostreak
+        elif cur == 1:
+            # higher part can only gets to 0~hi-1, plus lo remain
+            tot += hi*lostreak
+            tot += lo+1
+        else:  # cur > 1, entire high part * streak
+            tot += (hi+1)*lostreak
+        # lo = last low bits, lostream = 10^low bits
+        lo += cur*lostreak
+        lostreak *= 10
+    return tot
+assert countDigitOnes(13) == 6
+assert countDigitOnes(219) == 152  # 2*10+9
+assert countDigitOnes(229) == 153  # 3*10
+
 """ 
 loop each char, note down expected count and fount cnt. squeeze left edge.
 """
@@ -3053,22 +3082,25 @@ def coinchangePerm(arr, V):
     # when update tab[v] at c, equivalent to accumul tab[v] that incl c
     # excl c is automatically counted when update other coin values.
     for c in xrange(len(arr)):
-        for v in xrange(1,V+1):
-            if v >= arr[c]:
-                tab[v] += tab[v-arr[c]]
+        for v in xrange(arr[c],V+1):
+            tab[v] += tab[v-arr[c]]
     return tab[V]
 print coinchangePerm([1, 2], 3)
 
+""" when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
+for coin 10, tab[10]=tab[10]+tab[0], which is #{[5,5],[10]}
+hence, do not init tab[c]=1, and not tab[v]=tab[v-c]+1
+"""
 def coinchange(arr, V):
     tab = [0]*(V+1)
-    # can not use this. when v=8, iterate 3, will count(5,3), then iterate 5, count(3,5)
+    # can not init all coins. when v=8, iterate 3, will count(5,3), then iterate 5, double count(3,5)
     # for v in xrange(1,V+1):
     #     tab[v] = 1
     tab[0] = 1
     for i in xrange(len(arr)):
         fv = arr[i]
         for v in xrange(fv,V+1):
-            tab[v] += tab[v-fv]
+            tab[v] += tab[v-fv]   # not tab[v]=tab[v-1]+1
     return tab[V]
 print coinchange([3,5,10], 20)
 
@@ -3078,56 +3110,57 @@ diff order counts, [1,1,1], [1,2], [2,1]
 '''
 def coinchangePerm(arr, V):
     tab = [0]*(V+1)
-    tab[0] = 1
+    tab[0] = 1   # when coin face value = value, match.
     for v in xrange(1,V+1):
         for c in xrange(len(arr)):
             if v >= arr[c]:
-                tab[v] += tab[v-arr[c]]
+                tab[v] += tab[v-arr[c]]  # XX f(i)=f(i-1)+1
     return tab[V]
 print coinchangePerm([1, 2], 3)
 
+def scores(arr, S):
 
 # comb can exam head, branch at header incl and excl
-def combination(arr, path, sz, offset, result):
+def combination(arr, path, sz, pos, result):
     if sz == 0:
         result.append(path)  # add to result only when sz
         return result
-    if offset >= len(arr):
+    if pos >= len(arr):
         result.append(path)
         return result
     l = path[:]  # deep copy path before recursion
-    l.append(arr[offset])
-    combination(arr, l,    sz-1, offset+1, result)
-    combination(arr, path, sz, offset+1, result)
+    l.append(arr[pos])
+    combination(arr, l,    sz-1, pos+1, result)
+    combination(arr, path, sz, pos+1, result)
     return
 
 """ recur with partial result, when path in, iter each, incl/excl each """
-def combIter(arr, offset, r, path, res):
+def combIter(arr, pos, r, path, res):
     if r == 0:  # stop recursion when r = 1
         cp = path[:]
         res.append(cp)
         return res
-    for i in xrange(offset, len(arr)-r+1):  # can be [offset..n]
+    for i in xrange(pos, len(arr)-r+1):  # can be [pos..n]
         path.append(arr[i])
-        combIter(arr, i+1, r-1, path, res)  # iter from cur idx+1, not offset+1
+        combIter(arr, i+1, r-1, path, res)  # iter from idx+1, as not swap before/after
         path.pop()   # deep copy path for each recursion, or pop path after recursion
     return res
 res = [];combIter([1,2,3,4],0,2,[],res);print res;
 
 """ print all perm with len k, path served as visited[] ary """
-def perm(arr,offset,r,path):
+def perm(arr,pos,r,path):
   def swap(i,j):
     arr[i],arr[j] = arr[j],arr[i]
   if r == 0:
     print "perm:",path
     return
-  for i in xrange(offset,len(arr)):  # here need to iter all elements
-    swap(offset,i)
-    hd = arr[offset]
+  for i in xrange(pos,len(arr)):  # here need to iter all elements
+    swap(pos,i)
+    hd = arr[pos]
     p = path[:]
     p.append(hd)
-    perm(arr,offset+1,r-1,p)  # iter from offset+1
-    swap(i, offset)
+    perm(arr,pos+1,r-1,p)  # iter from pos+1, swap before/after
+    swap(i, pos)
 perm([1,2,3,4],0,2,[])
 
 def comb(arr,r):
