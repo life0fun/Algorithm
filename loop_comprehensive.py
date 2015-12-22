@@ -74,20 +74,35 @@ def convert(num, src, trg):
     print 'convert', num, ' res:', res
     return res
 
+""" out[i+j+1]=a[j]*b[i] """
+def multiplyStr(a,b):
+    la,lb = list(a),list(b)
+    out = [0]*(len(la)+len(lb))
+    for ib in xrange(len(lb)-1,-1,-1):
+        vb = int(lb[ib])
+        for ia in xrange(len(la)-1,-1,-1):
+            va = int(la[ia])
+            out[ia+ib+1] += va*vb
+            out[ia+ib] += out[ia+ib+1]/10
+            out[ia+ib+1] %= 10
+    return out
+print multiplyStr("234","5678")
+
 """ a[0..n]*b, out[i]=a[i]*b % 10 """
 def multiply(a, b):
-  arra = map(int, list(str(a)))
+  arrb = map(int, list(str(b)))
   out = [0]*12  # num of digits in final value
   c = 0
   j = len(out)-1
-  # go from a[n..1]
-  for i in xrange(len(arra)-1,-1,-1):
-    iv = arra[i]
-    prod = iv*b + c
+  # go from b[n..1]
+  for i in xrange(len(arrb)-1,-1,-1):
+    iv = arrb[i]
+    prod = iv*a + c
     res = prod%10
     c = prod/10
     out[j] = res
     j -= 1
+  # now most significant numbers are in big carry.
   while c > 0:
     out[j] = c%10
     j -= 1
@@ -315,7 +330,7 @@ print findMax([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
 print findMax([10, 20, 30, 40, 50])
 print findMax([120, 100, 80, 20, 0])
 
-''' find min in a rotated ary '''
+''' find min in a rotated ary, l always > r, as rotated'''
 def findminRotated(arr):
   l,r=0,len(arr)-1
   while l < r:
@@ -326,7 +341,7 @@ def findminRotated(arr):
       l = mid+1
     else:
       r = mid
-  return arr[0]   # not rotated at all
+  return arr[0]   # not rotated at all, 0, not l.
 print findminRotated([5, 6, 1, 2, 3, 4])
 print findminRotated([1, 2, 3, 4])
 print findminRotated([2,1])
@@ -1843,8 +1858,8 @@ def radixsort(arr):
       count[i] += count[i-1]
     for i in xrange(len(arr)-1,-1,-1):
       d = (arr[i]/exp)%10
-      r = count[d]
-      output[r-1] = arr[i]
+      rank = count[d]
+      output[rank-1] = arr[i]
       count[d] -= 1
     return output
   mx = getMax(arr)
@@ -2005,13 +2020,13 @@ class MinHeap(object):
         self.key2idx[key] = self.size
         self.size += 1
         return self.siftup(self.size-1)
-    def siftup(self, idx):
+    def siftup(self, idx, end=self.size):
         parent = self.parent(idx)
         if parent >= 0 and self.get(parent)[0] > self.get(idx)[0]:
             self.swap(parent, idx)
             return self.siftup(parent)
         return parent
-    def siftdown(self, idx):
+    def siftdown(self, idx, end=self.size):
         l,r = self.lchild(idx), self.rchild(idx)
         minidx = idx
         if l and self.get(l)[0] < self.get(minidx)[0]:
@@ -2963,10 +2978,10 @@ import sys
 def minjp(arr):
   tab = [sys.maxint]*len(arr)
   tab[0] = 0
-  for i in xrange(len(arr)):  # bottom up, expand to top. 
-    for j in xrange(1,arr[i]+1):
-      if i+j < len(arr):
-        tab[i+j] = min(tab[i+j], tab[i] + 1)
+  for i in xrange(1,len(arr)):  # bottom up, expand to top. 
+    for j in xrange(i):
+      if arr[j]+j >= i:  # can reach i
+        tab[i] = min(tab[i], tab[j] + 1)
   return tab[len(arr)-1]
 # tab[i] : min cost from i->dst
 def minjp(arr):
@@ -2977,7 +2992,7 @@ def minjp(arr):
             if j < len(arr):
                 tab[i] = min(tab[i], tab[j] + 1)
     return tab[0]
-print minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9])
+assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 
 ''' Graph, min cost from src to dst.
 recursive, topsort, 
@@ -3757,6 +3772,24 @@ def sumcut(arr, offset, target):
 print sumcut([1,2,3], 0, 6)
 print sumcut([1,2,0,6,9], 0, 81)
 
+""" the idea is to use rolling hash, A/C/G/T maps to [00,01,10,11]
+or use last 3 bits of the char, c%7. 3 bits, 10 chars, 30bits, hash stored in last 30 bits
+"""
+from collections import defaultdict
+def dna(arr):
+  tab = defaultdict(int)
+  mask = (1 << 30) - 1  # hash stores in the last 30 bits
+  hashv,out = 0,[]
+  for i in xrange(len(arr)):
+    v = arr[i]
+    vh = ord(v)&7
+    hashv = ((hashv << 3) & mask) | vh
+    if i > 9 and tab[hashv] > 0:
+      out.append(arr[i-9:i+1])
+    tab[hashv] += 1
+  return out
+print dna("AAAAACCCCCAAAAACCCCCCAAAAAGGGTTT")
+
 
 """ if get v at j, get v+jiv at i """
 def plusbetween(arr, target):
@@ -3895,7 +3928,17 @@ def wordladder(start, end, dict):
         if nextwd == end or (nextwd in dict and not nextwd in seen):
           nextwds.append(nextwd)
     return nextwds
-  
+  def replace(wd):
+    alphabet = 'abcdefghijklmnopqrstuvwxyz'
+    splits = [(wd[:i],wd[i:]) for i in xrange(len(wd)+1)]
+    replace = [a + c + b[1:] for a,b in splits for c in alphabet if b]
+    nextwds = []
+    for e in replace:
+        nextwd = "".join(l)
+        if nextwd == end or (nextwd in dict and not nextwd in seen):
+          nextwds.append(nextwd)
+    return nextwds
+
   ladder = []
   seen = set()
   if start == end:
