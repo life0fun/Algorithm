@@ -2450,6 +2450,46 @@ def minWindow(S, T):
 
     return min_beg, min_end
 
+
+""" sub string by concat all same length keys 
+continue mov r when each r+k is in dict. skip exceeding dups.
+mov l to r and reset trackings when break out when r+k not in dict.
+"""
+from collections import defaultdict
+def concatKeys(txt, keys):
+  keydict = defaultdict(int)  # key count
+  out = []
+  for k in keys:
+    keydict[k] += 1
+  k,cnt = len(keys[0]),0
+  l,r = 0,0
+  curmap = defaultdict(int)
+  while l < len(txt):
+    r = l
+    while r < len(txt):
+      wd = txt[r:r+k]
+      if wd in keydict:
+        curmap[wd] += 1
+        cnt += 1
+        # skip exceeding dups, the same as skip leading spaces
+        while curmap[wd] > keydict[wd]:
+          lwd = txt[l:l+k]
+          curmap[lwd] -= 1
+          l += k
+          cnt -= 1
+        if cnt == len(keys):
+          out.append(l)
+        r += k  # continue mov rite edge when r+k is in dict.
+      else:
+        break
+    # after break, which r+k not dict word, reset, mov left edge
+    l = r+k
+    cnt = 0
+    curmap.clear()
+  return out
+print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "foo"])
+print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "bar"])
+
 """ max value in sliding window """
 def slideMaxWin(arr, m):
   stk = []
@@ -3076,7 +3116,7 @@ def coinchangeSet(arr, V):
     for c in xrange(len(arr)):
         tab[0][c] = 1  # when v = coin_value, init pre subproblem tab[0][c] to 1
         tab2[arr[c]][c] = 1  # or init real tab[arr[c]][c] to 1, the accumulate later.
-
+    # outer loops enum each value, check all coins under each value.
     for v in xrange(1,V+1):
         for c in xrange(len(arr)):
             excl = 0
@@ -3094,7 +3134,7 @@ print coinchangeSet([1, 2, 3], 4)
 def coinchangePerm(arr, V):
     tab = [0]*(V+1)
     tab[0] = 1
-    # when update tab[v] at c, equivalent to accumul tab[v] that incl c
+    # when tab[v]+=tab[v-c] at c, means incl c from tab[v-c] to reach tab[v].
     # excl c is automatically counted when update other coin values.
     for c in xrange(len(arr)):
         for v in xrange(arr[c],V+1):
@@ -3112,6 +3152,7 @@ def coinchange(arr, V):
     # for v in xrange(1,V+1):
     #     tab[v] = 1
     tab[0] = 1
+    # outer loop enum each coin mean incl the coin, and excl when passed.
     for i in xrange(len(arr)):
         fv = arr[i]
         for v in xrange(fv,V+1):
@@ -3565,51 +3606,25 @@ def decode(dstr):
     tab = [0]*(len(dstr)+1)
     tab[0] = 1
     tab[1] = 1
-    for i in xrange(1,len(dstr)):
+    for i in xrange(2,len(dstr)+1):
         tab[i] = tab[i-1]
-        if dstr[i-1] == "1" or (dstr[i-1] == "2" and dstr[i] <= "6"):
+        if dstr[i-1-1] == "1" or (dstr[i-1-1] == "2" and dstr[i-1] <= "6"):
             tab[i] += tab[i-2]
     return tab[len(dstr)]
+print decode("122")
 
 """ DP with O(1) """
 def decode(dstr):
   if len(dstr) == 1:
     return 1
   prepre, pre = 1, 1
-  for i in xrange(1, len(dstr)):
+  for i in xrange(2,len(dstr)+1):
     cur = pre
-    if dstr[i-1] == '1' or (dstr[i-1]=='2' and dstr[i]<='6'):
+    if dstr[i-1-1] == '1' or (dstr[i-1-1]=='2' and dstr[i-1]<='6'):
       cur += prepre  # fib seq here.
     prepre, pre = pre, cur
   return cur
-
-""" recursion, bottom up, forward, from 0..n-1 """
-def decode(dstr, pos):
-  if dstr[pos] == '0':  # when forward, no more branch when hits 0
-    return 0
-  if pos == len(dstr)-1:
-    return 1
-  if dstr[pos] == '1' or (dstr[pos] == '2' and dstr[pos+1] <= '6'):
-    if pos+2 < len(dstr):
-      return decode(dstr, pos+1) + decode(dstr, pos+2)
-    else:
-      return decode(dstr, pos+1) + 1
-  else:
-    return decode(dstr, pos+1)
-
-""" recursion, top down, backward, from n-1..0 """
-def decode(dstr, pos):
-  if pos == 0:
-    return 1
-  if dstr[pos] == '0':  # when backwards, recur when hits 0.
-    return decode(dstr, pos-1)
-  if dstr[pos-1] == '1' or (dstr[pos-1]=='2' and dstr[pos]<='6'):
-    if pos - 2 < 0:
-      return decode(dstr, pos-1) + 1
-    else:
-      return decode(dstr, pos-1) + decode(dstr,pos-2)
-  else:
-    return decode(dstr, pos-1)
+print decode("122")
 
 
 """ top down offset n -> 1 when dfs inclusion branch """
