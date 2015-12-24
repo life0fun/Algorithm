@@ -2490,47 +2490,76 @@ def concatKeys(txt, keys):
 print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "foo"])
 print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "bar"])
 
-""" max value in sliding window """
-def slideMaxWin(arr, m):
-  stk = []
-  maxw = [0]*len(arr)
-  for i in xrange(len(arr)):
-    if i < m:
-      if len(stk) > 0 and arr[i] > stk[-1][0]:
-        stk.pop()
-      stk.append([arr[i],i])
-      maxw[i] = stk[0][0]
-    else:
-      if stk[0][1] == i-m:  # 2,3,4, idx 2 out of window 4-2
-        stk.pop(0)
-      while len(stk) > 0 and arr[i] > stk[-1][0]:
-        stk.pop()
-      stk.append([arr[i],i])
-      maxw[i] = stk[0][0]
-  return maxw
-print slideMaxWin([5,3,4,6,9,7,2],2)
+from collections import defaultdict
+def concatKeys(s, arr):
+  l,r,k = 0,0,len(arr[0])
+  out = []
+  expect = defaultdict(int)
+  count = defaultdict(int)
+  seen = 0
+  for w in arr:
+    expect[w] += 1
+  # keep mov rite edge, inner adjust left edge when skip dups
+  while r < len(s):
+    wd = s[r:r+k]
+    if not wd in expect:   # reset and restart
+      r += k
+      l = r
+      seen = 0
+      count.clear()
+      continue
+    count[wd] += 1
+    seen += 1
+    # appear more caused by dups in left, slide left
+    while count[wd] > expect[wd]:
+      prewd = s[l:l+k]
+      seen -= 1
+      count[prewd] -= 1
+      l += k    # slide left edge
+    if seen == len(arr):
+      out.append([l,r])
+    # slide rite edge
+    r += k
+  return out
 
-
-""" slide window w in an array, find max at each position.
-this equivalent to find max sz of window with m 0s in it.
-"""
-def maxwin(arr,m):
-  l,r,win,mx=0,0,0,0
+""" sliding win, outer while loop move rite, inner while loop mov left """
+def maxWin(arr, m):
+  l,r,mx = 0,0,0
+  out,stk = [],[]
   while r < len(arr):
-    if win <= m:
-      while r < len(arr) and arr[r] == 1:
-        r += 1
-      mx = max(mx, r-l)
-      win += 1
-      r += 1    # advance r to item after 0 as next window start.
-    else:   
-      while l < len(arr) and arr[l] == 1:
-        l += 1
-      win -= 1
+    # enqueu rite edge first, then check
+    while len(stk) and stk[-1][1] < arr[r]:
+      stk.pop()
+    stk.append([r,arr[r]])
+    if r-l+1 >= m:
+      out.append(stk[0])
+      if stk[0][0] == l:
+        stk.pop(0)
       l += 1
-  return mx
-print maxwin([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
-print maxwin([1, 1, 1, 0], 1)  # XXX
+    r += 1
+  return out
+print maxWin([5,3,4,6,9,7,2],2)
+print maxWin([5,3,4,6,9,7,2],3)
+
+""" sliding window, outer loop mov rite edge, inner loop mov left edge 
+You can check arr[i], or check win size.
+"""
+def maxWinSizeMzero(arr, m):
+    l,r,zeros,mx=0,0,0,0
+    while r < len(arr):
+        if arr[r] == 0:
+            # shrink by park left edge to next rite zero.
+            zeros += 1
+            if zeros > m:
+                while arr[l] != 0:
+                    l += 1
+                # left edge shrink mov over zero
+                l += 1
+                zeros -= 1
+        r += 1
+        mx = max(mx, r-l)
+    return mx
+print maxWinSizeMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
 ''' when sliding, always inc r, and only inc win size when r edge is 0 '''
 def maxWinSizeWithMzero(arr,m):
@@ -3288,20 +3317,28 @@ def powerset(arr, offset, path, result):
         l.append(arr[i])
         powerset(arr, i+1, l, result)
 
-# [a [ab [abc]] [ac [acb]]], [b [ba [bac]] [bc [bca]]], [c ...]
-def permutation(arr, offset, path, result):
-    if offset == len(arr)-1:
-        path.append(arr[offset])
-        result.append(path)
-        return
-    for i in xrange(offset, len(arr)):
-        l = path[:]
-        # arr is changed by swapping each rite, append to path, recur, change back arr.
-        arr[offset], arr[i] = arr[i], arr[offset]
-        l.append(arr[offset])
-        permutation(arr, offset+1, l, result)
-        arr[offset], arr[i] = arr[i], arr[offset]
-# need to pss different arr upon each recursion, vs. different offset.
+"""when recur to pos, carry the path to when we reach to pos.
+"""
+def perm(arr, pos, path, res):
+  def swap(arr, i, j):
+    arr[i],arr[j] = arr[j],arr[i]
+  if pos == len(arr):
+    l = path[:]
+    res.append(l)
+    return
+  for i in xrange(pos, len(arr)):
+    # if i is dup of pos, skip it.
+    if i != pos and arr[pos] == arr[i]:
+        continue
+    swap(arr, pos, i)
+    path.append(arr[pos])
+    perm(arr, pos+1, path, res)
+    path.pop()
+    swap(arr, pos, i)
+path=[];res=[];perm(list("123"), 0, [], res);print res
+path=[];res=[];perm(list("112"), 0, [], res);print res
+
+# need to pass different arr upon each recursion, vs. different offset.
 def perm(arr):
     result = []
     if len(arr) == 1:
@@ -3489,23 +3526,42 @@ def alibaba(n, strategy):
 """
 
 """ valid parenthese, two branches """
-def parenthese(n, lefts, rites, path, result):
-    if (lefts == n):
-        for i in xrange(rites, n):
-            path.append(")")
-        result.append(path)
-        return
-    if (lefts == rites):
-        p = path[:]
-        p.append("(")
-        parenthese(n, lefts+1, rites, p, result)
-        return    
+def genParenth(n, l, r, path, res):
+  if l == n:
     p = path[:]
-    p.append("(")
-    parenthese(n, lefts+1, rites, p, result)
-    p = path[:]
-    p.append(")")
-    parenthese(n, lefts, rites+1, p, result)
+    for i in xrange(r,n):
+      p.append(")")
+    res.append("".join(p))
+    return res
+  path.append("(")
+  genParenth(n,l+1,r, path, res)
+  path.pop()
+  if l > r:
+    path.append(")")
+    genParenth(n,l,r+1, path, res)
+    path.pop()
+  return res
+path=[];res=[];genParenth(3,0,0,path,res);print res;
+
+from collections import deque
+def genParenth(n):
+  q = deque()
+  res = []
+  q.append(["(", 1])
+  while len(q):
+    s,lc = q.popleft()
+    if lc == n:
+      for i in xrange(2*n-len(s)):
+        s += ")"
+      res.append(s)
+      continue
+    q.append([s+"(", lc+1])
+    if len(s) < 2*lc:
+      for i in xrange(2*lc-len(s)):
+        s += ")"
+        q.append([s+"(", lc+1])
+  return res
+print genParenth(3)
 
 
 """ word break, O(n2) """
@@ -3645,41 +3701,53 @@ def subsetsum(l, offset, n, path, result):
     # always reduce when excl current, with excl l[i] path.
     subsetsum(l, offset-1, n, path, result)
 
-"""
- for loop try each item, form a tree with each item as top rite tree node.
-"""
-def subsetsum(l, offset, n, path, result):
-    if n == 0:
-        result.append(path)
-        return
-    for i in xrange(offset, -1, -1):
-        if n >= l[i]:  # only include l[i]
-            p = path[:]
-            p.append(l[i])  # deep copy before recursion.
-            subsetsum(l, i, n-l[i], p, result)
-            # shift offset when no dup allowed, to incl once
-            # subsetsum(l, i-1, n-l[i], p, result)
+""" the combination, recur i+1, dup not allowed, recur i, dup allowed. """
+def comb(arr, n, pos, path, res):
+  if n == 0:
+    p = path[:]
+    res.append(p)
+    return
+  if pos == len(arr):
+    return
+  for i in xrange(pos, len(arr)):
+    if arr[i] <= n:
+      path.append(arr[i])
+      comb(arr, n-arr[i], i, path, res)     # dup allowed
+      comb(arr, n-arr[i], i+1, path, res)   # distinct
+      path.pop()
+  return res
+path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
 
-""" DP tab[offset][val] """
-from collections import defaultdict
-def subsetsum(l, val):
-    tab = [[0]*(val+1) for i in xrange(len(l))]  # tab[i][v], l[0:i] has v
-    for i in xrange(len(l)):
-        for v in xrange(val+1):
-            tab[i][v] = []
-        tab[i][l[i]].append([l[i]])  # init tab[i_th][i_th_val] to i_th_val
-    # row iterate items, col enum vals.
-    for r in xrange(1,len(l)):  # re-use smaller result 1..n
-        rv = l[r]
-        for v in xrange(val+1):
-            if len(tab[r-1][v]) > 0:  # not incl current
-                tab[r][v].append(list(tab[r-1][v]))
-            if len(tab[r-1][v-rv]) > 0:
-                p = list(tab[r-1][v-rv])
-                for e in p:
-                    e.append(rv)
-                    tab[r][v].append(e)
-    return tab[len(l)-1][val]
+
+""" DP tab[pos][val], when dup allowed, recur tab[pos], else tab[pos-1] """
+def subsetSum(arr, t, dupAllowed=False):
+  tab = [[None]*(t+1) for i in xrange(len(arr))]
+  for i in xrange(0,len(arr)):
+    for j in xrange(t+1):
+      if i > 0:  # cp prev row
+        tab[i][j] = tab[i-1][j][:]
+      else:
+        tab[i][j] = []
+      if j == arr[i]:
+        tab[i][j].append([j])
+      if j > arr[i]:
+        if len(tab[i][j-arr[i]]) > 0:  # there
+          if dupAllowed:
+            for e in tab[i][j-arr[i]]:
+              p = e[:]
+              p.append(arr[i])
+              tab[i][j].append(p)
+          elif i > 0:
+            for e in tab[i-1][j-arr[i]]:
+              p = e[:]
+              p.append(arr[i])
+              tab[i][j].append(p)
+  return tab[len(arr)-1][t]
+print subsetSum([2,3,6,7],7)
+print subsetSum([2,3,6,7],7, True)
+print subsetSum([2,3,6],8)
+print subsetSum([2,3,6],8, True)
+
 
 """ min number left after remove triplet.
 [2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
