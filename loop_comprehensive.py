@@ -110,52 +110,50 @@ def multiply(a, b):
   return out
 print multiply(345, 678)
 
-'''
-in-place merge use while ij loop, example, [1 3 9] [2 4 5 11]
-the key is, when l[i] > l[j], need to shift j subary until the one > l[i]
+""" merge two sorted arry """
+def merge(a,b):
+  ia,ib,la,lb=0,0,len(a),len(b)
+  out = []
+  while ia < la and ib < lb:
+    if a[ia] > b[ib]:
+      out.append(a[ia])
+      ia += 1
+    else:
+      out.append(b[ib])
+      ib += 1
+  for i in xrange(ia, la):
+    out.append(a[i])
+  for j in xrange(ib, lb):
+    out.append(b[j])
+  return out
+print merge([9,8,3], [6,5])
 
-'''
-def mergeInPlace(p,q):
-    l = []
-    l.extend(p)
-    l.extend(q)
-    i = 0
-    j = len(p)  # j starts from q
-    while i < len(l) and j < len(l):
-        if i == j:
-            j += 1
-            continue
-        if l[i] <= l[j]:
-            i += 1
-            continue
-        else:
-            tmp = l[i]
-            substart = subend = j
-            while l[subend] < l[i]:
-                subend += 1
-            # fill insert pos, i
-            l[i] = l[substart]
-            # subary cp of j ary where items < l[i]
-            l[substart:subend-1] = l[substart+1:subend-1]
-            # insert l[i] into the correct idx
-            l[subend] = tmp
-            continue
-    return l
+""" the max num can be formed from k digits from a, preserve the order in a """
+def maxKbits(a, k):
+    drops = len(a)-k   # how many ele from a to be dropped
+    out = []
+    for i in xrange(len(a)):
+        # when a[i] grt than pre and we have room to drop, then drop prev.
+        while drops > 0 and len(out) > 0 and a[i] > out[-1]:
+            out.pop()
+            drops -= 1
+        out.append(a[i])
+    return out[:k]  # only keep first k bits
+print reduce(lambda x,y: x*10+y, maxKbits([3,9,5,6,8,2], 2))
 
-def testMergeSort():
-    q = []
-    l = [1,3,4,7,9]
-    r = [2,3,7,12]
-    #mergeSort(l,r,q)
-    mergeInPlace(l,r)
-    print 'merge: ',q
-
-    q = []
-    l = [3,3,3,3,4]
-    r = [3,3,3,3,6]
-    r = []
-    mergeSort1(l,r,q)
-    print q
+""" max k digit num can be formed from a, b, preserve the order in each ary 
+idea is i digits from a, k-i digits from b, then merge.
+"""
+def maxNum(a,b,k):
+    def merge(a,b):  # one line version
+        return [max(a,b).pop(0) for _ in a+b]
+    mxnum = 0
+    for i in xrange(k+1):
+        lout = merge(maxKbits(a,i), maxKbits(b,k-i))
+        v = reduce(lambda x,y:x*10+y, lout)
+        mxnum = max(mxnum,v)
+    return mxnum
+print maxNum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)
 
 
 ''' 1. pick a pivot, put to end
@@ -775,19 +773,19 @@ class AVLTree(object):
             else:
                 return False, self
     def largestSmaller(self, parent, k):
-        if k < self.key:
+        if self.key > k:  # go left
           if not self.left:
             if parent and k > parent.key:
               return parent
             else:
               return None
           else:
-            return self.left.largestSmaller(k, self)
+            return self.left.largestSmaller(self, k)
         else:
           if not self.rite:
             return self
           else:
-            return self.rite.largestSmaller(k,self)
+            return self.rite.largestSmaller(self, k)
     ''' rank is num of node smaller than key '''
     def getRank(self, key):
         if key == self.key:
@@ -795,7 +793,7 @@ class AVLTree(object):
                 return self.left.size + 1
             else:
                 return 1
-        elif key < self.key:
+        elif self.key > key: 
             if self.left:
                 return self.left.getRank(key)
             else:
@@ -823,9 +821,9 @@ class AVLTree(object):
                 self.rite = self.rite.insert(key)
         # after insersion, rotate if needed.
         self.updateHeightSize()  # rotation may changed left. re-calculate
-        newroot = self.rotate(key)
-        print "insert ", key, " new root after rotated ", newroot
-        return newroot  # ret rotated new root
+        newself = self.rotate(key)
+        print "insert ", key, " new root after rotated ", newself
+        return newself  # ret rotated new root
     # delete a node.
     def delete(self,key):
         if key < self.key:
@@ -1870,6 +1868,29 @@ def radixsort(arr):
   return arr
 print radixsort([170, 45, 75, 90, 802, 24, 2, 66])
 
+""" min stack, when push x, push a pair (x, min) """
+class MinStack:
+    def __init__(self, minv=sys.maxint):
+        self.stk = []
+    def push(self, x):
+        if x < self.minv:
+            self.minv = x
+        self.stk.append([x,self.minv])
+    def push(self,x):
+        if x < self.minv:
+            self.stk.append(self.minv)
+            self.minv = x
+        self.stk.append(x)
+    def pop(self):
+        if self.stk[-1] == self.minv:
+            cur = self.stk.pop()
+            self.minv = self.stk.pop()
+        else:
+            cur = self.stk.pop()
+        if len(self.stk) == 0:
+            self.minv = sys.maxint
+        return cur
+
 ''' http://stackoverflow.com/questions/5212037/find-the-kth-largest-sum-in-two-arrays
     The idea is, take a pair(i,j), we need to consider both [(i+1, j),(i,j+1)] as next val
     in turn, when considering (i-1,j), we need to consider (i-2,j)(i-1,j-1), recursively.
@@ -2255,33 +2276,6 @@ list scan comprehension compute sub seq min/max, upbeat global min/max for each 
    slide thru, at each pos, compare to both lowest and highest value. if it set new low, 
    set cur_low and re-count, if it > cur_high, upbeat global max.
 
-5. max distance between two items where right item > left items.
-   http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
-   pre-scan, Lmin[0..n]   store min see so far. so min[i] is mono descrease.
-             Rmax[n-1..0] store max see so far from left <- right. so mono increase.
-   the observation here is, A[i-1] nullified by A[i] when A[i-1] < A[i], the same as A[j-1] by A[j].
-   after we have Lmin and Rmax, scan both from left to right, stretch Rmax to the farest right.
-
-6. slide window w in an array, find max at each position.
-   a maxheap with w items. heap node(val, idx). when sliding, add rite(val, idx) to heap.
-   if prq.top().idx < rite-winsize, max is prq.top(). if not, pop top. continue to pop while top().idx
-   not in window(rite-winsz). O(n): deque, loop pop q tail if rite > q.tail.
-
-7. convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
-   cost[i], at ary index i, the cost of sorted subary[0..i] with l[i] is the last.
-   l = [5,4,7,3] => 5-1, rm 3. cost[i+1], dp each 1<k<i, 
-    l[i+1] > l[k], cost[i+1] = cost[k] + del l[k] .. l[i+1]
-    l[i+1] < l[k], cost[i+1] = min of make each l[k] to l[i+1], or del l[k]
-
-8. three number sum to zero
-   sort first, two point at both end, i, k, the j moving in between.
-   for i in 0..sz to try all possibilities.
-
-9. first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
-    foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
-
-10. max square, square[i,j] = max(square[i,j+1], square[i+1,j], square[i+1,j+1])
-
 11. largest subary with equal 0s and 1s.
     a. change 0 -> -1, reduce to larget subary sum to 0.
     b. in case start from idx other than head, sum[j]==sum[i], max(j-1). hash[sumval] = idx. 
@@ -2508,6 +2502,7 @@ def concatKeys(s, arr):
       seen = 0
       count.clear()
       continue
+    # calculate rite edge first, as r starts from 0
     count[wd] += 1
     seen += 1
     # appear more caused by dups in left, slide left
@@ -2790,7 +2785,7 @@ def stock_profit(L):
     for i in xrange(sz):
         tot = max(tot, lp[i] + up[i])
     return tot
-''' max profit i = max_profit of [0..i-1], or sell at day i + profit[i..n]'''
+""" profit[i]=maxProfit[i..n], from left <- rite, then from left -> rite """
 def profit(arr):
   sz = len(arr)
   profit=[0]*sz
@@ -3563,6 +3558,71 @@ def genParenth(n):
   return res
 print genParenth(3)
 
+""" remove invalid (, recursion version """
+def rmInvalidParenth(s,pos,path,lcnt,rcnt,res):
+  if pos == len(s):
+    print lcnt, rcnt, path
+    res.append(path)
+    return
+  if s[pos] == "(":
+    p = path[:]
+    p.append(s[pos])
+    return rmInvalidParenth(s,pos+1,p,lcnt+1,rcnt,res)
+  if s[pos] == ")":
+    if lcnt > rcnt:
+      p = path[:]
+      p.append(s[pos])
+      return rmInvalidParenth(s,pos+1,p,lcnt,rcnt+1,res)
+    else:
+      r = len(path)-1
+      while path[r] == ")":
+        r -= 1
+      p = path[:]
+      rmInvalidParenth(s,pos+1,p,lcnt,rcnt,res)
+      r -= 1
+      for i in xrange(r, 0, -1):
+        if path[i] == ")":
+          p = path[0:i] + path[i+1:]
+          p.append(")")
+          rmInvalidParenth(s,pos+1,p,lcnt,rcnt,res)
+  return res
+s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
+s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
+
+""" anything we can do with recursion, we can use bfs """
+from collections import deque
+def bfsInvalidParen(s):
+  res = []
+  q = deque()
+  q.append([1, ["("], 1, 0])
+  while len(q):
+    pos,path,l,r = q.popleft()
+    if pos == len(s):
+      if l == r:
+        res.append(path)
+      continue
+    if s[pos] == "(":
+      p = path[:]
+      p.append("(")
+      q.append([pos+1, p, l+1, r])
+    else:
+      if l > r:
+        p = path[:]
+        p.append(")")
+        q.append([pos+1, p, l, r+1])
+      else:
+        p = path[:]
+        q.append([pos+1,p,l,r])
+
+        pr = ''.join(map(lambda x:str(x),path)).rindex("(")
+        for i in xrange(pr,0,-1):
+          if path[i] == ")":
+            p = path[0:i] + path[i+1:]
+            p.append(")")
+            q.append([pos+1, p, l, r])
+  return res
+print bfsInvalidParen("()())()")
+
 
 """ word break, O(n2) """
 # result=[];path=[];word="catsanddog";print wordbreak(word,0,path,result)
@@ -3578,57 +3638,42 @@ def wordbreak(word, offset, path, result):
             wordbreak(word, i+1, l, result)
     return result
 
-""" recursion version """
-from collections import defaultdict
-def wordbreak(word):
-    dict = ["cat", "cats", "and", "sand", "dog"]
-    tab = defaultdict(lambda: []) # tab[i] = tab[j] + cw, when j < i
-    def dp(offset):
-        for i in xrange(offset-1, -1, -1):
-            cw = word[i:offset+1]
-            if cw in dict:
-                if i == 0:
-                    tab[offset].append([cw])
-                    return
-                if len(tab[i-1]) == 0:
-                    dp(i-1)
-                if len(tab[i-1]) > 0:
-                    for e in tab[i-1]:
-                        tmp = list(e)
-                        tmp.append(cw)
-                        tab[offset].append(tmp)
-    dp(len(word)-1)   # recursion to rest from head
-    return tab[len(word)-1]
-
-""" DP version """
+''' bottom up, tab[i] = tab[i-k] '''    
 def wordbreak(word, dict):
-    dp = [0 for i in xrange(word)]
-    for i in xrange(word):
-        for j in xrange(i):
-            cw = word[j:i+1]
-            if cw in dict:
-                if j == 0:
-                    dp[i] = 1
-                elif dp[j]:
-                    dp[i] += dp[j]
-    return dp[len(word)-1]
+  tab = [None]*len(word)
+  for i in xrange(len(word)):
+    tab[i] = []   # init result for ith here
+    for j in xrange(i):
+      wd = word[j:i+1]
+      if wd in dict:
+        if j == 0:  # check j=0 to avoid tab[j-1] index out
+          tab[i].append([wd])
+        elif tab[j-1] != None:
+          for e in tab[j-1]:
+            tmp = e[:]
+            tmp.append(wd)
+            tab[i].append(tmp)
+  return tab[len(word)-1]
+#print wordbreak("leetcodegeekforgeek",["leet", "code", "for","geek"])
+print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
-from collections import defaultdict
-def wordbreak(word):
-    dict = ["cat", "cats", "and", "sand", "dog"]
-    tab = defaultdict(lambda: [])
-    for i in xrange(len(word)):
-        for j in xrange(i-1, -1, -1):
-            cw = word[j:i+1]
-            if cw in dict:
-                if j == 0:
-                    tab[i].append([cw])
-                elif len(tab[j-1]) > 0:
-                    for e in tab[j-1]:
-                        tmp = list(e)
-                        tmp.append(cw)
-                        tab[i].append(tmp)
-    return tab[len(word)-1]
+''' top down, tab[i] = tab[i+k] '''
+def wordbreak(word, dict):
+  tab = [None]*len(word)
+  for i in xrange(len(word)-1, -1, -1):
+    tab[i] = []
+    for j in xrange(i+1,len(word)):
+      wd = word[i:j+1]
+      if wd in dict:
+        if j == len(word)-1:
+          tab[i].append([wd])
+        elif tab[j+1] != None:
+          for e in tab[j+1]:
+            tmp = e[:]
+            tmp.append(wd)
+            tab[i].append(tmp)
+  return tab[0]
+print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
 """ word wrap, w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j], w
 """
@@ -3748,6 +3793,46 @@ print subsetSum([2,3,6,7],7, True)
 print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
 
+
+""" max number of k digits from 2 arr, order preserved, can interleave 
+tab[i,j,k]=max([i+1,j,k],[i,j+1,k],a[i]+[i+1,j,k-1],b[j]+[i,j+1,k-1])
+"""
+def maxnum(a,b,k):
+  tab = [[[0]*k for i in xrange(len(b))] for j in xrange(len(a))]
+  r,c = len(a)-1,len(b)-1
+  for z in xrange(1,k+1):
+    tab[r][c][z] = max(a[r],b[c])
+  for z in xrange(1,k+1):
+    for i in xrange(r,-1,-1):
+      for j in xrange(c,-1,-1):
+        if z > r-i+1+c-j+1:
+          continue
+        if i == r and j == c:
+          continue
+        tab[i][j][z] = max()
+  return tab[3][5][1]
+print maxnum([3, 9], [8, 9], 3)  # [9, 8, 9]
+print maxnum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)  # [9, 8, 6, 5, 3]
+
+def maxnum(nums1, nums2, k):
+    def prep(nums, k):
+        drop = len(nums) - k
+        out = []
+        for num in nums:
+            while drop and out and out[-1] < num:
+                out.pop()
+                drop -= 1
+            out.append(num)
+        return out[:k]
+
+    def merge(a, b):
+        return [max(a, b).pop(0) for _ in a+b]
+
+    return max(merge(prep(nums1, i), prep(nums2, k-i))
+               for i in range(k+1)
+               if i <= len(nums1) and k-i <= len(nums2))
+
+print maxnum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)
 
 """ min number left after remove triplet.
 [2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
@@ -3892,6 +3977,20 @@ def plusbetween(arr, target):
   return tab[sz-1][target]
 print plusbetween([1,2,0,6,9], 81)
 
+""" min insertion into str to convert to palindrom. tab[i,j]=min ins to convert str[i:j]
+tab[i][j] = tab[i+1,j-1] or min(tab[i,j-1], tab[i+1,j])
+"""
+def minInsertPalindrom(arr):
+    tab = [[0]*len(arr) for i in xrange(len(arr))]
+    for slen in xrange(1,len(arr)):
+        for i in xrange(len(arr)-slen):
+            j = i + slen
+            if arr[i] == arr[j]:
+                tab[i][j] = tab[i+1][j-1]
+            else:
+                tab[i][j] = min(tab[i][j-1], tab[i+1][j])
+    return tab[0][len(arr)-1]
+
 def palindromMincut(s, offset):
     ''' partition s into sets of palindrom substrings, with min # of cuts 
         mincut[offset] = 1 + min(mincut[k] for k in [offset+1..n] where s[offset:k] is palindrom)
@@ -4001,7 +4100,7 @@ enum all ascii to get new char, recur not visited.
 from collections import deque
 import string
 def wordladder(start, end, dict):
-  def getNext(wd):
+  def getNext(wd, seen):
     nextwds = []
     for i in xrange(len(list(wd))):
       for c in list(string.ascii_lowercase):
@@ -4030,7 +4129,7 @@ def wordladder(start, end, dict):
   q.append([start,[]])
   while len(q) > 0:
     [wd,path] = q.popleft()
-    for nextwd in getNext(wd):
+    for nextwd in getNext(wd, seen):
       if nextwd == end:
         path.append(nextwd)
         ladder.append(path)
