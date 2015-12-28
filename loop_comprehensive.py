@@ -2575,6 +2575,60 @@ def maxWinSizeWithMzero(arr,m):
   return maxWinsize
 print maxWinSizeWithMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
+""" distinct sequence of t in s bottom up, each s[i] row a list, each t[j] a col in row. 
+[ [t0, t1, ...], [t0, t1,], ...], incl s[i] for t[j], tab[i-1,j-1], excl, tab[i-1,j]
+tab[i][j] += tab[i-1][j-1], tab[i-1][j], when j==0, tab[i][0] += 1
+when iter col, new col as the last entry in row entry list.
+"""
+def distinctSeq(s,t):
+  tab = [[0]*len(t) for i in xrange(len(s))]
+  for j in xrange(len(t)):
+    for i in xrange(len(s)):
+      if i > 0:
+        tab[i][j] = tab[i-1][j]
+      if t[j] == s[i]:   # incl s[i] only when equals
+        if j == 0:
+          tab[i][j] += 1
+        elif i > 0:
+          tab[i][j] += tab[i-1][j-1]
+  return tab[len(s)-1][len(t)-1]
+print distinctSeq("aeb", "be")
+print distinctSeq("abbbc", "bc")
+print distinctSeq("rabbbit", "rabbit")
+
+"""as tab[i][j] only from tab[i-1][j-1], two rows solution """
+def distinct(s,t):
+  pre, row = [0]*len(t), [0]*len(t)
+  for r in xrange(len(s)):
+    for c in xrange(len(t)):
+      if s[r] == t[c]:
+        if c == 0:
+          row[c] += 1
+        else:
+          row[c] += pre[c-1]
+    pre = row[:]
+  return row[len(t)-1]
+print distinct("bbbc", "bbc")
+print distinct("abbbc", "bc")
+
+""" one row version, just cache row[col] as pre before mutate row[col]"""
+def distinct(s,t):
+  row = [0]*len(t)
+  pre = 0
+  for r in xrange(len(s)):
+    for c in xrange(len(t)):
+      if s[r] == t[c]:
+        if c == 0:
+          pre = row[c]
+          row[c] += 1
+        else:
+          tmp = row[c]
+          row[c] += pre
+          pre = tmp
+      else:
+        pre = row[c]
+  return row[len(t)-1]
+print distinct("bbc", "bbc")
 
 ''' in a seq of nums, find max(Aj - Ai) where j > i '''
 def maxDelta(A):
@@ -3058,19 +3112,8 @@ def minjp(arr):
     return tab[0]
 assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 
-''' Graph, min cost from src to dst.
-recursive, topsort, 
-'''
-def minpath(G, src, dst, path):
-    mincost = sys.maxint
-    # only consider cur node's neighbor, VS. enum each as intermediate
-    for v in neighbor(src):
-        if not v in path:
-            p = path[:]
-            p.append(v)
-            mincost = min(mincost, minpath(G,v,dst,p) + G[src][v])
-    return mincost
-''' enum each intermediate node '''
+
+''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
 def minpath(G,src,dst,cost,tab):
     mincost = cost[src][dst]
     # for each intermediate node
@@ -3081,9 +3124,7 @@ def minpath(G,src,dst,cost,tab):
             minpath(G,v,dst))
         tab[src][dst] = mincost
     return tab[src][dst]
-''' enum each station as intermediate 
-tab[i] = min cost to reach i from src 0
-'''
+''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
 def minpath(G, src, dst):
     tab = [sys.maxint]*szie
     tab[0] = 0
@@ -3092,7 +3133,8 @@ def minpath(G, src, dst):
         if i != j:
           tab[i] = min(tab[j]+cost[i][j], tab[i])
     return tab[n-1]
-''' mobile pad k edge '''
+
+''' mobile pad k edge, tab[src][dst][k] '''
 def minpath(G, src, dst, k):
     for gap in xrange(k):
       for s in G.vertices():
@@ -3126,13 +3168,20 @@ def minpath(G, src, dst):
 v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
 v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
 '''
-def knapsack(maxw, W, V):
+def knapsack(maxw, n, W, V):
+    tab = [[0]*W for i in xrange(n)]  # each wt is a col in row [[w1-v1, w2-v2, ...]]
     for i in xrange(n):
-        for w in xrange(maxw):
-            tab[i,w] = max(tab[i-1, w], tab[i-1, w-W[i-1]] + V[i])
-    return tab[n, maxw]
+        for w in xrange(maxw+1):
+            if i == 0:
+                tab[i][w] = V[i]
+            else:
+                tab[i][w] = max(tab[i-1][w], tab[i-1][w-W[i-1]] + V[i])
+    return tab[n-1][maxw]
 
-# Set. excl current i, and incl cuurent i
+
+""" bottom up each val, a new row [c1,c2,...], this way, at each val,
+all coins are considered, so coin order matters, like permutation.
+if not, then outer loop coin first, then enum each val under each coin"""
 # tab[3,2] = [12],[21] t(3,2) = [111]+[[2,(1,2)]=[2][1]]+[[1,2]]
 def coinchangeSet(arr, V):
     tab = [[0]*len(arr) for i in xrange(V+1)]
@@ -3154,19 +3203,24 @@ def coinchangeSet(arr, V):
     return tab[V][len(arr)-1]
 print coinchangeSet([1, 2, 3], 4)
 
-''' outer loop thru all coin, so act as excl/incl the coin '''
+''' outer loop thru all value, and inner thru all coin,
+diff order counts, [1,1,1], [1,2], [2,1]
+'''
 def coinchangePerm(arr, V):
     tab = [0]*(V+1)
-    tab[0] = 1
-    # when tab[v]+=tab[v-c] at c, means incl c from tab[v-c] to reach tab[v].
-    # excl c is automatically counted when update other coin values.
-    for c in xrange(len(arr)):
-        for v in xrange(arr[c],V+1):
-            tab[v] += tab[v-arr[c]]
+    tab[0] = 1   # when coin face value = value, match.
+    for v in xrange(1,V+1):
+        for c in xrange(len(arr)):
+            if v >= arr[c]:
+                tab[v] += tab[v-arr[c]]  # XX f(i)=f(i-1)+1
     return tab[V]
 print coinchangePerm([1, 2], 3)
 
-""" when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
+""" bottom up each val, a new row [c1,c2,...], loop coin col first, 
+so at 2, no knowledge of 3, kind of sorted, so 5=[2,3], no [3,2]
+if for comb, loop val first, at each value, look for all coin.
+
+when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
 for coin 10, tab[10]=tab[10]+tab[0], which is #{[5,5],[10]}
 hence, do not init tab[c]=1, and not tab[v]=tab[v-c]+1
 """
@@ -3182,23 +3236,8 @@ def coinchange(arr, V):
         for v in xrange(fv,V+1):
             tab[v] += tab[v-fv]   # not tab[v]=tab[v-1]+1
     return tab[V]
-print coinchange([3,5,10], 20)
+print coinchange([2,3,5], 10)
 
-
-''' outer loop thru all value, and inner thru all coin,
-diff order counts, [1,1,1], [1,2], [2,1]
-'''
-def coinchangePerm(arr, V):
-    tab = [0]*(V+1)
-    tab[0] = 1   # when coin face value = value, match.
-    for v in xrange(1,V+1):
-        for c in xrange(len(arr)):
-            if v >= arr[c]:
-                tab[v] += tab[v-arr[c]]  # XX f(i)=f(i-1)+1
-    return tab[V]
-print coinchangePerm([1, 2], 3)
-
-def scores(arr, S):
 
 # comb can exam head, branch at header incl and excl
 def combination(arr, path, sz, pos, result):
@@ -3638,7 +3677,8 @@ def wordbreak(word, offset, path, result):
             wordbreak(word, i+1, l, result)
     return result
 
-''' bottom up, tab[i] = tab[i-k] '''    
+''' bottom up, enum pos row up, [[wd1,wd2,...], [wd3,wd4],...]
+'''
 def wordbreak(word, dict):
   tab = [None]*len(word)
   for i in xrange(len(word)):
@@ -3675,6 +3715,27 @@ def wordbreak(word, dict):
   return tab[0]
 print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
+""" distince sequence of t in s, bottom up each i row in s, each j take a new col.
+[[t1, t2, ...], [t1, t2, ..], pos3, ...] tab[i][j] +=(tab[i-1][j-1], tab[i-1][j])
+init condition, when j==0, tab[i][0] += tab[i-1][0]
+"""
+def distinctSeq(s,t):
+  tab = [[0]*len(t) for i in xrange(len(s))]
+  for j in xrange(len(t)):
+    for i in xrange(len(s)):
+      if i > 0:
+        tab[i][j] = tab[i-1][j]
+      if t[j] == s[i]:   # incl s[i] only when equals
+        if j == 0:
+          tab[i][j] += 1
+        elif i > 0:
+          tab[i][j] += tab[i-1][j-1]
+  return tab[len(s)-1][len(t)-1]
+print distinctSeq("aeb", "be")
+print distinct("abbbc", "bc")
+print distinctSeq("rabbbit", "rabbit")
+
+
 """ word wrap, w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j], w
 """
 def wordWrap(words, m):
@@ -3702,7 +3763,7 @@ def calPack(arr):
     excl = curexcl
   return max(incl,excl)
 
-""" various way for decode """
+""" bottom up enum each pos, row pos is the cnt of ways for str[0:pos] """
 def decode(dstr):
     tab = [0]*(len(dstr)+1)
     tab[0] = 1
@@ -3764,7 +3825,9 @@ def comb(arr, n, pos, path, res):
 path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
 
 
-""" DP tab[pos][val], when dup allowed, recur tab[pos], else tab[pos-1] """
+""" bottom up each pos, at each set[0:pos], each val as a new col, entry is a list
+[ [v1-list, v2-list, ...], [v1-list, v2-lsit, ...], ...] 
+when dup allowed, recur same pos, tab[pos], else tab[pos-1] """
 def subsetSum(arr, t, dupAllowed=False):
   tab = [[None]*(t+1) for i in xrange(len(arr))]
   for i in xrange(0,len(arr)):
@@ -3814,25 +3877,6 @@ def maxnum(a,b,k):
 print maxnum([3, 9], [8, 9], 3)  # [9, 8, 9]
 print maxnum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)  # [9, 8, 6, 5, 3]
 
-def maxnum(nums1, nums2, k):
-    def prep(nums, k):
-        drop = len(nums) - k
-        out = []
-        for num in nums:
-            while drop and out and out[-1] < num:
-                out.pop()
-                drop -= 1
-            out.append(num)
-        return out[:k]
-
-    def merge(a, b):
-        return [max(a, b).pop(0) for _ in a+b]
-
-    return max(merge(prep(nums1, i), prep(nums2, k-i))
-               for i in range(k+1)
-               if i <= len(nums1) and k-i <= len(nums2))
-
-print maxnum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)
 
 """ min number left after remove triplet.
 [2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
@@ -3860,8 +3904,8 @@ def minLeft(arr, k):
         return ret
 
 """ m faces, n dices, num of ways to get value x
- tab[i,v] 0-i dices, ways to get value v.
- tab[i,v] += tab[i-1,v], tab[i-1, v-m]
+[[v1,v2], [v1,v2,...], d2, d3, ...], each v1 column is cnt of face 1..m
+tab[d,v] += tab[d-1, v] + tab[d-1,v-[f1,f2]]
 """
 def dice(m,n,x):
     tab = [[0]*n for i in xrange(x+1)]
@@ -3874,9 +3918,9 @@ def dice(m,n,x):
                     tab[i][v] += tab[i-1][v-f]
     return tab[n,x] 
 
-''' digitSum(2,5) = 14, 23, 32, 41 and 50 
-3 loops, n digits, j sum, and k loop last digit from 0-9
-tab[i,v] = sum(tab[i-1,k] for k in 0..9)
+''' digitSum(2,5) = 14, 23, 32, 41 and 50
+bottom up each row of i digits, each val is a col, 
+[[1,2,..], [v1, v2, ...], ..] tab[i,v] = sum(tab[i-1,k] for k in 0..9)
 '''
 def digitSum(n,s):
   tab = [[0]*max(s+1,10) for i in xrange(n)]
@@ -3902,11 +3946,10 @@ def digitSumDiffOne(n):
                 else:
                     odd[l][k] += even[l-1][k-d]
 
-"""
-  tab[i,v] = tot non descreasing at ith digit, end with value v
-  tab[i,v] = sum(tab[i-1,k] for k in 0..9
-  count(n, d) = ∑ (count(n-1, i)) where i varies from 0 to d
-  Total count = ∑ count(n-1, d) where d varies from 0 to n-1
+""" tab[i,v] = tot non descreasing at ith digit, end with value v
+bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
+tab[n,d] = sum(tab[n-1,k] where k takes various value[0..9]
+Total count = ∑ count(n-1, d) where d varies from 0 to n-1
 """
 def nonDecreasingCount(n):
   tab = [[0]*10 for i in xrange(n)]
