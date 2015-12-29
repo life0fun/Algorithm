@@ -2698,7 +2698,7 @@ print maxProd([-6,3,-4,-5,-2])
 mx[i] = max(mx[i-1]*v, mn[i-1]*v, v),
 at each idx, either it starts a new seq, or it join prev sum
 '''
-def max_product(a):
+def maxProduct(a):
     maxProd = cur_max = cur_min = a[0]  # first el as cur_max/min
     cur_beg, cur_end, max_beg, max_end = 0,0,0,0
     for cur in a[1:]:
@@ -3242,22 +3242,6 @@ def comb(arr,r):
   return res
 print comb("abc", 2)
 
-def incseq(n,k,p,out):
-  if len(p) == k:
-    cp = p[:]
-    out.append(cp)
-    return out
-  if len(p) == 0:
-    start = 1
-  else:
-    start = p[-1]+1
-  for i in xrange(start,n):
-    p.append(i)
-    incseq(n,k,p,out)
-    p.pop()
-  return out
-out = []
-print incseq(5,2,[],out)
 
 # Generate all possible sorted arrays from alternate eles of two sorted arrays
 def alterCombRecur(a,b,ai,bi,froma,path,out):
@@ -3331,11 +3315,9 @@ def perm(arr):
             result.append(e)
     return result
 
-""" Permutation rank, http://stackoverflow.com/questions/8940470/algorithm-for-finding-numerical-permutation-given-lexicographic-index
-"""
 
-""" next permutation, from l <- R, find first partition, then find first
-larger, then swap, the reverse right partition.
+""" next permutation, from l <- R, find first ele < next, partition, 
+then find first larger, then swap, the reverse right partition.
 """
 def nextPermutation(txt):
     for i in xrange(len(txt)-2, -1, -1):
@@ -3369,7 +3351,8 @@ def permRank(arr):
   return rank
 print permRank("bacefd")
 
-""" find the index char of each next subsize """
+""" find the index of the char of each next subsize, 
+rank/factorial(n) is the index of the char in the sorted arr """
 from math import factorial
 def nthPerm(arr, n):
   out = []
@@ -3495,7 +3478,39 @@ def alibaba(n, strategy):
 (all-permutations '(a b c))
 """
 
-""" valid parenthese, two branches """
+""" partition s to restore ip, bfs and dfs recursion """
+from collections import deque
+def restoreIp(s):
+  res, q = [], deque()
+  q.append([0, 0, []])
+  while len(q) > 0:
+    pos, segs, ips = q.popleft()
+    if pos == len(s):
+      res.append(ips)
+      continue
+    ed = min(len(s), pos+2)
+    for i in xrange(pos, ed+1):
+      if int(s[pos:i+1]) <= 255 and segs < 4:
+        p = ips[:]
+        p.append(s[pos:i+1])
+        q.append([i+1, segs+1, p])
+  return res
+print restoreIp("25525511135")
+
+def restoreIp(s, pos, path, res):
+  if pos == len(s):
+    res.append(path)
+    return
+  ed = min(len(s), pos+2)
+  for i in xrange(pos+1, ed+1):
+    if int(s[pos:i+1]) <= 255 and len(path) < 4:
+      p = path[:]
+      p.append(s[pos:i+1])
+      restoreIp(s, i+1, p, res)
+  return res
+s="25525511135";path=[];res=[];restoreIp(s,0,path,res);print res;
+
+""" valid parenthese, dfs recursion, when reaching pos, carry path"""
 def genParenth(n, l, r, path, res):
   if l == n:
     p = path[:]
@@ -3532,6 +3547,7 @@ def genParenth(n):
         q.append([s+"(", lc+1])
   return res
 print genParenth(3)
+
 
 """ remove invalid (, at each invalid pos, dfs excl/incl recursion """
 def rmInvalidParenth(s,pos,path,lcnt,rcnt,res):
@@ -3990,6 +4006,42 @@ def plusbetween(arr, target):
           tab[i][v+jiv] = True  # we can get v at j-1, then get v+jiv at i
   return tab[sz-1][target]
 print plusbetween([1,2,0,6,9], 81)
+
+""" next palindrom num, cp left -> rite, inc mid, propagate carry left/rite is mid=9"""
+def nextPalindrom(n):    
+  s = list(str(n))
+  sz = len(s)
+  l,r,m = (sz-1)/2,sz/2,(sz-1)/2
+  while l >= 0:
+    if s[l] != s[r]:
+      s[r] = s[l]
+    l -= 1
+    r += 1
+  if int("".join(s)) <= n:
+    s[m] = str(int(s[m])+1)
+  if sz % 2 == 0:
+    s[m+1] = s[m]
+  if s[m] == "10":
+    s[m] = "0"
+    l,r = m-1, min(sz-1, m+1)
+    if s[r] == "10":
+        s[r] = "0"
+        r += 1
+    while s[l] == "9":
+        s[l] = s[r] = "0"
+        l -= 1
+        r += 1
+    if l >= 0:
+        s[l] = str(int(s[l])+1)
+        s[r] = s[l]
+    else:
+        del s[m]
+        s.insert(0, "1")
+        s.append("1")
+  return int("".join(s))
+assert nextPalindrom(9) == 11
+assert nextPalindrom(99) == 101
+assert nextPalindrom(1234) == 1331
 
 """ min insertion into str to convert to palindrom. tab[i,j]=min ins to convert str[i:j]
 tab[i][j] = tab[i+1,j-1] or min(tab[i,j-1], tab[i+1,j])
