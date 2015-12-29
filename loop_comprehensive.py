@@ -1352,7 +1352,7 @@ class TernaryTree(object):
         if hd == self.key:
             if len(word) == 1:
                 self.leaf = True
-                return self.eq
+                return self
             else:  # more keys, advance and descend
                 if not self.eq:
                     self.eq = TernaryTree(word[1])  # new eq point to next char.
@@ -2181,11 +2181,11 @@ class SkipList:
 """
 from collections import defaultdict
 class HashTimeTable:
-    class Entry:
+    class Entry:   # Map.Entry value is a sorted list with k/v with timestamp
         def __init__(self, k, v, ts):
             self.key = k
             self.next = None
-            # value list is tuple of [v,ts]
+            # value list is a sorted list with entry as tuple of [v,ts]
             self.valueList = [[v,ts]]   # volatile
         def bisect(self, arr, ts=None):
             if not ts:
@@ -2575,60 +2575,6 @@ def maxWinSizeWithMzero(arr,m):
   return maxWinsize
 print maxWinSizeWithMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
-""" distinct sequence of t in s bottom up, each s[i] row a list, each t[j] a col in row. 
-[ [t0, t1, ...], [t0, t1,], ...], incl s[i] for t[j], tab[i-1,j-1], excl, tab[i-1,j]
-tab[i][j] += tab[i-1][j-1], tab[i-1][j], when j==0, tab[i][0] += 1
-when iter col, new col as the last entry in row entry list.
-"""
-def distinctSeq(s,t):
-  tab = [[0]*len(t) for i in xrange(len(s))]
-  for j in xrange(len(t)):
-    for i in xrange(len(s)):
-      if i > 0:
-        tab[i][j] = tab[i-1][j]
-      if t[j] == s[i]:   # incl s[i] only when equals
-        if j == 0:
-          tab[i][j] += 1
-        elif i > 0:
-          tab[i][j] += tab[i-1][j-1]
-  return tab[len(s)-1][len(t)-1]
-print distinctSeq("aeb", "be")
-print distinctSeq("abbbc", "bc")
-print distinctSeq("rabbbit", "rabbit")
-
-"""as tab[i][j] only from tab[i-1][j-1], two rows solution """
-def distinct(s,t):
-  pre, row = [0]*len(t), [0]*len(t)
-  for r in xrange(len(s)):
-    for c in xrange(len(t)):
-      if s[r] == t[c]:
-        if c == 0:
-          row[c] += 1
-        else:
-          row[c] += pre[c-1]
-    pre = row[:]
-  return row[len(t)-1]
-print distinct("bbbc", "bbc")
-print distinct("abbbc", "bc")
-
-""" one row version, just cache row[col] as pre before mutate row[col]"""
-def distinct(s,t):
-  row = [0]*len(t)
-  pre = 0
-  for r in xrange(len(s)):
-    for c in xrange(len(t)):
-      if s[r] == t[c]:
-        if c == 0:
-          pre = row[c]
-          row[c] += 1
-        else:
-          tmp = row[c]
-          row[c] += pre
-          pre = tmp
-      else:
-        pre = row[c]
-  return row[len(t)-1]
-print distinct("bbc", "bbc")
 
 ''' in a seq of nums, find max(Aj - Ai) where j > i '''
 def maxDelta(A):
@@ -3084,13 +3030,12 @@ def regMatch(T, P, offset):
 
 
 """ """ """ """ """
-Dynamic programming, divide and conquer the problem space from minimal, then recursion. F[i,j] = {F[i-1, j-1]}
-You can do recursion fn with reducing the space to the leaf. or tabular F[i,j] from i-1,j-1, etc.
+Dynamic Programming, better than DFS/BFS.
+bottom up each row, inside each row, iter each col.
+[ [col1, col2, ...], [col1, col2, ...], row3, row4, ...]
+At each row/col, recur incl/excl situation.
+Boundary condition: check when i/j=0 can not i/j-1.
 """ """ """ """ """
-''' question is deduce ? or dependent ?
- depend: tab[i] is min from i->end. = min(tab[i+k]+1), tab[0]
- deduce: expand arr, tab[j] is min from 0->i, tab[j] = tab[j-k]+1
-'''
 # tab[i] : min cost from start->i
 import sys
 def minjp(arr):
@@ -3111,7 +3056,6 @@ def minjp(arr):
                 tab[i] = min(tab[i], tab[j] + 1)
     return tab[0]
 assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
-
 
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
 def minpath(G,src,dst,cost,tab):
@@ -3169,14 +3113,14 @@ v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] 
 v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
 '''
 def knapsack(maxw, n, W, V):
-    tab = [[0]*W for i in xrange(n)]  # each wt is a col in row [[w1-v1, w2-v2, ...]]
-    for i in xrange(n):
-        for w in xrange(maxw+1):
-            if i == 0:
-                tab[i][w] = V[i]
-            else:
-                tab[i][w] = max(tab[i-1][w], tab[i-1][w-W[i-1]] + V[i])
-    return tab[n-1][maxw]
+  tab = [[0]*W for i in xrange(n)]  # each wt is a col in row [[w1-v1, w2-v2, ...]]
+  for i in xrange(n):
+    for w in xrange(maxw+1):
+      if i == 0:
+        tab[i][w] = V[i]
+      else:
+        tab[i][w] = max(tab[i-1][w], tab[i-1][w-W[i-1]] + V[i])
+  return tab[n-1][maxw]
 
 
 """ bottom up each val, a new row [c1,c2,...], this way, at each val,
@@ -3184,36 +3128,36 @@ all coins are considered, so coin order matters, like permutation.
 if not, then outer loop coin first, then enum each val under each coin"""
 # tab[3,2] = [12],[21] t(3,2) = [111]+[[2,(1,2)]=[2][1]]+[[1,2]]
 def coinchangeSet(arr, V):
-    tab = [[0]*len(arr) for i in xrange(V+1)]
-    tab2 = [[0]*len(arr) for i in xrange(V+1)]
+  tab = [[0]*len(arr) for i in xrange(V+1)]
+  tab2 = [[0]*len(arr) for i in xrange(V+1)]
+  for c in xrange(len(arr)):
+    tab[0][c] = 1  # when v = coin_value, init pre subproblem tab[0][c] to 1
+    tab2[arr[c]][c] = 1  # or init real tab[arr[c]][c] to 1, the accumulate later.
+  # outer loops enum each value, check all coins under each value.
+  for v in xrange(1,V+1):
     for c in xrange(len(arr)):
-        tab[0][c] = 1  # when v = coin_value, init pre subproblem tab[0][c] to 1
-        tab2[arr[c]][c] = 1  # or init real tab[arr[c]][c] to 1, the accumulate later.
-    # outer loops enum each value, check all coins under each value.
-    for v in xrange(1,V+1):
-        for c in xrange(len(arr)):
-            excl = 0
-            if c >= 1:
-                excl = tab[v][c-1]
-            incl = 0
-            if v >= arr[c]:   # when v = coin value, tab[0][c]
-                incl = tab[v-arr[c]][c]
-            tab[v][c] = excl + incl
-            tab2[v][c] += excl + incl   # accumulate on top, as tab2[0][c]=0 here.
-    return tab[V][len(arr)-1]
+        excl = 0
+        if c >= 1:
+            excl = tab[v][c-1]
+          incl = 0
+          if v >= arr[c]:   # when v = coin value, tab[0][c]
+              incl = tab[v-arr[c]][c]
+          tab[v][c] = excl + incl
+          tab2[v][c] += excl + incl   # accumulate on top, as tab2[0][c]=0 here.
+  return tab[V][len(arr)-1]
 print coinchangeSet([1, 2, 3], 4)
 
 ''' outer loop thru all value, and inner thru all coin,
 diff order counts, [1,1,1], [1,2], [2,1]
 '''
 def coinchangePerm(arr, V):
-    tab = [0]*(V+1)
-    tab[0] = 1   # when coin face value = value, match.
-    for v in xrange(1,V+1):
-        for c in xrange(len(arr)):
-            if v >= arr[c]:
-                tab[v] += tab[v-arr[c]]  # XX f(i)=f(i-1)+1
-    return tab[V]
+  tab = [0]*(V+1)
+  tab[0] = 1   # when coin face value = value, match.
+  for v in xrange(1,V+1):
+    for c in xrange(len(arr)):
+        if v >= arr[c]:
+            tab[v] += tab[v-arr[c]]  # XX f(i)=f(i-1)+1
+  return tab[V]
 print coinchangePerm([1, 2], 3)
 
 """ bottom up each val, a new row [c1,c2,...], loop coin col first, 
@@ -3387,6 +3331,9 @@ def perm(arr):
             result.append(e)
     return result
 
+""" Permutation rank, http://stackoverflow.com/questions/8940470/algorithm-for-finding-numerical-permutation-given-lexicographic-index
+"""
+
 """ next permutation, from l <- R, find first partition, then find first
 larger, then swap, the reverse right partition.
 """
@@ -3408,72 +3355,61 @@ def nextPermutation(txt):
         r -= 1
     return txt
 
-""" permutation rank. at pos i, tot i! permutations, out of which, rite smaller * (i-1)!
-    find count n on the rite of pos is smaller, n * pos!, with dup, n*pos!/d[i]
+""" iter each substr head, rank += index(hd,substr)*(n-pos)! 
+the index calcu is based off smaller substr by removing current head
+"""
+from math import factorial
+def permRank(arr):
+  def index(c, arr):
+    return sorted(arr).index(c)
+  sz,rank = len(arr),1
+  for i in xrange(sz):
+    hd = arr[i]
+    rank += index(hd, arr[i:]) * factorial(sz-i-1)
+  return rank
+print permRank("bacefd")
+
+""" find the index char of each next subsize """
+from math import factorial
+def nthPerm(arr, n):
+  out = []
+  while len(arr) > 0:
+    subsize = factorial(len(arr)-1)
+    index = n / subsize
+    out.append(arr[index])
+    # next iteration with smaller arr by reomoving this round's char.
+    n -= index*subsize
+    arr = arr[:index] + arr[index+1:]
+  return "".join(out)
+assert(nthPerm("1234", 15), "3241")
+
+""" solution with right smaller count. 
+At each pos, there are (n-pos)! perms. If there are k eles smaller than cur,
+means those k packs smaller than cur. so rank += k*(n-pos)!
+with dup, tot is (n-pos)!/A!*B!, and we need sum up all k copies of dup ele to rank
 """
 from collections import defaultdict
-def permRankNoDup(s):
-    def ordchar(c):
-        return ord(c)-ord('a')
-    def fact(n):
-        f = 1
-        for i in xrange(1,n+1):
-            f = f*i
-        return f
-    def riteSmaller(arr):
-        smallcnt = [0]*26
-        count = [0]*26
-        for i in xrange(len(arr)-1, -1, -1):
-            cord = ordchar(arr[i])
-            count[cord] += 1  # count char.
-            for j in xrange(cord):  # for smaller char to [a,b,.c], sum count
-                smallcnt[cord] += count[j]
-        return smallcnt
-    sz = len(arr)
-    arr = list(s)
-    smallcnt = riteSmaller(arr)
-    permu = fact(len(arr))  # from hd, # of perm = len(arr)!
-    rank = 1
-    # tot fact(n), i=[0,1,..n], n!/n-1, perm/=sz!/[n..1]
-    for i in xrange(len(arr)-1):
-        c = arr[i]
-        ritesmaller = smallcnt[ordchar(c)]
-        permu /= (sz-i)  # 6!/6=5!, 5!/5=4!, ...
-        rank += ritesmaller*permu
-        print i, c, ritesmaller, permu, rank
-    return rank
-
-from collections import defaultdict
-def permRankDup(s):
-    def ordchar(c):
-        return ord(c)-ord('a')
-    def fact(n):
-        f = 1
-        for i in xrange(1,n+1):
-            f = f*i
-        return f
-    def riteSmaller(arr):
-        smallcnt = [0]*26
-        count = [0]*26
-        for i in xrange(len(arr)-1, -1, -1):
-            cord = ordchar(arr[i])
-            count[cord] += 1
-            for j in xrange(cord):
-                smallcnt[cord] += count[j]
-        return smallcnt, count
-    arr = list(s)
-    smallcnt, count = riteSmaller(arr)
-    permu = fact(len(arr))
-    rank = 1
-    for i in xrange(len(arr)-1):
-        c = arr[i]
-        cidx = ordchar(c)
-        ritesmaller = smallcnt[cidx]
-        permu = permu / (count[cidx] * (sz-i))
-        count[cidx] -= 1
-        rank += ritesmaller*permu
-        print i, c, ritesmaller, permu, rank
-    return rank
+from math import factorial
+def permRankDup(arr):
+  def permTotal(n, counter):
+    tot = factorial(n)
+    for k,v in counter.items():
+      tot /= factorial(v)
+    return tot
+  rank = 1
+  counter = defaultdict(int)
+  for i in range(len(arr)-1,-1,-1):
+      e = arr[i]
+      counter[e] += 1
+      tot = permTotal(len(arr)-i-1, counter)
+      for k,v in counter.items():
+        if e > k:  # rite smaller, sum up all v copies of char k smaller than arr[i]
+          rank += tot*v
+  return rank
+assert permRankDup('3241') == 16
+print permRankDup('baa')
+print permRankDup('BOOKKEEPER') == 10743
+assert permRankDup("BCBAC") == 15
 
 
 """ for each possibility, strategy should have 1 hit
@@ -3597,7 +3533,7 @@ def genParenth(n):
   return res
 print genParenth(3)
 
-""" remove invalid (, recursion version """
+""" remove invalid (, at each invalid pos, dfs excl/incl recursion """
 def rmInvalidParenth(s,pos,path,lcnt,rcnt,res):
   if pos == len(s):
     print lcnt, rcnt, path
@@ -3628,7 +3564,7 @@ def rmInvalidParenth(s,pos,path,lcnt,rcnt,res):
 s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
 s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
 
-""" anything we can do with recursion, we can use bfs """
+""" anything we can do with recursion, we should do with bfs """
 from collections import deque
 def bfsInvalidParen(s):
   res = []
@@ -3715,9 +3651,27 @@ def wordbreak(word, dict):
   return tab[0]
 print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
-""" distince sequence of t in s, bottom up each i row in s, each j take a new col.
-[[t1, t2, ...], [t1, t2, ..], pos3, ...] tab[i][j] +=(tab[i-1][j-1], tab[i-1][j])
-init condition, when j==0, tab[i][0] += tab[i-1][0]
+""" boundary condition set in the loop """
+def editDistance(a, b):
+  tab = [[0]*(len(b)+1) for i in xrange(len(a)+1)]
+  for i in xrange(len(a)+1):
+    for j in xrange(len(b)+1):
+      if i==0:
+        tab[0][j] = j
+      elif j==0:
+        tab[i][0] = i
+      elif a[i-1] == b[j-1]:
+        tab[i][j] = tab[i-1][j-1]
+      else:
+        tab[i][j] = 1 + min(tab[i][j-1], tab[i-1][j], tab[i-1][j-1])
+    return tab[len(a)][len(b)]
+
+
+
+""" distinct sequence of t in s; bottom up, each s[i] row a list, each t[j] a col in row. 
+[ [t0, t1, ...], [t0, t1,], ...], tab[i][j] += tab[i-1][j-1], tab[i-1][j], when j==0, tab[i][0] += 1
+incl s[i] for t[j], tab[i-1,j-1], excl, tab[i-1,j], you can do dfs recursion also.
+when iter col, cp prev row, new col as the last entry in the new row entry list.
 """
 def distinctSeq(s,t):
   tab = [[0]*len(t) for i in xrange(len(s))]
@@ -3732,25 +3686,42 @@ def distinctSeq(s,t):
           tab[i][j] += tab[i-1][j-1]
   return tab[len(s)-1][len(t)-1]
 print distinctSeq("aeb", "be")
-print distinct("abbbc", "bc")
+print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
 
+"""as tab[i][j] only from tab[i-1][j-1], two rows solution """
+def distinct(s,t):
+  pre, row = [0]*len(t), [0]*len(t)
+  for r in xrange(len(s)):
+    for c in xrange(len(t)):
+      if s[r] == t[c]:
+        if c == 0:
+          row[c] += 1
+        else:
+          row[c] += pre[c-1]
+    pre = row[:]
+  return row[len(t)-1]
+print distinct("bbbc", "bbc")
+print distinct("abbbc", "bc")
 
-""" word wrap, w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j], w
-"""
-def wordWrap(words, m):
-    sz = len(words)
-    #extras[i][j] extra spaces if words from i to j are put in a single line
-    extras = [[0]*sz for i in xrange(sz)]
-    lc = [[0]*sz for i in xrange(sz)] # cost of line with word i:j
-    for linewords in xrange(sz/m):
-        for st in xrange(sz-linewords):
-            ed = st + linewords
-            extras[st][ed] = abs(m-sum(words, st, ed))
-    for i in xrange(sz):
-        for j in xrange(i):
-            lc[i] = min(lc[i] + extras[j][i])
-    return lc[sz-1]
+""" one row version, just cache row[col] as pre before mutate row[col]"""
+def distinct(s,t):
+  row = [0]*len(t)
+  pre = 0
+  for r in xrange(len(s)):
+    for c in xrange(len(t)):
+      if s[r] == t[c]:
+        if c == 0:
+          pre = row[c]
+          row[c] += 1
+        else:
+          tmp = row[c]
+          row[c] += pre
+          pre = tmp
+      else:
+        pre = row[c]
+  return row[len(t)-1]
+print distinct("bbc", "bbc")
 
 
 """ keep track of 2 thing, max of incl cur ele, excl cur ele """
@@ -4217,6 +4188,23 @@ def boggle(G, dictionary):
             path.pop()
             seen.remove(G[i][j])
     return out
+
+""" word wrap, w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j], w
+"""
+def wordWrap(words, m):
+    sz = len(words)
+    #extras[i][j] extra spaces if words from i to j are put in a single line
+    extras = [[0]*sz for i in xrange(sz)]
+    lc = [[0]*sz for i in xrange(sz)] # cost of line with word i:j
+    for linewords in xrange(sz/m):
+        for st in xrange(sz-linewords):
+            ed = st + linewords
+            extras[st][ed] = abs(m-sum(words, st, ed))
+    for i in xrange(sz):
+        for j in xrange(i):
+            lc[i] = min(lc[i] + extras[j][i])
+    return lc[sz-1]
+
 
 """
 http://www.geeksforgeeks.org/find-the-largest-rectangle-of-1s-with-swapping-of-columns-allowed/
