@@ -128,7 +128,8 @@ def merge(a,b):
   return out
 print merge([9,8,3], [6,5])
 
-""" the max num can be formed from k digits from a, preserve the order in a """
+""" the max num can be formed from k digits from a, preserve the order in ary.
+key point is drop digits along the way."""
 def maxKbits(a, k):
     drops = len(a)-k   # how many ele from a to be dropped
     out = []
@@ -665,7 +666,6 @@ def serdePreBst(val, parent, leftchild, minv, maxv):
             serdePreBst(nextv, node, False, val, sys.maxint)
 
 
-
 """ no same char shall next to each other """
 from collections import defaultdict
 def noAdj(text):
@@ -698,7 +698,6 @@ class AVLTree(object):
     def __init__(self,key):
         self.key = key
         self.size = 1
-        self.rank = 0
         self.height = 1
         self.left = None
         self.rite = None
@@ -1359,11 +1358,11 @@ class TernaryTree(object):
                 self.eq.insert(word[1:])
         elif hd < self.key:
             if not self.left:
-                self.left = TernaryTree(hd)
+                self.left = TernaryTree(hd)  # left tree root is hd
             self.left.insert(word)
         else:
             if not self.rite:
-                self.rite = TernaryTree(hd)
+                self.rite = TernaryTree(hd)  # rite tree root is hd
             self.rite.insert(word)
     def search(self, word):   # return parent where eq originated
         if not len(word):
@@ -2542,17 +2541,17 @@ You can check arr[i], or check win size.
 def maxWinSizeMzero(arr, m):
     l,r,zeros,mx=0,0,0,0
     while r < len(arr):
-        if arr[r] == 0:
-            # shrink by park left edge to next rite zero.
-            zeros += 1
-            if zeros > m:
-                while arr[l] != 0:
-                    l += 1
-                # left edge shrink mov over zero
-                l += 1
-                zeros -= 1
-        r += 1
-        mx = max(mx, r-l)
+      if arr[r] == 0:
+        # shrink by park left edge to next rite zero.
+        zeros += 1
+        if zeros > m:
+          while arr[l] != 0:
+            l += 1
+          # left edge shrink mov over zero
+          l += 1
+          zeros -= 1
+      r += 1
+      mx = max(mx, r-l)
     return mx
 print maxWinSizeMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
@@ -2769,7 +2768,9 @@ def maxprofit(arr):
         rmax = min(rmax, arr[i])
     return maxprofit
 
-""" allow 2 transactions, lmin[l], bot on lmin, sell today. rmax[r], bot today, sell rmax.
+""" allow 2 transactions, so maxp = max{one transaction on 0..i, one trans on i+1..n}
+left trans end at i, max(lp[i-1], S[i]-valley)
+rite trans start at i, max(r[i+1], peak-S[i])
 """
 def stock_profit(L):
     sz = len(L)
@@ -2777,7 +2778,7 @@ def stock_profit(L):
     valley,peak=sys.maxint,0
     for i in xrange(sz):
         valley = min(valley, L[i])
-        lp[i] = max(lp[i-1], L[i]-valley)
+        lp[i] = max(lp[i-1], L[i]-valley)  # max of lp[i-1],
         # price peak going up from n..0
         j = sz-i-1
         peak = max(peak, L[j])
@@ -2819,36 +2820,43 @@ print many_profit([2,4,3,5,4,2,8,10])
 """ first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
 """
-def firstMissingPos(L):
-    def bucketsort(L):
-        for i in len(L)-1:
-            while L[i] != i+1:
-                if L[i] < 0 or L[i] > len(L) || L[i] == L[L[i]-1]:
-                    break
-                swap(L[i], L[L[i]-1])
-    bucketsort(L)
-    for i in len(L)-1:
-        if L[i] != i+1:
-            return i+1
-    return len(L)+1
+def firstMissing(L):
+  def bucketsort(L):
+    for i in xrange(len(L)):
+      while L[i] > 0 and L[i] != i+1:
+        v = L[i]-1
+        if L[v] < 0:  # alrady detected dup and toggled
+          L[v] -= 1
+          L[i] = 0    # Li is a dup, can not swap anymore, set it to 0, skip
+        else:         # L[v] >= 0: when dup, entry was set to 0, we still can swap to it.
+          L[i],L[v] = L[v],L[i]
+          L[v] = -1
+      if L[i] == i+1:
+        L[i] = -1
+  bucketsort(L)
+  for i in xrange(len(L)):
+    if L[i] == 0:  # ith has i+1 will be -1, missing replaced by dup, so 0.
+      break
+  return i+1
+print firstMissing([4,2,5,2,1])
 
 """ toggle arr[i] -= 1 for count """
 def bucketsort_count(arr):
   def swap(arr, i,j):
     arr[i],arr[j] = arr[j],arr[i]
   for i in xrange(len(arr)):
-    if arr[i] == i+1:
-        arr[i] = -1
-        continue
     while arr[i] != i+1 and arr[i] > 0:
       v = arr[i]-1
-      if arr[v] < 0:
-        arr[v] -= 1
-        arr[i] = 0  # set to 0 indicate processed.
-      else:
+      if arr[v] >= 0:    # only swap back to ith when not swapped.
         swap(arr, i, v)
-        arr[v] = -1
+        arr[v] = -1     # after swap, toggle to -1
+      else:             # already swapped, inc v, set current ith to 0
+        arr[v] -= 1
+        arr[i] = 0  # set cur pos to 0 indicate it is dup and dup processed
+    if arr[i] == i+1:
+      arr[i] = -1
   return arr
+print bucket([1, 2, 4, 3, 2])
 
 """ max repetition num, bucket sort. change val to -1, dec on every reptition.
     bucket sort, when arr[i] is neg, means it has correct pos. when hit again, inc neg.
@@ -3048,13 +3056,13 @@ def minjp(arr):
   return tab[len(arr)-1]
 # tab[i] : min cost from i->dst
 def minjp(arr):
-    tab = [sys.maxint]*len(arr)
-    tab[len(arr)-1] = 0
-    for i in xrange(len(arr)-1-1, -1, -1):  # top down
-        for j in xrange(i+1, i+arr[i]+1):
-            if j < len(arr):
-                tab[i] = min(tab[i], tab[j] + 1)
-    return tab[0]
+  tab = [sys.maxint]*len(arr)
+  tab[len(arr)-1] = 0
+  for i in xrange(len(arr)-1-1, -1, -1):  # top down
+    for j in xrange(i+1, i+arr[i]+1):
+      if j < len(arr):
+        tab[i] = min(tab[i], tab[j] + 1)
+  return tab[0]
 assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
@@ -3112,15 +3120,31 @@ def minpath(G, src, dst):
 v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
 v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
 '''
-def knapsack(maxw, n, W, V):
-  tab = [[0]*W for i in xrange(n)]  # each wt is a col in row [[w1-v1, w2-v2, ...]]
-  for i in xrange(n):
-    for w in xrange(maxw+1):
+def knapsack(arr, varr, W):
+  prerow, row = [0]*(W+1), [0]*(W+1)
+  for i in xrange(len(arr)):
+    row = prerow[:]
+    w,v = arr[i], varr[i]
+    for ww in xrange(w, W+1):
       if i == 0:
-        tab[i][w] = V[i]
+        row[w] = v
       else:
-        tab[i][w] = max(tab[i-1][w], tab[i-1][w-W[i-1]] + V[i])
-  return tab[n-1][maxw]
+        prev = prerow[ww-w]
+        if prev+v > row[ww]:
+          row[ww] = max(row[ww], prev+v)
+    prerow = row[:]
+  return row[W]
+print knapsack([2, 3, 5, 7], [1, 5, 2, 9], 18)
+
+def backpack(arr, W):
+  pre,row = [0]*(W+1), [0]*(W+1)
+  for i in xrange(len(arr)):
+    row = pre[:]
+    for w in xrange(arr[i], W+1):      
+      row[w] = max(row[w], pre[w-arr[i]]+arr[i])
+    pre = row[:]
+  return row[W]
+print backpack([2, 3, 5, 7], 11)
 
 
 """ bottom up each val, a new row [c1,c2,...], this way, at each val,
@@ -3682,8 +3706,6 @@ def editDistance(a, b):
         tab[i][j] = 1 + min(tab[i][j-1], tab[i-1][j], tab[i-1][j-1])
     return tab[len(a)][len(b)]
 
-
-
 """ distinct sequence of t in s; bottom up, each s[i] row a list, each t[j] a col in row. 
 [ [t0, t1, ...], [t0, t1,], ...], tab[i][j] += tab[i-1][j-1], tab[i-1][j], when j==0, tab[i][0] += 1
 incl s[i] for t[j], tab[i-1,j-1], excl, tab[i-1,j], you can do dfs recursion also.
@@ -3720,7 +3742,9 @@ def distinct(s,t):
 print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
 
-""" one row version, just cache row[col] as pre before mutate row[col]"""
+""" one row version, in rolling row version, row's index does not matter.
+we iter each col, cache row[col] as pre before mutate row[col], as col-1 already mutated
+"""
 def distinct(s,t):
   row = [0]*len(t)
   pre = 0
@@ -3729,11 +3753,12 @@ def distinct(s,t):
       if s[r] == t[c]:
         if c == 0:
           pre = row[c]
-          row[c] += 1
+          row[c] += 1  # cumulate pre row c equals. "bbb", "bb"
         else:
           tmp = row[c]
+          # can not do row[c-1] as when in prerow[col-1] already change in currow[col-1]
           row[c] += pre
-          pre = tmp
+          pre = tmp  # cache pre for next row, j+1
       else:
         pre = row[c]
   return row[len(t)-1]
@@ -3811,6 +3836,15 @@ def comb(arr, n, pos, path, res):
   return res
 path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
 
+def coinchange(arr, V):
+    tab = [0]*(V+1)
+    tab[0] = 1
+    # outer loop enum each coin mean incl the coin, and excl when passed.
+    for i in xrange(len(arr)):
+      for v in xrange(arr[i],V+1):
+        tab[v] += tab[v-arr[i]]   # not tab[v]=tab[v-1]+1
+    return tab[V]
+print coinchange([2,3,5], 10)
 
 """ bottom up each pos, at each set[0:pos], each val as a new col, entry is a list
 [ [v1-list, v2-list, ...], [v1-list, v2-lsit, ...], ...] 
@@ -3827,7 +3861,7 @@ def subsetSum(arr, t, dupAllowed=False):
         tab[i][j].append([j])
       if j > arr[i]:
         if len(tab[i][j-arr[i]]) > 0:  # there
-          if dupAllowed:
+          if dupAllowed:  # from the same row, otherwise, from prev row.
             for e in tab[i][j-arr[i]]:
               p = e[:]
               p.append(arr[i])
@@ -3843,26 +3877,6 @@ print subsetSum([2,3,6,7],7, True)
 print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
 
-
-""" max number of k digits from 2 arr, order preserved, can interleave 
-tab[i,j,k]=max([i+1,j,k],[i,j+1,k],a[i]+[i+1,j,k-1],b[j]+[i,j+1,k-1])
-"""
-def maxnum(a,b,k):
-  tab = [[[0]*k for i in xrange(len(b))] for j in xrange(len(a))]
-  r,c = len(a)-1,len(b)-1
-  for z in xrange(1,k+1):
-    tab[r][c][z] = max(a[r],b[c])
-  for z in xrange(1,k+1):
-    for i in xrange(r,-1,-1):
-      for j in xrange(c,-1,-1):
-        if z > r-i+1+c-j+1:
-          continue
-        if i == r and j == c:
-          continue
-        tab[i][j][z] = max()
-  return tab[3][5][1]
-print maxnum([3, 9], [8, 9], 3)  # [9, 8, 9]
-print maxnum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)  # [9, 8, 6, 5, 3]
 
 
 """ min number left after remove triplet.
@@ -4182,13 +4196,13 @@ def wordladder(start, end, dict):
     replace = [a + c + b[1:] for a,b in splits for c in alphabet if b]
     nextwds = []
     for e in replace:
-        nextwd = "".join(l)
+        nextwd = "".join(e)
         if nextwd == end or (nextwd in dict and not nextwd in seen):
           nextwds.append(nextwd)
     return nextwds
 
   ladder = []
-  seen = set()
+  seen = set()     # global visited/seen map for all bfs iterations
   if start == end:
     return
   q = deque()
@@ -4211,6 +4225,7 @@ dict = set(["hot","dot","dog","lot","log"])
 print wordladder(start, end, dict)
 
 """ consider every cell in borad as start, dfs find all word in dict
+reset visited map for each dfs iteration.
 """
 def boggle(G, dictionary):
     def isValid(r,c,M,N,seen):
