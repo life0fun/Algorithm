@@ -1155,9 +1155,42 @@ def maxIntervals(arr):
     return mx
 print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
 
-""" Binary indexed tree, Each node in BI[] stores sum of a range.
+""" Binary Indexed Tree(BIT, or Fenwick), Each node in BI[] stores sum of a range.
 the key is idx in BI, its parent is by removing the last set bit. 
 idx = idx - (idx & (-idx)), (n&-n),ritemost set bit. n&n-1, clr ritemost set bit.
+http://www.geeksforgeeks.org/binary-indexed-tree-or-fenwick-tree-2/
+* Example: given an array a[0]...a[7], we use a array BIT[9] to
+* represent a tree, where index [2] is the parent of [1] and [3], [6]
+* is the parent of [5] and [7], [4] is the parent of [2] and [6], and
+* [8] is the parent of [4]. I.e.,
+* 
+* BIT[] as a binary tree:
+*            ______________*
+*            ______*
+*            __*     __*
+*            *   *   *   *
+* indices: 0 1 2 3 4 5 6 7 8
+* BIT[i] = ([i] is a left child) ? the partial sum from its left most
+* descendant to itself : the partial sum from its parent (exclusive) to
+* itself. (check the range of "__").
+* 
+* Eg. BIT[1]=a[0], BIT[2]=a[1]+BIT[1]=a[1]+a[0], BIT[3]=a[2],
+* BIT[4]=a[3]+BIT[3]+BIT[2]=a[3]+a[2]+a[1]+a[0],
+* BIT[6]=a[5]+BIT[5]=a[5]+a[4],
+* BIT[8]=a[7]+BIT[7]+BIT[6]+BIT[4]=a[7]+a[6]+...+a[0], ...
+* 
+* Thus, to update a[1]=BIT[2], we shall update BIT[2], BIT[4], BIT[8],
+* i.e., for current [i], the next update [j] is j=i+(i&-i) //double the
+* last 1-bit from [i].
+* Similarly, to get the partial sum up to a[6]=BIT[7], we shall get the
+* sum of BIT[7], BIT[6], BIT[4], i.e., for current [i], the next
+* summand [j] is j=i-(i&-i) // delete the last 1-bit from [i].
+* To obtain the original value of a[7] (corresponding to index [8] of
+* BIT), we have to subtract BIT[7], BIT[6], BIT[4] from BIT[8], i.e.,
+* starting from [idx-1], for current [i], the next subtrahend [j] is
+* j=i-(i&-i), up to j==idx-(idx&-idx) exclusive. (However, a quicker
+* way but using extra space is to store the original array.)
+* 
 """
 class BITree:
     def __init__(self, arr):
@@ -2516,18 +2549,18 @@ def concatKeys(s, arr):
     r += k
   return out
 
-""" sliding win, outer while loop move rite, inner while loop mov left """
+""" sliding win, outer while loop move rite, inner while loop mov left 
+always enque r first, then check r-l+1==m"""
 def maxWin(arr, m):
   l,r,mx = 0,0,0
   out,stk = [],[]
   while r < len(arr):
-    # enqueu rite edge first, then check
     while len(stk) and stk[-1][1] < arr[r]:
       stk.pop()
     stk.append([r,arr[r]])
-    if r-l+1 >= m:
+    if r-l+1 == m:
       out.append(stk[0])
-      if stk[0][0] == l:
+      if l == stk[0][0]:
         stk.pop(0)
       l += 1
     r += 1
@@ -2536,7 +2569,7 @@ print maxWin([5,3,4,6,9,7,2],2)
 print maxWin([5,3,4,6,9,7,2],3)
 
 """ sliding window, outer loop mov rite edge, inner loop mov left edge 
-You can check arr[i], or check win size.
+Always process rite edge first. You can check arr[i], or check win size.
 """
 def maxWinSizeMzero(arr, m):
     l,r,zeros,mx=0,0,0,0
@@ -2857,6 +2890,21 @@ def bucketsort_count(arr):
       arr[i] = -1
   return arr
 print bucket([1, 2, 4, 3, 2])
+
+""" find dup in ary using slow/fast pointers 
+arr[a] is the same as a.next
+"""
+def findDuplicate(arr):
+  slow = fast = finder = 0
+  while True:
+    slow = arr[slow]
+    fast = arr[arr[fast]]
+    if slow == fast:
+      while finder != slow:
+        finder = arr[finder]
+        slow = arr[slow]
+      return finder
+
 
 """ max repetition num, bucket sort. change val to -1, dec on every reptition.
     bucket sort, when arr[i] is neg, means it has correct pos. when hit again, inc neg.
@@ -3553,24 +3601,30 @@ def genParenth(n, l, r, path, res):
 path=[];res=[];genParenth(3,0,0,path,res);print res;
 
 from collections import deque
-def genParenth(n):
+def genParath(n):
+  out = []
   q = deque()
-  res = []
-  q.append(["(", 1])
-  while len(q):
-    s,lc = q.popleft()
-    if lc == n:
-      for i in xrange(2*n-len(s)):
-        s += ")"
-      res.append(s)
-      continue
-    q.append([s+"(", lc+1])
-    if len(s) < 2*lc:
-      for i in xrange(2*lc-len(s)):
-        s += ")"
-        q.append([s+"(", lc+1])
-  return res
-print genParenth(3)
+  q.append(["(", 1, 0])
+  while len(q) > 0:
+    [path,l,r] = q.popleft()
+    if l == n:
+      for i in xrange(2*n-l-r):
+        path += ")"
+      out.append(path)
+    else:
+      if l == r:
+        p = str(path)
+        p += "("
+        q.append([p, l+1, r])
+      else:
+        p = str(path)
+        p += "("
+        q.append([p,l+1,r])
+        p = str(path)
+        p += ")"
+        q.append([p,l,r+1])
+  return out
+print genParath(3)
 
 
 """ remove invalid (, at each invalid pos, dfs excl/incl recursion """
@@ -3801,7 +3855,7 @@ def decode(dstr):
 print decode("122")
 
 
-""" top down offset n -> 1 when dfs inclusion branch """
+""" top down offset n -> 1 when dfs inclusion recursion """
 # path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 def subsetsum(l, offset, n, path, result):
     if offset < 0:
@@ -3851,12 +3905,12 @@ print coinchange([2,3,5], 10)
 when dup allowed, recur same pos, tab[pos], else tab[pos-1] """
 def subsetSum(arr, t, dupAllowed=False):
   tab = [[None]*(t+1) for i in xrange(len(arr))]
-  for i in xrange(0,len(arr)):
-    for j in xrange(t+1):
-      if i > 0:  # cp prev row
-        tab[i][j] = tab[i-1][j][:]
-      else:
+  for i in xrange(len(arr)):
+    for j in xrange(1, t+1):
+      if i == 0:   # boundary, init
         tab[i][j] = []
+      else:        # cp prev row result
+        tab[i][j] = tab[i-1][j][:]
       if j == arr[i]:
         tab[i][j].append([j])
       if j > arr[i]:
@@ -3872,37 +3926,11 @@ def subsetSum(arr, t, dupAllowed=False):
               p.append(arr[i])
               tab[i][j].append(p)
   return tab[len(arr)-1][t]
-print subsetSum([2,3,6,7],7)
+print subsetSum([2,3,6,7],9)
 print subsetSum([2,3,6,7],7, True)
 print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
 
-
-
-""" min number left after remove triplet.
-[2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
-tab[i,j] track the min left in subary i..j
-"""
-def minLeft(arr, k):
-    tab = [[0]*len(arr) for i in len(arr)]
-    def minLeftSub(arr, lo, hi, k):
-        if tab[lo][hi] != 0:
-            return tab[lo][hi]
-        if hi-lo+1 < 3:  # can not remove ele less than triplet
-            return hi-lo+1
-        ret = 1 + minLeftSub(arr, lo+1, hi, k)
-
-        for i in xrange(lo+1,hi-1):
-            for j in xrange(i+1, hi):
-                if arr[i] == arr[lo] + k and
-                   arr[j] == arr[lo] + 2*k and
-                   # both lo..i-1 and i+1..j-1 remove, tripelt lo,i,j
-                   minLeftSub(arr, lo+1, i-1, k) == 0 and 
-                   minLeftSub(arr, i+1, j-1, k) == 0:
-                   # now triplet lo,i,j also can be removed
-                   ret = min(ret, minLeftSub(arr, j+1, hi, k))
-        tab[lo][hi] = ret
-        return ret
 
 """ m faces, n dices, num of ways to get value x
 [[v1,v2], [v1,v2,...], d2, d3, ...], each v1 column is cnt of face 1..m
@@ -3935,6 +3963,32 @@ def digitSum(n,s):
 assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
 
+""" comb sum, not some subset sum, so can NOT cp prev row to cur row.
+for digit sum, dup at diff digit is allowed.
+when each digit needs to be distinct, only append j when it is bigger  
+"""
+def combinationSum(n,s, distinct=False):  # n digits, sum to s.
+  tab = [[None]*(s+1) for i in xrange(n)]
+  for i in xrange(n):
+    for v in xrange(s+1):
+      for j in xrange(1, v+1):
+        if i == 0 and j == v:
+          tab[i][j] = []
+          tab[i][j].append([j])
+        if tab[i-1][v-j] and len(tab[i-1][v-j]) > 0:
+          if tab[i][v] == None:
+            tab[i][v] = []
+          for e in tab[i-1][v-j]:
+            # if need to be distinct, append j only when it is bigger.
+            if distinct and j <= e[-1]:
+              continue
+            p = e[:]
+            p.append(j)
+            tab[i][v].append(p)
+  return tab[n-1][s]
+print combinationSum(3,9,True)
+
+
 ''' sum of odd and even digit diff by one '''
 def digitSumDiffOne(n):
     odd = [[0]*18 for i in xrange(n)]
@@ -3946,6 +4000,24 @@ def digitSumDiffOne(n):
                     even[l][k] += odd[l-1][k-d]
                 else:
                     odd[l][k] += even[l-1][k-d]
+
+""" adding + in between. [1,2,0,6,9] and target 81 
+more complex than subset sum, 3 loops, bottom up row, 
+for each j to i that forms num, then for each value 
+"""
+def plusbetween(arr, target):
+  def toInt(arr, st, ed):
+    return int("".join(map(lambda x:str(x), arr[st:ed+1])))
+  tab = [[False]*(target+1) for i in xrange(len(arr))]
+  for i in xrange(len(arr)):
+    for j in xrange(i,-1,-1):
+      num = toInt(arr,j,i)
+      if j == 0 and num <= target:
+        tab[i][num] = True
+      for v in xrange(num, target+1):
+        tab[i][v] |= tab[j-1][v-num]
+  return tab[len(arr)-1][target]
+print plusbetween([1,2,0,6,9], 81)
 
 """ tab[i,v] = tot non descreasing at ith digit, end with value v
 bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
@@ -3967,22 +4039,6 @@ def nonDecreasingCount(n):
 assert(nonDecreasingCount(2), 55)
 assert(nonDecreasingCount(3), 220)
 
-""" adding + in between. [1,2,0,6,9] and target 81 """
-def sumcut(arr, offset, target):
-  def toInt(arr, st, ed):
-    return int("".join(str(i) for i in arr[st:ed+1]))
-  sz = len(arr)
-  # each [offset..i] as head.
-  for i in xrange(offset,sz):
-    hd = toInt(arr,offset,i)
-    if hd == target and i == sz-1:
-        return True
-    if hd < target:
-      if sumcut(arr, i+1, target-hd):
-        return True
-  return False
-print sumcut([1,2,3], 0, 6)
-print sumcut([1,2,0,6,9], 0, 81)
 
 """ the idea is to use rolling hash, A/C/G/T maps to [00,01,10,11]
 or use last 3 bits of the char, c%7. 3 bits, 10 chars, 30bits, hash stored in last 30 bits
@@ -4002,24 +4058,6 @@ def dna(arr):
   return out
 print dna("AAAAACCCCCAAAAACCCCCCAAAAAGGGTTT")
 
-
-""" if get v at j, get v+jiv at i """
-def plusbetween(arr, target):
-  def toInt(arr, st, ed):
-    return int("".join(str(i) for i in arr[st:ed+1]))
-  sz = len(arr)
-  tab = [[False]*(target+1) for i in xrange(sz)]
-  for i in xrange(sz):
-    ival = toInt(arr,0,i)
-    if ival <= target:
-        tab[i][ival] = True
-    for j in xrange(i,0,-1):
-      jiv = toInt(arr, j, i)
-      for v in xrange(target):
-        if tab[j-1][v] == True and v+jiv<=target:
-          tab[i][v+jiv] = True  # we can get v at j-1, then get v+jiv at i
-  return tab[sz-1][target]
-print plusbetween([1,2,0,6,9], 81)
 
 """ next palindrom num, cp left -> rite, inc mid, propagate carry left/rite is mid=9"""
 def nextPalindrom(n):    
@@ -4143,6 +4181,31 @@ def nextPalindrom(v):
       arr[mr] = str(int(arr[mr])+1)
   return int(''.join(arr))
 
+""" min number left after remove triplet.
+[2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
+tab[i,j] track the min left in subary i..j
+"""
+def minLeft(arr, k):
+    tab = [[0]*len(arr) for i in len(arr)]
+    def minLeftSub(arr, lo, hi, k):
+        if tab[lo][hi] != 0:
+            return tab[lo][hi]
+        if hi-lo+1 < 3:  # can not remove ele less than triplet
+            return hi-lo+1
+        ret = 1 + minLeftSub(arr, lo+1, hi, k)
+
+        for i in xrange(lo+1,hi-1):
+            for j in xrange(i+1, hi):
+                if arr[i] == arr[lo] + k and
+                   arr[j] == arr[lo] + 2*k and
+                   # both lo..i-1 and i+1..j-1 remove, tripelt lo,i,j
+                   minLeftSub(arr, lo+1, i-1, k) == 0 and 
+                   minLeftSub(arr, i+1, j-1, k) == 0:
+                   # now triplet lo,i,j also can be removed
+                   ret = min(ret, minLeftSub(arr, j+1, hi, k))
+        tab[lo][hi] = ret
+        return ret
+
 ''' bfs search on Matrix for min dist '''
 from collections import deque
 def matrixBFSk(G):
@@ -4226,6 +4289,7 @@ print wordladder(start, end, dict)
 
 """ consider every cell in borad as start, dfs find all word in dict
 reset visited map for each dfs iteration.
+Optimization: build Trie for all words, then backtrack bail out early
 """
 def boggle(G, dictionary):
     def isValid(r,c,M,N,seen):
@@ -4271,6 +4335,7 @@ def wordWrap(words, m):
         for j in xrange(i):
             lc[i] = min(lc[i] + extras[j][i])
     return lc[sz-1]
+
 
 
 """
