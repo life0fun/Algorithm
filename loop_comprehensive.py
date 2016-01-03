@@ -2416,28 +2416,28 @@ def noConsecutive(text):
 
 """
 count num of 1s that appear on all numbers less than n. 13=6{1,10,11,12,13}
-idea is: iter at each pos, if pos > 1, higher part can go upto 0~hi+1, times lostreak.
-if pos == 1, higher part only go to 0~hi, and plus remain low part, lovalue.
+idea is: iter at each last pos, if last pos > 1, its higher can go upto 0~hi+1,
+times rite pack, if pos == 1, its higher only go to 0~hi, and plus remain low part, lovalue.
 """
 def countDigitOnes(n):
     hi,lo = n,0
-    lostreak = 1  # 10^low-bits
+    lopack = 1  # 10^low-bits
     tot = 0
     while hi > 0:
-        cur = hi % 10
+        lastbit = hi % 10
         hi = hi / 10
-        if cur == 0:
+        if lastbit == 0:
             # higher part can only gets to 0~hi-1, and no remaining
-            tot += hi*lostreak
-        elif cur == 1:
+            tot += hi*lopack
+        elif lastbit == 1:
             # higher part can only gets to 0~hi-1, plus lo remain
-            tot += hi*lostreak
+            tot += hi*lopack
             tot += lo+1
-        else:  # cur > 1, entire high part * streak
-            tot += (hi+1)*lostreak
+        else:  # lastbit > 1, entire high part * streak
+            tot += (hi+1)*lopack
         # lo = last low bits, lostream = 10^low bits
-        lo += cur*lostreak
-        lostreak *= 10
+        lo += lastbit*lopack
+        lopack *= 10
     return tot
 assert countDigitOnes(13) == 6
 assert countDigitOnes(219) == 152  # 2*10+9
@@ -3616,7 +3616,7 @@ def genParath(n):
         p = str(path)
         p += "("
         q.append([p, l+1, r])
-      else:
+      else:  # at this pos, we can append eith l/r, branch.
         p = str(path)
         p += "("
         q.append([p,l+1,r])
@@ -3708,7 +3708,7 @@ def wordbreak(word, offset, path, result):
     return result
 
 ''' bottom up, enum pos row up, [[wd1,wd2,...], [wd3,wd4],...]
-'''
+plusBetween is one leve complicated when enum values '''
 def wordbreak(word, dict):
   tab = [None]*len(word)
   for i in xrange(len(word)):
@@ -3909,7 +3909,7 @@ def subsetSum(arr, t, dupAllowed=False):
     for j in xrange(1, t+1):
       if i == 0:   # boundary, init
         tab[i][j] = []
-      else:        # cp prev row result
+      else:        # cp prev row, some subset 0..pre has value j
         tab[i][j] = tab[i-1][j][:]
       if j == arr[i]:
         tab[i][j].append([j])
@@ -4005,7 +4005,7 @@ def digitSumDiffOne(n):
 more complex than subset sum, 3 loops, bottom up row, 
 for each j to i that forms num, then for each value 
 """
-def plusbetween(arr, target):
+def plusBetween(arr, target):
   def toInt(arr, st, ed):
     return int("".join(map(lambda x:str(x), arr[st:ed+1])))
   tab = [[False]*(target+1) for i in xrange(len(arr))]
@@ -4017,7 +4017,7 @@ def plusbetween(arr, target):
       for v in xrange(num, target+1):
         tab[i][v] |= tab[j-1][v-num]
   return tab[len(arr)-1][target]
-print plusbetween([1,2,0,6,9], 81)
+print plusBetween([1,2,0,6,9], 81)
 
 """ tab[i,v] = tot non descreasing at ith digit, end with value v
 bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
@@ -4057,6 +4057,39 @@ def dna(arr):
     tab[hashv] += 1
   return out
 print dna("AAAAACCCCCAAAAACCCCCCAAAAAGGGTTT")
+
+
+""" whether s1, s2 are scramble, bottom up s1, s2, with increasing len """
+def isInterleave(a, b, c):
+  tab = [[[0]*(len(b)+1) for i in xrange(len(a)+1)]]
+  for i in xrange(len(s1)+1):
+    for j in xrange(len(s2)+1):
+      if i == 0 and j == 0:
+        tab[i][j] = True
+      elif i == 0 and b[j-1] == c[j-1]:
+        tab[i][j] = tab[i][j-1]
+      elif j == 0 and a[i-1] == c[i-1]:
+        tab[i][j] = tab[i-1][j]
+      elif c[i+j-1] == a[i-1]:
+        tab[i][j] = tab[i-1][j]
+      elif c[i+j-1] == b[j-1]::
+        tab[i][j] = tab[i][j-1]
+  return tab[len(a)][len(b)]
+
+""" 3 dim, length[1..n], ia index and ib index """
+def isScramble(a, b):
+  tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
+  for gap in xrange(len(a)):
+    for ia in xrange(len(a)):
+      for ib in xrange(len(b)):
+        if gap == 0:
+          tab[gap][ia][ib] = a[ia] == b[ib]
+        for sublen in xrange(gap):
+          if tab[sublen][ia][ib] and tab[gap-sublen][ia+sublen][ib+sublen]:
+            tab[gap][ia][ib] = True
+          elif tab[sublen][ia][ib+gap-sublen] and tab[gap-sublen][ia+sublen][sublen]:
+            tab[gap][i][j] = True
+  return tab[len(a)-1][0][0]
 
 
 """ next palindrom num, cp left -> rite, inc mid, propagate carry left/rite is mid=9"""
