@@ -3282,22 +3282,6 @@ def combIter(arr, pos, r, path, res):
     return res
 res = [];combIter([1,2,3,4],0,2,[],res);print res;
 
-""" print all perm with len k, path served as visited[] ary """
-def perm(arr,pos,r,path):
-  def swap(i,j):
-    arr[i],arr[j] = arr[j],arr[i]
-  if r == 0:
-    print "perm:",path
-    return
-  for i in xrange(pos,len(arr)):  # here need to iter all elements
-    swap(pos,i)
-    hd = arr[pos]
-    p = path[:]
-    p.append(hd)
-    perm(arr,pos+1,r-1,p)  # iter from pos+1, swap before/after
-    swap(i, pos)
-perm([1,2,3,4],0,2,[])
-
 def comb(arr,r):
   res = []
   if r == 1:  # leaf, need ret a list, wrap leaf as first element.
@@ -3313,7 +3297,6 @@ def comb(arr,r):
       res.append(e)
   return res
 print comb("abc", 2)
-
 
 # Generate all possible sorted arrays from alternate eles of two sorted arrays
 def alterCombRecur(a,b,ai,bi,froma,path,out):
@@ -3428,17 +3411,18 @@ rank/factorial(n) is the index of the char in the sorted arr """
 from math import factorial
 def nthPerm(arr, n):
   out = []
-  while len(arr) > 0:
-    subsize = factorial(len(arr)-1)
-    index = n / subsize
-    out.append(arr[index])
-    # next iteration with smaller arr by reomoving this round's char.
-    n -= index*subsize
-    arr = arr[:index] + arr[index+1:]
+  sz = len(arr)
+  tot = factorial(sz)
+  for i in xrange(sz):
+    tot = tot/(sz-i)
+    idx = n/tot
+    out.append(arr[idx])
+    n -= idx*tot
+    arr = arr[:idx] + arr[idx+1:]
   return "".join(out)
 assert(nthPerm("1234", 15), "3241")
 
-""" solution with right smaller count. 
+""" solution with a map track right smaller count. rank += rite smaller pack.
 At each pos, there are (n-pos)! perms. If there are k eles smaller than cur,
 means those k packs smaller than cur. so rank += k*(n-pos)!
 with dup, tot is (n-pos)!/A!*B!, and we need sum up all k copies of dup ele to rank
@@ -3446,6 +3430,7 @@ with dup, tot is (n-pos)!/A!*B!, and we need sum up all k copies of dup ele to r
 from collections import defaultdict
 from math import factorial
 def permRankDup(arr):
+  ''' tot and divide dup! in the counter '''
   def permTotal(n, counter):
     tot = factorial(n)
     for k,v in counter.items():
@@ -3467,18 +3452,19 @@ print permRankDup('BOOKKEEPER') == 10743
 assert permRankDup("BCBAC") == 15
 
 
-""" for each possibility, strategy should have 1 hit
-check whether strategy has cover of all cases, any day n on any idx k.
-dp[n][k] == true if dp[n - 1][k - 1] == true || dp[n - 1][k + 1] == true
-traverse strategy, as dp[n][k] only rely on dp[n-1], O(n) space.
+""" thief can at cave k on day i. For all possibilities, strategy needs to cover all.
+To cover day i at cave k, if strategy can cover day i-1, k-1 or k+1, [i,k] is covered.
+tab[i][k] = (tab[i][k] or tab[i-1][k-1] or tab[i-1][k+1])
+traverse strategy, as tab[i][k] only rely on tab[n-1], O(n) space.
 """
 def alibaba(ncaves, strategy):
+  ''' assume day 0 at cave pos, enum all possible cave for every day'''
   def posperm(ncaves, pos, days):
-    presult = []
-    presult.append([pos])
+    result = []  # result will be n*2^d possibles
+    result.append([pos])    # first day, at cave pos.
     for i in xrange(1,days):
       tmp = []
-      for e in presult:
+      for e in result:
         lastpos = e[-1]
         if lastpos == ncaves-1 or lastpos == 0:
           if lastpos == 0:
@@ -3492,46 +3478,50 @@ def alibaba(ncaves, strategy):
           tmp.append(ne)
           e.append(lastpos-1)
           tmp.append(e)
-      presult = tmp
-    return presult
+      result = tmp
+    return result
+  # n days
   days = len(strategy)
   result = []
   for i in xrange(ncaves):
-    preslt = posperm(ncaves, i, days)
-    result.extend(preslt)
+    oneresult = posperm(ncaves, i, days)
+    result.extend(oneresult)
+  # iterate all possible result, each result is a list contains one possible when thief day 0 at cave k.
   for e in result:
     found = False
     for i in xrange(days):
       if strategy[i] == e[i]:
           found = True
+    # after traversing, strategy not found a hit, then fail
     if not found:
-        print "wrong....", i, strategy, e
+      print "fail to find hit from strategy....", i, strategy, e
   return result
 
-''' theft wont be caught at i when pre-day i-1,i+1, and strategy predict day k not i 
-  survive[i] means whether theft wont be caught at slot i, at cur day k.
+''' thief will be caught at cave c on day d if strategy[d]=c or strategy[d-1] == c-1/c+1
+iter each prediction at day d, strategy[d], for each cave c, thief can survive only when
+strategy[d] not cave c, and pre day cave c+1/c-1 also can survive.
+one rolling row, survive[i] means whether thief wont be caught at cave i, at cur day k.
 '''
-def alibaba(n, strategy):
-  k = len(strategy)
-  survive = [True]*n  # at cur day, survive[i] = whether theft wont be caught at slot i
+def alibaba(ncaves, strategy):
+  kdays = len(strategy)
+  survive = [True]*ncaves  # at cur day, survive[i] = whether thief wont be caught at slot i
   survive[strategy[0]] = False  # will be caught when strategy[i] indicate it.
-  for d in xrange(1,k):
-    slot = strategy[d]
-    survive[slot] = False
+  for d in xrange(1,kdays):
+    cave = strategy[d]
+    survive[cave] = False
     canSurvive,pre = False, False
-    for i in xrange(n):
+    for i in xrange(ncaves):  # check each cave at day d
       if i == 0:
-        a = False
+        leftcave = False
       else:
-        a = pre
-      if i == n-1:
-        b = False
+        leftcave = pre
+      if i == ncaves-1:
+        ritecave = False
       else:
-        b = survive[i+1]   # theft was at pos i+1 on pre day
-      pre = survive[i]  # store pre day's pos i
-      if strategy[d] != i and (a or b):
+        ritecave = survive[i+1]   # thief was at pos i+1 on pre day
+      pre = survive[i]  # cache survive[i] as pre
+      if strategy[d] != i and (leftcave or ritecave):
         survive[i] == True
-      if survive[i] == True:
         canSurvive = True
     if not canSurvive:
       return False
@@ -3900,6 +3890,14 @@ def coinchange(arr, V):
     return tab[V]
 print coinchange([2,3,5], 10)
 
+""" if different coins count the same as 1 coin only, the same as diff ways to stair """
+def nways(steps, n):
+  ways[i] = steps[i]
+  for i in xrange(steps[1], n):
+    for step in steps:
+      ways[i] += ways[i-step]
+  return ways[n-1]
+
 """ bottom up each pos, at each set[0:pos], each val as a new col, entry is a list
 [ [v1-list, v2-list, ...], [v1-list, v2-lsit, ...], ...] 
 when dup allowed, recur same pos, tab[pos], else tab[pos-1] """
@@ -3962,6 +3960,24 @@ def digitSum(n,s):
   return tab[n-1][s]
 assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
+
+
+''' count tot num of N digit with sum of even digits 1 more than sum of odds
+n=2, [10,21,32,43...] n=3,[100,111,122,...980]
+the key is tab[i,diff] = sigma(tab[i-1, k-diff])
+'''
+def evenonemore(n):
+  tab = [[0]*10 for i in xrange(n)]
+  for i in xrange(10):
+    tab[0][i] = i
+  for i in xrange(1,n):
+    for j in xrange(10):
+      for k in xrange(10):
+        tab[i][j] += tab[i-1][k-j]
+  return tab[n-1][1]
+assert evenonemore(2) == 9
+assert evenonemore(3) == 54
+
 
 """ comb sum, not some subset sum, so can NOT cp prev row to cur row.
 for digit sum, dup at diff digit is allowed.
