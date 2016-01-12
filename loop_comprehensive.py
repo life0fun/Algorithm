@@ -2671,6 +2671,36 @@ def triplet(arr):
         v = arr[i]
         if lmin[i] < v and v < rmax[i]:
             print lmin[i], v, rmax[i]
+
+""" long arithmath progression. tab[i,j] = lap of arr[i:j] with i,j as first 2 ele.
+tab[i,j] = tab[k,i]+1, iff arr[k]+arr[j]=2*arr[i] """
+def longestArithmathProgress(arr):
+  mx = 0
+  tab = [[0]*len(arr) for i in xrange(len(arr))]
+  # boundary cond, tab[i][n] = 2, arr[i],arr[n] is an AP with len 2
+  for i in xrange(len(arr)-2, -1, -1):
+    tab[i][len(arr)-1] = 2
+  for j in xrange(len(arr)-2, -1, -1): # start from n-2
+    i,k = j-1,j+1
+    while i >= 0 and k < len(arr):
+      if 2*arr[j] == arr[i] + arr[k]:
+        tab[i][j] = tab[j][k] + 1
+        print arr[i],arr[j],arr[k], " :: ", i, j, tab[i]
+        mx = max(mx, tab[i][j])
+        i -= 1
+        k += 1
+      elif 2*arr[j] > arr[i] + arr[k]:
+        k += 1
+      else:
+        i -= 1
+    if i >= 0:  # if k is out, then [i:j] as header 2.
+      tab[i][j] = 2
+      i -= 1
+  return mx
+print longestArithmathProgress([1, 7, 10, 15, 27, 29])
+print longestArithmathProgress([5, 10, 15, 20, 25, 30])
+
+
 """ 
 left < cur < rite, for each i, max smaller on left and max rite. 
 Only need to max left two items which is not max from rite.
@@ -2703,12 +2733,12 @@ print triplet_maxprod([5,4,3,10,2,7,8])
 ''' max prod exclude a[i], keep track of pre prod excl cur '''
 def productExcl(arr):
   prod = [1]*len(arr)
-  tot = arr[0]
-  for i in xrange(1,len(arr)):
+  tot = 1
+  for i in xrange(len(arr)):
     prod[i] = tot
     tot *= arr[i]
-  tot = arr[len(arr)-1]
-  for i in xrange(len(arr)-2,-1,-1):
+  tot = 1
+  for i in xrange(len(arr)-1,-1,-1):
     prod[i] *= tot
     tot *= arr[i]
   return prod
@@ -3174,7 +3204,7 @@ def knapsack(arr, varr, W):
     row = prerow[:]
     w,v = arr[i], varr[i]
     for ww in xrange(w, W+1):
-      if i == 0:
+      if i == 0:     # init boundary, first 
         row[w] = v
       else:
         prev = prerow[ww-w]
@@ -3698,6 +3728,7 @@ def wordbreak(word, offset, path, result):
     return result
 
 ''' bottom up, enum pos row up, [[wd1,wd2,...], [wd3,wd4],...]
+tab[i]=arr[0:i] is break. tab[i] = tab[k] and arr[k:i] in dict
 plusBetween is one leve complicated when enum values '''
 def wordbreak(word, dict):
   tab = [None]*len(word)
@@ -3717,7 +3748,7 @@ def wordbreak(word, dict):
 #print wordbreak("leetcodegeekforgeek",["leet", "code", "for","geek"])
 print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
-''' top down, tab[i] = tab[i+k] '''
+''' top down, tab[i] means arr[i:n] is breakable. tab[i] = tab[i+k] and arr[i:i+k] in dict '''
 def wordbreak(word, dict):
   tab = [None]*len(word)
   for i in xrange(len(word)-1, -1, -1):
@@ -3735,11 +3766,12 @@ def wordbreak(word, dict):
   return tab[0]
 print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
-""" boundary condition set in the loop """
+""" tab[ia,ib] means the distance between a[0:ia] and b[0:ib] """
 def editDistance(a, b):
   tab = [[0]*(len(b)+1) for i in xrange(len(a)+1)]
   for i in xrange(len(a)+1):
     for j in xrange(len(b)+1):
+      # boundary condition, i=0/j=0 set in the loop, i
       if i==0:
         tab[0][j] = j
       elif j==0:
@@ -3751,7 +3783,7 @@ def editDistance(a, b):
     return tab[len(a)][len(b)]
 
 """ distinct sequence of t in s; bottom up, each s[i] row a list, each t[j] a col in row. 
-[ [t0, t1, ...], [t0, t1,], ...], tab[i][j] += tab[i-1][j-1], tab[i-1][j], when j==0, tab[i][0] += 1
+tab[i][j] += tab[i-1][j-1], tab[i-1][j], when j==0, and s.i==t.j, tab[i][0] += 1
 incl s[i] for t[j], tab[i-1,j-1], excl, tab[i-1,j], you can do dfs recursion also.
 when iter col, cp prev row, new col as the last entry in the new row entry list.
 """
@@ -3763,7 +3795,7 @@ def distinctSeq(s,t):
         tab[i][j] = tab[i-1][j]
       if t[j] == s[i]:   # incl s[i] only when equals
         if j == 0:
-          tab[i][j] += 1
+          tab[i][j] += 1  # t[0] == s[i], head of t[0] eqs S[i]
         elif i > 0:
           tab[i][j] += tab[i-1][j-1]
   return tab[len(s)-1][len(t)-1]
@@ -3771,7 +3803,7 @@ print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
 
-"""as tab[i][j] only from tab[i-1][j-1], two rows solution """
+""" as tab[i][j] only from tab[i-1][j-1], two rows solution """
 def distinct(s,t):
   pre, row = [0]*len(t), [0]*len(t)
   for r in xrange(len(s)):
@@ -3831,7 +3863,7 @@ def decode(dstr):
     return tab[len(dstr)]
 print decode("122")
 
-""" DP with O(1) """
+""" DP with O(1), cur = prepre + pre """
 def decode(dstr):
   if len(dstr) == 1:
     return 1
@@ -3930,37 +3962,41 @@ print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
 
 
-""" m faces, n dices, num of ways to get value x
-[[v1,v2], [v1,v2,...], d2, d3, ...], each v1 column is cnt of face 1..m
-tab[d,v] += tab[d-1, v] + tab[d-1,v-[f1,f2]]
+""" m faces, n dices, num of ways to get value x.
+bottom up, 1 dice, 2 dices,...,n dices. Last dice take face value 1..m.
+[[v1,v2,...], [v1,v2,...], d2, d3, ...], each v1 column is cnt of face 1..m
+tab[d,v] += tab[d-1,v-[1..m]]. Outer loop is enum dices, so it's like incl/excl.
 """
 def dice(m,n,x):
     tab = [[0]*n for i in xrange(x+1)]
     for f in xrange(m):
-        tab[1][f] = 1
-    for i in xrange(n):
-        for v in xrange(x):
-            for f in xrange(m):
-                if f < v:
-                    tab[i][v] += tab[i-1][v-f]
-    return tab[n,x] 
+      tab[1][f] = 1
+    for i in xrange(n):         # for each dice
+      for v in xrange(x):       # for each value
+        for f in xrange(m,v):   # for each face
+          tab[i][v] += tab[i-1][v-f]
+    return tab[n,x]
 
-''' digitSum(2,5) = 14, 23, 32, 41 and 50
-bottom up each row of i digits, each val is a col, 
-[[1,2,..], [v1, v2, ...], ..] tab[i,v] = sum(tab[i-1,k] for k in 0..9)
-'''
-def digitSum(n,s):
-  tab = [[0]*max(s+1,10) for i in xrange(n)]
-  for i in xrange(10):
-    tab[0][i] = 1
+
+""" tab[i,v] = tot non descreasing at ith digit, end with value v
+bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
+tab[n,d] = sum(tab[n-1,k] where k takes various value[0..9]
+Total count = ∑ count(n-1, d) where d varies from 0 to n-1
+"""
+def nonDecreasingCount(n):
+  tab = [[0]*10 for i in xrange(n)]
+  for v in xrange(10):
+    tab[0][v] = 1
   for i in xrange(1,n):
-    for v in xrange(s+1):
-      for d in xrange(v):
-        tab[i][v] += tab[i-1][v-d]
-  return tab[n-1][s]
-assert(digitSum(2,5), 5)
-assert(digitSum(3,6), 21)
-
+    for v in xrange(10):
+      for k in xrange(v+1): # k is capped by prev digit v
+        tab[i][v] += tab[i-1][k]
+  tot = 0
+  for v in xrange(10):
+    tot += tab[n-1][v]
+  return tot
+assert(nonDecreasingCount(2), 55)
+assert(nonDecreasingCount(3), 220)
 
 ''' count tot num of N digit with sum of even digits 1 more than sum of odds
 n=2, [10,21,32,43...] n=3,[100,111,122,...980]
@@ -3979,11 +4015,28 @@ assert evenonemore(2) == 9
 assert evenonemore(3) == 54
 
 
+''' digitSum(2,5) = 14, 23, 32, 41 and 50
+bottom up each row of i digits, each val is a col, 
+[[1,2,..], [v1, v2, ...], ..] tab[i,v] = sum(tab[i-1,k] for k in 0..9)
+'''
+def digitSum(n,s):
+  tab = [[0]*max(s+1,10) for i in xrange(n)]
+  for i in xrange(10):
+    tab[0][i] = 1
+  for i in xrange(1,n):
+    for v in xrange(s+1):
+      for d in xrange(v):
+        tab[i][v] += tab[i-1][v-d]
+  return tab[n-1][s]
+assert(digitSum(2,5), 5)
+assert(digitSum(3,6), 21)
+
+
 """ comb sum, not some subset sum, so can NOT cp prev row to cur row.
 for digit sum, dup at diff digit is allowed.
 when each digit needs to be distinct, only append j when it is bigger  
 """
-def combinationSum(n,s, distinct=False):  # n digits, sum to s.
+def combinationSum(n, s, distinct=False):  # n digits, sum to s.
   tab = [[None]*(s+1) for i in xrange(n)]
   for i in xrange(n):
     for v in xrange(s+1):
@@ -4017,16 +4070,17 @@ def digitSumDiffOne(n):
                 else:
                     odd[l][k] += even[l-1][k-d]
 
-""" adding + in between. [1,2,0,6,9] and target 81 
-more complex than subset sum, 3 loops, bottom up row, 
-for each j to i that forms num, then for each value 
+""" adding + in between. [1,2,0,6,9] and target 81.
+at each stop, enum all values t[0:i][v].
+more complex than subset sum, one loop from i left to coerce k:i as cur num.
+bottom up row, for each j to i that forms num, then for each num 
 """
 def plusBetween(arr, target):
   def toInt(arr, st, ed):
     return int("".join(map(lambda x:str(x), arr[st:ed+1])))
   tab = [[False]*(target+1) for i in xrange(len(arr))]
   for i in xrange(len(arr)):
-    for j in xrange(i,-1,-1):
+    for j in xrange(i,-1,-1):  # one loop j:i to coerce current num
       num = toInt(arr,j,i)
       if j == 0 and num <= target:
         tab[i][num] = True
@@ -4034,26 +4088,6 @@ def plusBetween(arr, target):
         tab[i][v] |= tab[j-1][v-num]
   return tab[len(arr)-1][target]
 print plusBetween([1,2,0,6,9], 81)
-
-""" tab[i,v] = tot non descreasing at ith digit, end with value v
-bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
-tab[n,d] = sum(tab[n-1,k] where k takes various value[0..9]
-Total count = ∑ count(n-1, d) where d varies from 0 to n-1
-"""
-def nonDecreasingCount(n):
-  tab = [[0]*10 for i in xrange(n)]
-  for v in xrange(10):
-    tab[0][v] = 1
-  for i in xrange(1,n):
-    for v in xrange(10):
-      for k in xrange(v+1): # k is capped by prev digit v
-        tab[i][v] += tab[i-1][k]
-  tot = 0
-  for v in xrange(10):
-    tot += tab[n-1][v]
-  return tot
-assert(nonDecreasingCount(2), 55)
-assert(nonDecreasingCount(3), 220)
 
 
 """ the idea is to use rolling hash, A/C/G/T maps to [00,01,10,11]
@@ -4075,7 +4109,7 @@ def dna(arr):
 print dna("AAAAACCCCCAAAAACCCCCCAAAAAGGGTTT")
 
 
-""" whether s1, s2 are scramble, bottom up s1, s2, with increasing len """
+""" tab[i][j] whether a[0:i] is interleave b[0:j]; tab[i,j] = tab[i-1,j], etc"""
 def isInterleave(a, b, c):
   tab = [[[0]*(len(b)+1) for i in xrange(len(a)+1)]]
   for i in xrange(len(s1)+1):
@@ -4092,7 +4126,7 @@ def isInterleave(a, b, c):
         tab[i][j] = tab[i][j-1]
   return tab[len(a)][len(b)]
 
-""" 3 dim, length[1..n], ia index and ib index """
+""" 3 dim, tab[gap][ia][ib] whether a[ia:ia+gap] is scrabme of b[ib:ib+gap] """
 def isScramble(a, b):
   tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
   for gap in xrange(len(a)):
@@ -4103,7 +4137,7 @@ def isScramble(a, b):
         for sublen in xrange(gap):
           if tab[sublen][ia][ib] and tab[gap-sublen][ia+sublen][ib+sublen]:
             tab[gap][ia][ib] = True
-          elif tab[sublen][ia][ib+gap-sublen] and tab[gap-sublen][ia+sublen][sublen]:
+          elif tab[sublen][ia][ib+gap-sublen] and tab[gap-sublen][ia+sublen][ib]:
             tab[gap][i][j] = True
   return tab[len(a)-1][0][0]
 
@@ -4149,9 +4183,9 @@ tab[i][j] = tab[i+1,j-1] or min(tab[i,j-1], tab[i+1,j])
 """
 def minInsertPalindrom(arr):
     tab = [[0]*len(arr) for i in xrange(len(arr))]
-    for slen in xrange(1,len(arr)):
-        for i in xrange(len(arr)-slen):
-            j = i + slen
+    for sublen in xrange(1,len(arr)):
+        for i in xrange(len(arr)-sublen):
+            j = i + sublen
             if arr[i] == arr[j]:
                 tab[i][j] = tab[i+1][j-1]
             else:
