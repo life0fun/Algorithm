@@ -1226,32 +1226,33 @@ import math
 import sys
 class RMQ(object):
     class Node():
-        def __init__(self, lo=0, hi=0, minval=0, minvalidx=0, heapidx=0):
+        def __init__(self, lo=0, hi=0, minval=0, minvalidx=0, segidx=0):
             self.lo = lo
             self.hi = hi
+            self.segidx = segidx      # segment idx in rmq heap tree.
             self.minval = minval
             self.minvalidx = minvalidx  # idx in origin val arr
-            self.heapidx = heapidx      # segment idx in rmq heap tree.
             self.left = self.rite = None
     def __init__(self, arr=[]):
         self.arr = arr  # original arr
         self.size = len(self.arr)
         self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
         self.root = self.build(0, self.size-1, 0)[0]
-    def build(self, lo, hi, heapidx):
+    # 0th segment covers tot ary, 1th, left half, 2th, rite half
+    def build(self, lo, hi, segidx):
         if lo == hi:
-            n = RMQ.Node(lo, hi, self.arr[lo], lo, heapidx)
-            self.heap[heapidx] = n
+            n = RMQ.Node(lo, hi, self.arr[lo], lo, segidx)
+            self.heap[segidx] = n
             return [n, lo]
         mid = (lo+hi)/2
-        left,lidx = self.build(lo, mid, 2*heapidx+1)
-        rite,ridx = self.build(mid+1, hi, 2*heapidx+2)
+        left,lidx = self.build(lo, mid, 2*segidx+1)
+        rite,ridx = self.build(mid+1, hi, 2*segidx+2)
         minval = min(left.minval, rite.minval)
         minidx = lidx if minval == left.minval else ridx
-        n = RMQ.Node(lo, hi, minval, minidx, heapidx)
+        n = RMQ.Node(lo, hi, minval, minidx, segidx)
         n.left = left
         n.rite = rite
-        self.heap[heapidx] = n
+        self.heap[segidx] = n
         return [n,minidx]
     # segment tree in bst, search always from root.
     def query(self, root, lo, hi):
@@ -2362,7 +2363,7 @@ print maxcircular([8, -8, 9, -9, 10, -11, 12])
 print maxcircular([10, -3, -4, 7, 6, 5, -4, -1])
 
 
-""" nlgn LIS, only compute length """
+""" nlgn LIS, use parent to store each ele's parent """
 def lis(arr):
   def bisectUpdate(l, val):
     lo,hi = 0, len(l)-1
@@ -2375,15 +2376,24 @@ def lis(arr):
     if l[lo] > val:  # l[lo] bound to great, if val is great, val appended.
       l[lo] = val # update lo with smaller
     return lo
+  parent = []
   lis = []
-  lis.append(arr[0])
+  lis.append([0, arr[0]])
   maxlen = 0
   for i in xrange(1,len(arr)):
-    if arr[i] > lis[-1]:
-      lis.append(arr[i])
+    if arr[i] > lis[-1][1]:
+      parent[i] = lis[-1][0]
+      lis.append([i,arr[i]])
     else:
       lo = bisectUpdate(lis, arr[i])
+      lis[lo] = [i, arr[i]]
+      parent[i] = lis[lo-1][0]
+  i = lis[-1]
+  while i:
+    print arr[i]
+    i = parent[i]
   return lis
+
 
 """ no same char next to each other """
 from collections import defaultdict
@@ -2624,12 +2634,12 @@ def maxDelta(A):
     return max_beg, max_end
 
 """
-    max distance between two items where right item > left items.
-    http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
-    pre-scan, Lmin[0..n]   store min see so far. so min[i] is mono descrease.
-             Rmax[n-1..0] store max see so far from left <- right. so mono increase.
-    the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
-    Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
+max distance between two items where right item > left items.
+http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
+Lmin[0..n]   store min see so far. so min[i] is mono descrease.
+Rmax[n-1..0] store max see so far from left <- right. so mono increase.
+the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
+Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
 """
 def max_distance(l):
     sz = len(l)
@@ -2699,6 +2709,29 @@ def longestArithmathProgress(arr):
   return mx
 print longestArithmathProgress([1, 7, 10, 15, 27, 29])
 print longestArithmathProgress([5, 10, 15, 20, 25, 30])
+
+def LAP(arr):
+  mx = 0
+  tab = [[0]*len(arr) for i in xrange(len(arr))]
+  for i in xrange(1,len(arr)):
+    tab[0][i] = 2
+  for i in xrange(1,len(arr)-1):
+    k,j=i-1,i+1
+    while k >= 0 and j <= len(arr)-1:
+      if 2*arr[i] == arr[k]+arr[j]:
+        tab[i][j] = tab[k][i] + 1
+        mx = max(mx, tab[i][j])
+        k -= 1
+        j += 1
+      elif 2*arr[i] > arr[k]+arr[j]:
+        j += 1
+      else:
+        if tab[k][i] == 0:
+          tab[k][i] = 2
+        k -= 1
+  return mx
+print LAP([1, 7, 10, 15, 27, 29])
+print LAP([5, 10, 15, 20, 25, 30])
 
 
 """ 
@@ -2880,7 +2913,7 @@ def many_profit(arr):
     return profit
 print many_profit([2,4,3,5,4,2,8,10])
 
-""" first missing pos int. bucket sort. L[0] shall store 1, L[1]=2. 
+""" first missing pos int. bucket sort. L[0]=1, L[1]=2. value from 1..n
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
 """
 def firstMissing(L):
@@ -2888,12 +2921,13 @@ def firstMissing(L):
     for i in xrange(len(L)):
       while L[i] > 0 and L[i] != i+1:
         v = L[i]-1
-        if L[v] < 0:  # alrady detected dup and toggled
+        if L[v] < 0:  # arr[i] is a DUP as already detected and toggled
           L[v] -= 1
           L[i] = 0    # Li is a dup, can not swap anymore, set it to 0, skip
         else:         # L[v] >= 0: when dup, entry was set to 0, we still can swap to it.
           L[i],L[v] = L[v],L[i]
           L[v] = -1
+      # natureally in correct pos, turn to -1
       if L[i] == i+1:
         L[i] = -1
   bucketsort(L)
@@ -2908,14 +2942,14 @@ def bucketsort_count(arr):
   def swap(arr, i,j):
     arr[i],arr[j] = arr[j],arr[i]
   for i in xrange(len(arr)):
-    while arr[i] != i+1 and arr[i] > 0:
-      v = arr[i]-1
-      if arr[v] >= 0:    # only swap back to ith when not swapped.
+    while arr[i] != i+1 and arr[i] >= 0 and arr[i] != 999:
+      v = arr[i]
+      if arr[v] >= 0:    # arr[i] not a dup as 
         swap(arr, i, v)
         arr[v] = -1     # after swap, toggle to -1
       else:             # already swapped, inc v, set current ith to 0
         arr[v] -= 1
-        arr[i] = 0  # set cur pos to 0 indicate it is dup and dup processed
+        arr[i] = 999  # set cur pos to 0 indicate it is dup and dup processed
     if arr[i] == i+1:
       arr[i] = -1
   return arr
@@ -4032,8 +4066,9 @@ assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
 
 
-""" comb sum, not some subset sum, so can NOT cp prev row to cur row.
-for digit sum, dup at diff digit is allowed.
+""" comb sum, not some subset sum, subset sum is one ary, here each position
+can varying val 0-9. so can NOT cp prev row to cur row.
+bottom up, all start from 1 digit, val=[0..9]; dup at diff digit is allowed.
 when each digit needs to be distinct, only append j when it is bigger  
 """
 def combinationSum(n, s, distinct=False):  # n digits, sum to s.
@@ -4041,7 +4076,7 @@ def combinationSum(n, s, distinct=False):  # n digits, sum to s.
   for i in xrange(n):
     for v in xrange(s+1):
       for j in xrange(1, v+1):
-        if i == 0 and j == v:
+        if i == 0 and j == v and v < 10:   # tab[0][0..9] = [0..9]
           tab[i][j] = []
           tab[i][j].append([j])
         if tab[i-1][v-j] and len(tab[i-1][v-j]) > 0:
