@@ -295,7 +295,7 @@ def floorceil(arr, t):
   l,r = 0,len(arr)-1
   while l != r:
     mid = l + (r-l)/2
-    if t >= arr[mid]:
+    if t >= arr[mid]:  # for ceiling, lift l when equals.
       l = mid+1
     else:
       r = mid
@@ -348,12 +348,23 @@ print findminRotated([2,1])
 """ inverse count with merge sort """
 def mergesort(arr, lo, hi):
     def merge(arr, ai, bi, hi):
-        i,j,k=ai,bi,hi
-        cnt = 0
-        while i < bi and j < hi:
-            if arr[i] > arr[j]:
-                cnt += j-i
-        return cnt
+      out = []
+      i,j,k=ai,bi,hi
+      cnt = 0
+      while i < bi and j < hi:
+        if arr[i] <= arr[j]:
+          out.append(arr[i])
+          i += 1
+        else:
+          out.append(arr[j])
+          cnt += j-i  # entire left from i->end is bigger than rite[j]
+      while i < bi:
+        out.append(arr[i])
+        i += 1
+      while j < hi:
+        out.append(arr[j])
+        j += 1
+      return cnt
     inv = 0
     if lo < hi:
         mid = (lo+hi)/2
@@ -361,6 +372,42 @@ def mergesort(arr, lo, hi):
         inv += mergesort(arr, mid+1, hi)
         inv += merge(arr, lo, mid+1, hi)
     return inv
+
+""" rite smaller with merge sort, for e in left, += rite smaller
+only when mov left edge.
+"""
+def riteSmaller(arr):
+  def merge(left, rite):
+    ''' left rite ary is sorted and contains idx of ary '''
+    ls,rs = 0,0
+    out = []
+    while ls < len(left) and rs < len(rite):
+      lidx,ridx = left[ls],rite[rs]
+      if arr[lidx] < arr[ridx]:
+        rank[lidx] += rs    # update rite smaller only when move left edge
+        out.append(lidx)
+        ls += 1
+      else:
+        out.append(ridx)
+        rs += 1
+    for i in xrange(ls, len(left)):
+      out.append(left[i])
+      rank[left[i]] += rs
+    for i in xrange(rs, len(rite)):
+      out.append(rite[i])
+    return out  
+  def mergesort(arr, l, r):
+    if l == r:
+      return [l]
+    m = (l+r)/2
+    left = mergesort(arr, l, m)
+    rite = mergesort(arr, m+1, r)
+    return merge(left,rite)
+
+  rank = [0]*len(arr)
+  mergesort(arr, 0, len(arr)-1)
+  return rank
+print riteSmaller([5, 4, 7, 6, 5, 1])
 
 """
 find kth smallest ele in a union of two sorted list
@@ -771,20 +818,21 @@ class AVLTree(object):
                 return self.rite.search(key)
             else:
                 return False, self
-    def largestSmaller(self, parent, k):
-        if self.key > k:  # go left
-          if not self.left:
-            if parent and k > parent.key:
-              return parent
-            else:
-              return None
-          else:
-            return self.left.largestSmaller(self, k)
+    ''' max smaller of the tree '''
+    def maxSmaller(self, key):
+      if key < self.key:
+        if not self.left:
+          return None   # no smaller in this sub tree.
         else:
-          if not self.rite:
-            return self
-          else:
-            return self.rite.largestSmaller(self, k)
+          return self.left.maxSmaller(key)
+      if key > self.key:
+        if not self.rite:
+          return self    # cur is largest smaller
+        else:
+          rtmx = self.rite.maxSmaller(key)
+          node = rtmx ? rtmx : self
+          return node
+      return self
     ''' rank is num of node smaller than key '''
     def getRank(self, key):
         if key == self.key:
@@ -883,6 +931,10 @@ class Interval(object):
             return True, lo
         else:
             return False, lo
+    def overlap(self, st1, ed1, st2, ed2):
+        if st2 > ed1 or ed2 < st1:
+            return False
+        return True
     # which slot in the arr this new interval shall be inserted
     def findStartSlot(self, st, ed):
         """ pre-ed < start < next-ed, bisect insert pos is next """
@@ -895,10 +947,6 @@ class Interval(object):
         startvals = map(lambda x: x[0], self.arr)
         found, idx = self.bisect(startvals, ed)        
         return idx-1  # to find pre-interval slot less than ed, so ed-1
-    def overlap(self, st1, ed1, st2, ed2):
-        if st2 > ed1 or ed2 < st1:
-            return False
-        return True
     def merge(self, st1, ed1, st2, ed2):
         return [min(st1,st2), max(ed1,ed2)]
     def insertMerge(self, sted):
@@ -2737,28 +2785,26 @@ print LAP([5, 10, 15, 20, 25, 30])
 """ 
 left < cur < rite, for each i, max smaller on left and max rite. 
 Only need to max left two items which is not max from rite.
-# [7, 6, 8, 1, 2, 3, 9, 10], [5,4,3,10,2,7,8]
-# [5,4,3,2,7,8], [5,4,3,2,7]
+lmax smaller ary is the same as rmax smaller, need AVL tree with augmented size.
 """
 def triplet_maxprod(arr):
   maxl,maxtriplet = -1,1
-  minl,maxr=[1]*len(arr),[1]*len(arr)
-  maxr[-1] = arr[-1]
-  for i in xrange(len(arr)-2,-1,-1):
-    maxr[i] = max(maxr[i+1],arr[i])
-  minl[0] = arr[0]
-  for i in xrange(1,len(arr)):
-    minl[i] = min(minl[i-1], arr[i])
-  for i in xrange(len(arr)):
-    v = arr[i]
-    if v == maxr[i]:
+  rmax=[0]*len(arr)
+  mx = 1
+  for i in xrange(len(arr)-1,-1,-1):
+    if arr[i] < mx:
+      rmax[i] = mx*arr[i]
+    mx = max(mx, arr[i])
+
+  lmaxsmaller = AVL(arr[0])
+  for i in xrange(1, len(arr)):
+    if rmax[i] == 0:
+      lmaxsmaller.insert(arr[i])
       continue
-    if v == minl[i]:  # update maxl, for case V [5,4,3,7,8]
-      maxl = max(maxl, v)
-      continue
-    if v > maxl: # maxL * cur * maxR
-      maxtriplet = max(maxtriplet, maxl*v*maxr[i])
-      maxl = v
+    else:
+      maxl = lmaxsmaller.maxSmaller(arr[i])
+      maxtriplet = max(maxtriplet, maxl*rmax[i])
+      lmaxsmaller.insert(arr[i])
   return maxtriplet
 print triplet_maxprod([7, 6, 8, 1, 2, 3, 9, 10])
 print triplet_maxprod([5,4,3,10,2,7,8])
