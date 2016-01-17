@@ -2889,9 +2889,8 @@ def maxWinM(arr,m):
 print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
 
 
-"""
-    keep track left min, max profit is when bot at min day sell today.
-    keep track rite max, max profit is when bot today and sell at max day.
+"""keep track left min, max profit is when bot at min day sell today.
+keep track rite max, max profit is when bot today and sell at max day.
 """
 def stock_profit(arr):
     sz = len(l)
@@ -2945,19 +2944,49 @@ def profit(arr):
   return profit[sz-1]
 
 ''' can buy sell many times. sum up every incr segment.(i,j) 
-if pre > cur, profit+=(pre-buy), cur set to new buy. if nxt < cur, nxt will be new buy.
+if pre > cur, profit+=(pre-buy), cur set to new buy only when next > cur after sell.
 '''
 def many_profit(arr):
-    buy,sell,sz = 0,0,len(arr)
-    profit = 0
-    for i in xrange(1,sz):
-        if arr[i-1] > arr[i]:  # i-1 peaked locally.
-            profit += arr[i-1]-arr[buy]
-            buy = i
-    if buy != sz-1:
-        profit += arr[sz-1]-arr[buy]
-    return profit
+  buy,sz,bot = 0,0,len(arr),False
+  profit = 0
+  for i in xrange(sz-1):
+    if not bot and arr[i+1] > arr[i]:
+      buy = i
+      bot = True
+      continue
+    if bot and arr[i] > arr[i+1]:
+      profit += arr[i]-arr[buy]
+      bot = False
+  if bot and arr[sz-1] > arr[buy]:
+    profit += arr[sz-1]-arr[buy]
+  return profit
 print many_profit([2,4,3,5,4,2,8,10])
+
+""" FSM many profit, sold[i]=max(sold[i-1], bot[i-1]+price[i]) """
+def many_profit(arr):
+  bot,sold = -sys.maxint, 0
+  for i in xrange(len(arr)):
+    prebot = bot
+    bot = max(bot, sold-arr[i])
+    sold = max(prebot + arr[i], sold)
+  return sold
+print many_profit([2,4,3,5,4,2,8,10])
+
+""" FSM, bot/sold/rest, sold at day i is bot[i-1]+p[i],bot at i is rest[i-1]-p[i], rest[i] is sold[i-1]
+bot[i] = max(bot[i-1], rest[i-1]-price[i])
+sold[i] = bot[i-1]+price[i]; with cooldown, sold[i] =\= max(sold[i-1]), sold[i-1] contribute to rest[i]
+rest[i]=max(rest[i-1], sold[i-1])
+"""
+import sys
+def stock_profit_cooldown(arr):
+  rest,bot,sold = 0, -sys.maxint, 0
+  for i in xrange(len(arr)):
+    presold = sold
+    sold = bot+arr[i]
+    bot = max(rest-arr[i], bot)
+    rest = max(rest, presold)
+  return max(sold, rest)
+print stock_profit_cooldown([1, 2, 3, 0, 2])
 
 """ first missing pos int. bucket sort. L[0]=1, L[1]=2. value from 1..n
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
@@ -4350,25 +4379,53 @@ def nextPalindrom(v):
 tab[i,j] track the min left in subary i..j
 """
 def minLeft(arr, k):
-    tab = [[0]*len(arr) for i in len(arr)]
-    def minLeftSub(arr, lo, hi, k):
-        if tab[lo][hi] != 0:
-            return tab[lo][hi]
-        if hi-lo+1 < 3:  # can not remove ele less than triplet
-            return hi-lo+1
-        ret = 1 + minLeftSub(arr, lo+1, hi, k)
+  tab = [[0]*len(arr) for i in len(arr)]
+  def minLeftSub(arr, lo, hi, k):
+    if tab[lo][hi] != 0:
+        return tab[lo][hi]
+    if hi-lo+1 < 3:  # can not remove ele less than triplet
+        return hi-lo+1
+    ret = 1 + minLeftSub(arr, lo+1, hi, k)
 
-        for i in xrange(lo+1,hi-1):
-            for j in xrange(i+1, hi):
-                if arr[i] == arr[lo] + k and
-                   arr[j] == arr[lo] + 2*k and
-                   # both lo..i-1 and i+1..j-1 remove, tripelt lo,i,j
-                   minLeftSub(arr, lo+1, i-1, k) == 0 and 
-                   minLeftSub(arr, i+1, j-1, k) == 0:
-                   # now triplet lo,i,j also can be removed
-                   ret = min(ret, minLeftSub(arr, j+1, hi, k))
-        tab[lo][hi] = ret
-        return ret
+  for i in xrange(lo+1,hi-1):
+    for j in xrange(i+1, hi):
+      # lo, i, j is k-spaced triplet, and [lo+1..i-1],[i+1..j-1] can be removed
+      if arr[i] == arr[lo] + k and arr[j] == arr[lo] + 2*k and
+        minLeftSub(arr, lo+1, i-1, k) == 0 and 
+        minLeftSub(arr, i+1, j-1, k) == 0:
+          # now triplet lo,i,j also can be removed
+          ret = min(ret, minLeftSub(arr, j+1, hi, k))
+    tab[lo][hi] = ret
+    return ret
+
+''' sub regioin [l..r] with l,r not burst, max coin 
+tab[l,r] = max(tab[l,k]+tab[k+1,r]+arr[l]*arr[k]*arr[r])
+'''
+def ballonburst(arr):
+  earr = [1] + arr + [1]   # set boundary
+  sz = len(earr)
+  tab = [[0]*(sz) for i in xrange(sz)]
+  for gap in xrange(1, len(arr)+1):
+    for l in xrange(len(arr)):  # largest l is 2 less than
+      r = l + gap + 1
+      if r >= sz:
+        break
+      for m in xrange(l+1,r):
+        tab[l][r] = max(tab[l][r], tab[l][m]+tab[m][r]+earr[l]*earr[m]*earr[r])
+  return tab[0][sz-1]
+print ballonburst([3, 1, 5, 8])
+
+""" m[i,j]=matrix(i,j) = min(m[i,k]+m[k+1,j]+arr[i-1]*arr[k]*arr[j]) """
+def matrix(arr):
+  tab = [[0]*len(arr) for i in xrange(len(arr))]
+  for gap in xrange(2,len(arr)):
+    for i in xrange(1, len(arr)-gap+1):
+      j = i + gap -1
+      tab[i][j] = sys.maxint
+      for k in xrange(i,j):
+        tab[i][j] = min(tab[i][j], tab[i][k] + tab[k+1][j] + arr[i]*arr[k]*arr[j])
+  return tab[1][len(arr)-1]
+print matrix([1,2,3,4])
 
 ''' bfs search on Matrix for min dist '''
 from collections import deque
