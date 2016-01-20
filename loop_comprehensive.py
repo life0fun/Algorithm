@@ -2501,6 +2501,25 @@ assert countDigitOnes(13) == 6
 assert countDigitOnes(219) == 152  # 2*10+9
 assert countDigitOnes(229) == 153  # 3*10
 
+""" recursion version, add memoization """
+def countones(n):
+  def expo(n):
+    width=1
+    while n > 10:
+      n = n/10
+      width *= 10
+    return n, width
+  tot = 0
+  sig,w = expo(n)
+  if sig == 1:
+    tot += n%w
+    tot += 1+countones(w-1) + countones(n%w)
+  else:
+    # when sig > 1,000~099,200~299=count(99); 100~199=100+count(99)
+    tot += w
+    tot += sig*countones(w-1) + countones(n%w)
+  return tot
+
 """ 
 loop each char, note down expected count and fount cnt. squeeze left edge.
 """
@@ -2927,6 +2946,8 @@ def stock_profit(L):
     for i in xrange(sz):
         tot = max(tot, lp[i] + up[i])
     return tot
+print stock_profit([10, 22, 5, 75, 65, 80])
+
 """ profit[i]=maxProfit[i..n], from left <- rite, then from left -> rite """
 def profit(arr):
   sz = len(arr)
@@ -2942,11 +2963,12 @@ def profit(arr):
     lmin = min(lmin, arr[i])
     profit[i] = max(profit[i-1], profit[i]+arr[i]-lmin)
   return profit[sz-1]
+print 
 
 ''' can buy sell many times. sum up every incr segment.(i,j) 
 if pre > cur, profit+=(pre-buy), cur set to new buy only when next > cur after sell.
 '''
-def many_profit(arr):
+def profit_many_trans(arr):
   buy,sz,bot = 0,0,len(arr),False
   profit = 0
   for i in xrange(sz-1):
@@ -2960,17 +2982,17 @@ def many_profit(arr):
   if bot and arr[sz-1] > arr[buy]:
     profit += arr[sz-1]-arr[buy]
   return profit
-print many_profit([2,4,3,5,4,2,8,10])
+print profit_many_trans([2,4,3,5,4,2,8,10])
 
 """ FSM many profit, sold[i]=max(sold[i-1], bot[i-1]+price[i]) """
-def many_profit(arr):
+def profit_many_trans(arr):
   bot,sold = -sys.maxint, 0
   for i in xrange(len(arr)):
     prebot = bot
     bot = max(bot, sold-arr[i])
     sold = max(prebot + arr[i], sold)
   return sold
-print many_profit([2,4,3,5,4,2,8,10])
+print profit_many_trans([2,4,3,5,4,2,8,10])
 
 """ FSM, bot/sold/rest, sold at day i is bot[i-1]+p[i],bot at i is rest[i-1]-p[i], rest[i] is sold[i-1]
 bot[i] = max(bot[i-1], rest[i-1]-price[i])
@@ -2987,6 +3009,64 @@ def stock_profit_cooldown(arr):
     rest = max(rest, presold)
   return max(sold, rest)
 print stock_profit_cooldown([1, 2, 3, 0, 2])
+
+
+def profit_topk(arr):
+  """ find successive transaction pairs, enum all possible trans,
+  and pick the top k trans """
+  def valleyPeakPair(arr, st):
+    v = st
+    while v+1 < len(arr) and arr[v] > arr[v+1]:
+      v += 1
+    p = v+1
+    while p+1 < len(arr) and arr[p] < arr[p+1]:
+      p += 1
+    if v == p:
+      return False, []
+    return True, [v,p]
+
+  pairs,profit = [],[]
+  v = 0
+  found = True
+  while found:
+    found, [v,p] = valleyPeakPair(arr, v)
+    # when prev trans's valley bigger than this valley, no consolidate
+    while len(pairs) > 0 and arr[pairs[-1][0]] > arr[v]:
+      profit.append(arr[pairs[-1][1]] - arr[pairs[-1][0]])
+      pairs.pop()
+    # when pre trans valley smaller than this valley, can combine trans.
+    while len(pairs) > 0 and arr[pairs[-1][0] < arr[v]]:
+      profit.append(arr[pairs[-1][1]] - arr[v])
+      v = pairs[-1][0]
+      pairs.pop()
+    pairs.append([v,p])
+  while len(pairs) > 0:
+    profit.append(arr[pair[-1][1]] - arr[pairs[-1][0]])
+    pairs.pop()
+
+  # calculate the top k profits
+  if len(profits) > k:
+    profits = sorted(profilts)[n-k:]
+  return reduce(lambda t,c: t += c, profits)
+
+""" sell[i][p] is max profit with i transactions sell at p.
+For each price, bottom up k transations. use k+1 as k deps on k-1. k=0.
+sell[i] = max(sell[i-1], bot[i]+p),
+bot[i] = max(bot[i-1], sell[i-1]-p)
+"""
+import sys
+def topk_profit(arr, k):
+  sell,bot=[0]*(k+1), [-9999]*(k+1)
+  for i in xrange(len(arr)):
+    for trans in xrange(1,k+1):
+      sell[trans] = max(sell[trans], bot[trans]+arr[i])
+      bot[trans] = max(bot[trans], sell[trans-1]-arr[i])
+    print arr[i], bot, "  ", sell
+  return sell[k]
+#print topk_profit([10, 22, 5, 75], 2)
+print topk_profit([1, 4, 5, 75], 2)
+#print topk_profit([10, 22, 5, 75, 65, 80], 2)
+
 
 """ first missing pos int. bucket sort. L[0]=1, L[1]=2. value from 1..n
     foreach pos, while L[pos]!=pos+1: swap(L[pos],L[L[pos]-1]).
@@ -4398,7 +4478,7 @@ def minLeft(arr, k):
     tab[lo][hi] = ret
     return ret
 
-''' sub regioin [l..r] with l,r not burst, max coin 
+''' sub regioin [l..r] with l,r not burst, max
 tab[l,r] = max(tab[l,k]+tab[k+1,r]+arr[l]*arr[k]*arr[r])
 '''
 def ballonburst(arr):
