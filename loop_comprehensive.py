@@ -273,6 +273,36 @@ def bisectRotated(arr,t):
   return False, None
 print bisectRotated([3, 4, 5, 1, 2], 2)
 
+""" find min in rotated. with dup, advance mid, and check on each mov """
+def rotatedMin(arr):
+  l,r=0,len(arr)-1
+  while l != r:
+    mid = (l+r)/2
+    if arr[mid] > arr[mid+1]:
+        return arr[mid+1]
+    # skip dups by mov mid, check, if mid==r, povot is on left
+    while arr[mid] == arr[l] and mid < r:
+      if arr[mid] > arr[mid+1]:
+        return arr[mid+1]
+      mid += 1
+    if mid == r:
+      r = (l+r)/2  # r = old mid
+      continue
+    if mid < r and arr[mid] > arr[l]:
+      l = mid+1
+    else:
+      r = mid
+  return arr[0]
+print rotatedMin([4,5,0,1,2,3])
+print rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4])
+print rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4,4,4])
+print rotatedMin([6,6,6,0])
+print rotatedMin([0,1])
+print rotatedMin([0,1,3])
+print rotatedMin([5,6,6,7,0,1,3])
+print rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
+
+
 ''' bisect always check l,r boundary first '''
 def floorceil(arr, t):
   f,c = -1,-1
@@ -283,7 +313,7 @@ def floorceil(arr, t):
     return arr[-1],None
   while l != r:
     mid = l + (r-l)/2
-    if t > arr[mid]:
+    if arr[mid] < t:
       l = mid+1
     else:
       r = mid
@@ -295,14 +325,14 @@ def floorceil(arr, t):
   l,r = 0,len(arr)-1
   while l != r:
     mid = l + (r-l)/2
-    if t >= arr[mid]:  # for ceiling, lift l when equals.
+    if arr[mid] <= t:  # for ceiling, lift l when equals.
       l = mid+1
     else:
       r = mid
-  if arr[l-1] == t:
-    c = l-1
-  else:
+  if arr[l] == t:
     c = l
+  else:
+    c = l-1
 
   if f >= 0:
     f = arr[f]
@@ -329,21 +359,6 @@ print findMax([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
 print findMax([10, 20, 30, 40, 50])
 print findMax([120, 100, 80, 20, 0])
 
-''' find min in a rotated ary, l always > r, as rotated'''
-def findminRotated(arr):
-  l,r=0,len(arr)-1
-  while l < r:
-    mid = l+(r-l)/2
-    if arr[mid] > arr[mid+1]:
-      return arr[mid+1]
-    elif arr[l] < arr[mid]:
-      l = mid+1
-    else:
-      r = mid
-  return arr[0]   # not rotated at all, 0, not l.
-print findminRotated([5, 6, 1, 2, 3, 4])
-print findminRotated([1, 2, 3, 4])
-print findminRotated([2,1])
 
 """ inverse count with merge sort """
 def mergesort(arr, lo, hi):
@@ -373,34 +388,35 @@ def mergesort(arr, lo, hi):
         inv += merge(arr, lo, mid+1, hi)
     return inv
 
-""" rite smaller with merge sort, for e in left, += rite smaller
-only when mov left edge.
+""" rite smaller with merge sort, when merging left and rite,
+left[l] > rite[0..r-1], because we mov r when rite[r] < left[l].
+so rank[l]+= r.
 """
 def riteSmaller(arr):
   def merge(left, rite):
     ''' left rite ary is sorted and contains idx of ary '''
-    ls,rs = 0,0
+    l,r = 0,0
     out = []
-    while ls < len(left) and rs < len(rite):
-      lidx,ridx = left[ls],rite[rs]
+    while l < len(left) and r < len(rite):
+      lidx,ridx = left[l],rite[r]
       if arr[lidx] < arr[ridx]:
-        rank[lidx] += rs    # update rite smaller only when move left edge
+        rank[lidx] += r    # update rite smaller only when move left edge
         out.append(lidx)
-        ls += 1
+        l += 1
       else:
         out.append(ridx)
-        rs += 1
-    for i in xrange(ls, len(left)):
+        r += 1
+    for i in xrange(l, len(left)):
       out.append(left[i])
-      rank[left[i]] += rs
-    for i in xrange(rs, len(rite)):
+      rank[left[i]] += r
+    for i in xrange(r, len(rite)):
       out.append(rite[i])
     return out  
   def mergesort(arr, l, r):
     if l == r:
       return [l]
     m = (l+r)/2
-    left = mergesort(arr, l, m)
+    left = mergesort(arr, l, m)     # use idx, not arr[idx]
     rite = mergesort(arr, m+1, r)
     return merge(left,rite)
 
@@ -1726,14 +1742,12 @@ def sqrt(n, prec=2):
         xn = n*pow(10, prec)*pow(10,prec)   # expand to 100^2
         beg = 2
         end = xn-1
-
         while beg <= end:
             mid = (beg+end)/2
             if mid*mid < xn:
                 beg = mid+1
             else:
                 end = mid-1
-
         rt = beg if math.fabs(beg*beg-xn) < math.fabs(end*end-xn) else end
         print 'intSqrt :', xn, ' = ', rt
         return rt
@@ -2474,34 +2488,26 @@ def noConsecutive(text):
 
 """
 count num of 1s that appear on all numbers less than n. 13=6{1,10,11,12,13}
-idea is: iter at each last pos, if last pos > 1, its higher can go upto 0~hi+1,
-times rite pack, if pos == 1, its higher only go to 0~hi, and plus remain low part, lovalue.
+xyz, when y=0, tot += x*10, y=1, tot += x*10+z, y>1: tot += x*10+10
 """
 def countDigitOnes(n):
-    hi,lo = n,0
-    lopack = 1  # 10^low-bits
-    tot = 0
-    while hi > 0:
-        lastbit = hi % 10
-        hi = hi / 10
-        if lastbit == 0:
-            # higher part can only gets to 0~hi-1, and no remaining
-            tot += hi*lopack
-        elif lastbit == 1:
-            # higher part can only gets to 0~hi-1, plus lo remain
-            tot += hi*lopack
-            tot += lo+1
-        else:  # lastbit > 1, entire high part * streak
-            tot += (hi+1)*lopack
-        # lo = last low bits, lostream = 10^low bits
-        lo += lastbit*lopack
-        lopack *= 10
-    return tot
+  left, width = n, 1
+  tot = 0
+  while left > 0:
+    lastd = left % 10
+    left = left / 10
+    tot += left*width
+    if lastd == 1:
+      tot += (n % width) + 1
+    if d > 1:
+      tot += width
+    width *= 10
+  return tot
 assert countDigitOnes(13) == 6
 assert countDigitOnes(219) == 152  # 2*10+9
 assert countDigitOnes(229) == 153  # 3*10
 
-""" recursion version, add memoization """
+""" recursion version, ones(13) = 4 + 1*ones(10-1) + ones(3) """
 def countones(n):
   def expo(n):
     width=1
@@ -2512,8 +2518,8 @@ def countones(n):
   tot = 0
   sig,w = expo(n)
   if sig == 1:
-    tot += n%w
-    tot += 1+countones(w-1) + countones(n%w)
+    tot += 1 + n%w
+    tot += 1*countones(w-1) + countones(n%w)
   else:
     # when sig > 1,000~099,200~299=count(99); 100~199=100+count(99)
     tot += w
@@ -2845,14 +2851,16 @@ def productExcl(arr):
 for each ele, track cur max/min, and upbeat tot max.
 """
 def maxProd(arr):
-  totmx,curmx,curmn = 1,1,1
+  mx,mn=1,1
   for i in xrange(len(arr)):
     v = arr[i]
-    curmx,curmn = max(v,curmx*v, curmn*v), min(v,curmx*v, curmn*v, 1)
-    #curmx,curmn = max(curmx,curmx*v, curmn*v), min(curmn,curmx*v, curmn*v)
-    totmx = max(totmx, curmx)
-  return curmn,curmx,totmx
-print maxProd([-6,3,-4,-5,-2])
+    cmx = mx
+    mx = max(mx, v*mx, v*mn, v)
+    mn = min(mn, v*cmx, v*mn, v)
+  return mx, mn
+print prod([-6,-3])
+print prod([-6,3,-4,-5,2])
+
 
 ''' at every point, keep track both max[i] and min[i].
 mx[i] = max(mx[i-1]*v, mn[i-1]*v, v),
@@ -2984,7 +2992,8 @@ def profit_many_trans(arr):
   return profit
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
-""" FSM many profit, sold[i]=max(sold[i-1], bot[i-1]+price[i]) """
+""" FSM many profit, no loop of k trans. at each price, incl/excl at buy/sell state.
+bot[i]=max(bot[i-1],sell[i-1]-p), sold[i]=max(sold[i-1], bot[i-1]+price[i]) """
 def profit_many_trans(arr):
   bot,sold = -sys.maxint, 0
   for i in xrange(len(arr)):
@@ -2995,21 +3004,46 @@ def profit_many_trans(arr):
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
 """ FSM, bot/sold/rest, sold at day i is bot[i-1]+p[i],bot at i is rest[i-1]-p[i], rest[i] is sold[i-1]
-bot[i] = max(bot[i-1], rest[i-1]-price[i])
-sold[i] = bot[i-1]+price[i]; with cooldown, sold[i] =\= max(sold[i-1]), sold[i-1] contribute to rest[i]
-rest[i]=max(rest[i-1], sold[i-1])
+bot[i] = max(bot[i-1], rest[i-1]-price[i]);
+sold[i] = max(bot[i-1]+price[i], sold[i-1]; 
+rest[i] = sold[i-1], with cooldown, rest[i] = pre sold.
 """
 import sys
 def stock_profit_cooldown(arr):
-  rest,bot,sold = 0, -sys.maxint, 0
+  bot,sold,rest = -sys.maxint, 0, 0
   for i in xrange(len(arr)):
     presold = sold
-    sold = bot+arr[i]
-    bot = max(rest-arr[i], bot)
-    rest = max(rest, presold)
+    sold = max(sold, bot+arr[i])
+    bot = max(bot, rest-arr[i])
+    rest = presold
   return max(sold, rest)
 print stock_profit_cooldown([1, 2, 3, 0, 2])
 
+
+""" At most up-to K transactions. max profit may involve less than k trans.
+e.g, [1,2,3,4], max profit of up to 2 trans the same as 1 trans.
+sell[i][p] is max profit with i transactions sell at p.
+For each price, bottom up 1 -> k transations. use k+1 as k deps on k-1. k=0.
+sell[i] = max(sell[i], bot[i]+p), // carry over prev num in trans i'th profit.
+bot[i] = max(bot[i], sell[i-1]-p) // max of incl/excl bot at this price, 
+"""
+import sys
+def topk_profit(arr, k):
+  sell,bot=[0]*(k+1), [-9999]*(k+1)
+  for i in xrange(len(arr)):
+    for trans in xrange(1,k+1):
+      sell[trans] = max(sell[trans], bot[trans]+arr[i])
+      bot[trans] = max(bot[trans], sell[trans-1]-arr[i])
+    print arr[i], bot, "  ", sell
+  return sell[k]
+print topk_profit([1, 4, 5, 6, 7, 8, 9, 10], 2)
+print topk_profit([1, 4, 5, 6, 7, 8, 4, 10], 2)
+#print topk_profit([10, 22, 5, 75, 65, 80], 2)
+
+""" with exact k trans, tab[i,j,k] = max profit of arr[i..j] with k trans.
+tab[i,j,k] = max(tab[i+x, j, k-1]+(arr[i+x]-arr[i]))
+the same as dag with exactly k edges
+"""
 
 def profit_topk(arr):
   """ find successive transaction pairs, enum all possible trans,
@@ -3048,24 +3082,6 @@ def profit_topk(arr):
   if len(profits) > k:
     profits = sorted(profilts)[n-k:]
   return reduce(lambda t,c: t += c, profits)
-
-""" sell[i][p] is max profit with i transactions sell at p.
-For each price, bottom up k transations. use k+1 as k deps on k-1. k=0.
-sell[i] = max(sell[i-1], bot[i]+p),
-bot[i] = max(bot[i-1], sell[i-1]-p)
-"""
-import sys
-def topk_profit(arr, k):
-  sell,bot=[0]*(k+1), [-9999]*(k+1)
-  for i in xrange(len(arr)):
-    for trans in xrange(1,k+1):
-      sell[trans] = max(sell[trans], bot[trans]+arr[i])
-      bot[trans] = max(bot[trans], sell[trans-1]-arr[i])
-    print arr[i], bot, "  ", sell
-  return sell[k]
-#print topk_profit([10, 22, 5, 75], 2)
-print topk_profit([1, 4, 5, 75], 2)
-#print topk_profit([10, 22, 5, 75, 65, 80], 2)
 
 
 """ first missing pos int. bucket sort. L[0]=1, L[1]=2. value from 1..n
@@ -3111,7 +3127,7 @@ def bucketsort_count(arr):
 print bucket([1, 2, 4, 3, 2])
 
 """ find dup in ary using slow/fast pointers 
-arr[a] is the same as a.next
+arr[a] is the same as a.next, after cycle meet, start from 0.
 """
 def findDuplicate(arr):
   slow = fast = finder = 0
@@ -3633,7 +3649,7 @@ def nthPerm(arr, n):
   sz = len(arr)
   tot = factorial(sz)
   for i in xrange(sz):
-    tot = tot/(sz-i)
+    tot = tot/(sz-i)   # tot = (n-1)! = n!/n
     idx = n/tot
     out.append(arr[idx])
     n -= idx*tot
@@ -3978,19 +3994,24 @@ when iter col, cp prev row, new col as the last entry in the new row entry list.
 """
 def distinctSeq(s,t):
   tab = [[0]*len(t) for i in xrange(len(s))]
-  for j in xrange(len(t)):
-    for i in xrange(len(s)):
-      if i > 0:
-        tab[i][j] = tab[i-1][j]
+  for i in xrange(len(s)):     # bottom up, i
+    for j in xrange(len(t)):
+      if i == 0:
+        if s[i] == t[j]:
+          tab[0][j] = 1
+        continue
+      tab[i][j] = tab[i-1][j]   # exclude s[i]
       if t[j] == s[i]:   # incl s[i] only when equals
         if j == 0:
-          tab[i][j] += 1  # t[0] == s[i], head of t[0] eqs S[i]
-        elif i > 0:
+          #tab[i][j] += 1  # t[0] == s[i], head of t[0] eqs S[i]
+          tab[i][j] = tab[i-1][j] + 1
+        else:
           tab[i][j] += tab[i-1][j-1]
   return tab[len(s)-1][len(t)-1]
 print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
+
 
 """ as tab[i][j] only from tab[i-1][j-1], two rows solution """
 def distinct(s,t):
@@ -4056,12 +4077,15 @@ print decode("122")
 def decode(dstr):
   if len(dstr) == 1:
     return 1
-  prepre, pre = 1, 1
+  pre,total = 1, 1
   for i in xrange(2,len(dstr)+1):
-    cur = pre
+    tmp = total
+    if dstr[i] == '0':
+      total = pre
+      continue
     if dstr[i-1-1] == '1' or (dstr[i-1-1]=='2' and dstr[i-1]<='6'):
-      cur += prepre  # fib seq here.
-    prepre, pre = pre, cur
+      total += pre  # fib seq here.
+    pre = tmp 
   return cur
 print decode("122")
 
@@ -4224,25 +4248,26 @@ assert(digitSum(3,6), 21)
 """ comb sum, not some subset sum, subset sum is one ary, here each position
 can varying val 0-9. so can NOT cp prev row to cur row.
 bottom up, all start from 1 digit, val=[0..9]; dup at diff digit is allowed.
-when each digit needs to be distinct, only append j when it is bigger  
+when each digit needs to be distinct, only append j when it is bigger
+tab[i,v] i digits, value v, = tab[i-1,v-[1..9]]+[1..9]
 """
 def combinationSum(n, s, distinct=False):  # n digits, sum to s.
   tab = [[None]*(s+1) for i in xrange(n)]
-  for i in xrange(n):
-    for v in xrange(s+1):
-      for j in xrange(1, v+1):
+  for i in xrange(n):      # bottom up n digits
+    for v in xrange(s+1):  # each digit, enum each value
+      for j in xrange(1, 10):  # each dig value, 1..9
         if i == 0 and j == v and v < 10:   # tab[0][0..9] = [0..9]
           tab[i][j] = []
           tab[i][j].append([j])
-        if tab[i-1][v-j] and len(tab[i-1][v-j]) > 0:
-          if tab[i][v] == None:
-            tab[i][v] = []
+        if v > j and tab[i-1][v-j] and len(tab[i-1][v-j]) > 0:
           for e in tab[i-1][v-j]:
             # if need to be distinct, append j only when it is bigger.
             if distinct and j <= e[-1]:
               continue
             p = e[:]
             p.append(j)
+            if tab[i][v] == None:
+              tab[i][v] = []
             tab[i][v].append(p)
   return tab[n-1][s]
 print combinationSum(3,9,True)
@@ -4478,7 +4503,7 @@ def minLeft(arr, k):
     tab[lo][hi] = ret
     return ret
 
-''' sub regioin [l..r] with l,r not burst, max
+''' sub regioin [l..r], consider m as the LAST to burst, so last 3 l,m,r
 tab[l,r] = max(tab[l,k]+tab[k+1,r]+arr[l]*arr[k]*arr[r])
 '''
 def ballonburst(arr):
