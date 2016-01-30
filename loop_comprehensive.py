@@ -280,15 +280,16 @@ def rotatedMin(arr):
     mid = (l+r)/2
     if arr[mid] > arr[mid+1]:
         return arr[mid+1]
-    # skip dups by mov mid, check, if mid==r, povot is on left
-    while arr[mid] == arr[l] and mid < r:
+    # first, check and skip dups by mov mid, if arr[l]=arr[r] povot is on left
+    while arr[l] == arr[mid] and mid < r:
+      # check at each mov of mid
       if arr[mid] > arr[mid+1]:
         return arr[mid+1]
       mid += 1
     if mid == r:
       r = (l+r)/2  # r = old mid
       continue
-    if mid < r and arr[mid] > arr[l]:
+    if arr[mid] > arr[l] and mid < r:
       l = mid+1
     else:
       r = mid
@@ -2927,9 +2928,6 @@ def stock_profit(arr):
         maxprofit = max(maxprofit, arr[i]-lmin)
         lmin = min(lmin, arr[i])
     return maxprofit
-def maxprofit(arr):
-    sz = len(l)
-    maxprofit = 0
     rmax = arr[sz-1]
     for i in xrange(sz-2,-1,-1):
         maxprofit = max(maxprofit, rmax-arr[i])
@@ -2937,7 +2935,7 @@ def maxprofit(arr):
     return maxprofit
 
 """ allow 2 transactions, so maxp = max{one transaction on 0..i, one trans on i+1..n}
-left trans end at i, max(lp[i-1], S[i]-valley)
+left trans end at i, max(l[i-1], S[i]-valley)
 rite trans start at i, max(r[i+1], peak-S[i])
 """
 def stock_profit(L):
@@ -2980,6 +2978,7 @@ def profit_many_trans(arr):
   buy,sz,bot = 0,0,len(arr),False
   profit = 0
   for i in xrange(sz-1):
+    # do not buy at today if tomorrow is cheaper.
     if not bot and arr[i+1] > arr[i]:
       buy = i
       bot = True
@@ -3808,7 +3807,7 @@ def restoreIp(s, pos, path, res):
 s="25525511135";path=[];res=[];restoreIp(s,0,path,res);print res;
 
 """ valid parenthese, dfs recursion, when reaching pos, carry path"""
-def genParenth(n, l, r, path, res):
+def recurParenth(n, l, r, path, res):
   if l == n:
     p = path[:]
     for i in xrange(r,n):
@@ -3816,17 +3815,17 @@ def genParenth(n, l, r, path, res):
     res.append("".join(p))
     return res
   path.append("(")
-  genParenth(n,l+1,r, path, res)
+  recurParenth(n,l+1,r, path, res)
   path.pop()
   if l > r:
     path.append(")")
-    genParenth(n,l,r+1, path, res)
+    recurParenth(n,l,r+1, path, res)
     path.pop()
   return res
-path=[];res=[];genParenth(3,0,0,path,res);print res;
+path=[];res=[];recurParenth(3,0,0,path,res);print res;
 
 from collections import deque
-def genParath(n):
+def bfsParath(n):
   out = []
   q = deque()
   q.append(["(", 1, 0])
@@ -3838,18 +3837,15 @@ def genParath(n):
       out.append(path)
     else:
       if l == r:
-        p = str(path)
-        p += "("
+        p = str(path) + "("
         q.append([p, l+1, r])
       else:  # at this pos, we can append eith l/r, branch.
-        p = str(path)
-        p += "("
+        p = str(path) + "("
         q.append([p,l+1,r])
-        p = str(path)
-        p += ")"
+        p = str(path) + ")"
         q.append([p,l,r+1])
   return out
-print genParath(3)
+print bfsParath(3)
 
 
 """ remove invalid (, at each invalid pos, dfs excl/incl recursion """
@@ -4063,29 +4059,28 @@ def calPack(arr):
 
 """ bottom up enum each pos, row pos is the cnt of ways for str[0:pos] """
 def decode(dstr):
-    tab = [0]*(len(dstr)+1)
-    tab[0] = 1
-    tab[1] = 1
-    for i in xrange(2,len(dstr)+1):
-        tab[i] = tab[i-1]
-        if dstr[i-1-1] == "1" or (dstr[i-1-1] == "2" and dstr[i-1] <= "6"):
-            tab[i] += tab[i-2]
-    return tab[len(dstr)]
+  tab = [0]*(len(dstr)+1)
+  tab[0] = 1
+  tab[1] = 1
+  for i in xrange(2,len(dstr)+1):
+      tab[i] = tab[i-1]
+      if dstr[i-1-1] == "1" or (dstr[i-1-1] == "2" and dstr[i-1] <= "6"):
+          tab[i] += tab[i-2]
+  return tab[len(dstr)]
 print decode("122")
 
-""" DP with O(1), cur = prepre + pre """
+""" DP with O(1), cur = pre, cur = prepre + pre """
 def decode(dstr):
   if len(dstr) == 1:
     return 1
-  pre,total = 1, 1
-  for i in xrange(2,len(dstr)+1):
-    tmp = total
+  prepre, pre, cur = 0, 1, 0
+  for i in xrange(1,len(dstr)+1):
+    cur = pre
     if dstr[i] == '0':
-      total = pre
       continue
     if dstr[i-1-1] == '1' or (dstr[i-1-1]=='2' and dstr[i-1]<='6'):
-      total += pre  # fib seq here.
-    pre = tmp 
+      cur += prepre  # fib seq here.
+    prepre, pre = pre, cur
   return cur
 print decode("122")
 
@@ -4341,19 +4336,20 @@ def isInterleave(a, b, c):
         tab[i][j] = tab[i][j-1]
   return tab[len(a)][len(b)]
 
-""" 3 dim, tab[gap][ia][ib] whether a[ia:ia+gap] is scrabme of b[ib:ib+gap] """
+""" 2 string, i, j, and i is not fixed at 0, so 3 dim tab[length][ia][ib];
+whether a[ia:ia+length] is scrabme of b[ib:ib+length] """
 def isScramble(a, b):
   tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
-  for gap in xrange(len(a)):
-    for ia in xrange(len(a)):
-      for ib in xrange(len(b)):
-        if gap == 0:
-          tab[gap][ia][ib] = a[ia] == b[ib]
-        for sublen in xrange(gap):
-          if tab[sublen][ia][ib] and tab[gap-sublen][ia+sublen][ib+sublen]:
-            tab[gap][ia][ib] = True
-          elif tab[sublen][ia][ib+gap-sublen] and tab[gap-sublen][ia+sublen][ib]:
-            tab[gap][i][j] = True
+  for length in xrange(len(a)):
+    for ia in xrange(len(a)-length):
+      for ib in xrange(len(b)-length):
+        if length == 0:
+          tab[length][ia][ib] = a[ia] == b[ib]
+        for sublen in xrange(length):
+          if tab[sublen][ia][ib] and tab[length-sublen][ia+sublen][ib+sublen]:
+            tab[length][ia][ib] = True
+          elif tab[sublen][ia][ib+length-sublen] and tab[length-sublen][ia+sublen][ib]:
+            tab[length][i][j] = True
   return tab[len(a)-1][0][0]
 
 
