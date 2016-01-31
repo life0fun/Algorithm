@@ -2489,26 +2489,39 @@ def noConsecutive(text):
 
 """
 count num of 1s that appear on all numbers less than n. 13=6{1,10,11,12,13}
+consider n=2015: check the option of xxx1, xx1z, x1zz, 1zzz, sum them up
+(1)consider 5: higherNum = 201; curDigit = 5; lowerNum = 0; weight = 1;
+    choice of xxx1: xxx from 000 to 201 => (higherNum+1)*weight
+(2)consider 1: higherNum = 20; curDigit =1; lowerNum = 5; weight = 10
+      choice of xx1z: (a)xx from 0 to 19, z from 0 to 9  => higherNum*weight
+                      (b)xx is 20       , z from 0 to 5  => lowerNum + 1
+(3)consider 0: higherNum = 2; curDigit = 0; lowerNum = 15; weight =100
+      choice of x1zz: (a)x from 0 to 1,   z from 0 to 99 => higherNum*wiehgt 
+                      (b)x is 2         , 21zz > 2015    => 0
+(4)consider 2: higherNum = 0; curDigit = 2; lowerNum = 015; weight = 1000
+      choice of 1zzz: (a)no x(x==0)     , z from 000 to 999 => (higherNum+1)*weight
 xyz, when y=0, tot += x*10, y=1, tot += x*10+z, y>1: tot += x*10+10
 """
-def countDigitOnes(n):
-  left, width = n, 1
-  tot = 0
-  while left > 0:
-    lastd = left % 10
-    left = left / 10
-    tot += left*width
-    if lastd == 1:
-      tot += (n % width) + 1
-    if d > 1:
-      tot += width
+def countOnes(n):
+  width = 1
+  cnt = 0
+  while n/width > 0:
+    hi,cur,lo = n/(width*10),(n/width)%10, n%width
+    if cur > 1:
+      cnt += (hi+1)*width
+    elif cur == 1:
+      cnt += hi*width + lo + 1
+    else:  # cur = 0, borrow from hi, to set cur=1, so hi range 0..hi-1
+      cnt += hi*width
     width *= 10
-  return tot
-assert countDigitOnes(13) == 6
-assert countDigitOnes(219) == 152  # 2*10+9
-assert countDigitOnes(229) == 153  # 3*10
+  return cnt
+assert countOnes(13) == 6
+assert countOnes(219) == 152  # 2*10+9
+assert countOnes(229) == 153  # 3*10
 
-""" recursion version, ones(13) = 4 + 1*ones(10-1) + ones(3) """
+""" recursion; when msb > 1, 219, break to (0-99, 200-299)+(100-199)
+so, 100+sig*recur(100-1)+recur(19); when msb=1, n%w + 1 + recur(w-1) + recur(n%w)
+"""
 def countones(n):
   def expo(n):
     width=1
@@ -3504,17 +3517,17 @@ def combination(arr, path, sz, pos, result):
     return
 
 """ recur with partial result, when path in, iter each, incl/excl each """
-def combIter(arr, pos, r, path, res):
+def combRecur(arr, pos, r, path, res):
     if r == 0:  # stop recursion when r = 1
         cp = path[:]
         res.append(cp)
         return res
     for i in xrange(pos, len(arr)-r+1):  # can be [pos..n]
         path.append(arr[i])
-        combIter(arr, i+1, r-1, path, res)  # iter from idx+1, as not swap before/after
+        combRecur(arr, i+1, r-1, path, res)  # iter from idx+1, as not swap before/after
         path.pop()   # deep copy path for each recursion, or pop path after recursion
     return res
-res = [];combIter([1,2,3,4],0,2,[],res);print res;
+res = [];combRecur([1,2,3,4],0,2,[],res);print res;
 
 def comb(arr,r):
   res = []
@@ -3850,34 +3863,53 @@ print bfsParath(3)
 
 """ remove invalid (, at each invalid pos, dfs excl/incl recursion """
 def rmInvalidParenth(s,pos,path,lcnt,rcnt,res):
+  def firstRite(path, i):
+    while path[i] == ")":
+      i -= 1
+    return i+1
+
   if pos == len(s):
     print lcnt, rcnt, path
     res.append(path)
     return
   if s[pos] == "(":
     p = path[:]
-    p.append(s[pos])
+    p.append("(")
     return rmInvalidParenth(s,pos+1,p,lcnt+1,rcnt,res)
   if s[pos] == ")":
     if lcnt > rcnt:
       p = path[:]
-      p.append(s[pos])
+      p.append(")")
       return rmInvalidParenth(s,pos+1,p,lcnt,rcnt+1,res)
     else:
-      r = len(path)-1
-      while path[r] == ")":
-        r -= 1
-      p = path[:]
+      p = path[:]  # skip pos )
       rmInvalidParenth(s,pos+1,p,lcnt,rcnt,res)
-      r -= 1
-      for i in xrange(r, 0, -1):
+      # replace only the first ) in a batch of consecutive ))) makes diff
+      r = firstRite(path, len(path)-1)
+      for i in xrange(r-1, 0, -1):
         if path[i] == ")":
-          p = path[0:i] + path[i+1:]
+          k = firstRite(path, i)
+          p = path[0:k] + path[k+1:]   # skip each prev )
           p.append(")")
           rmInvalidParenth(s,pos+1,p,lcnt,rcnt,res)
   return res
 s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
 s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
+
+
+def rmParenth(arr, pos, rmpos, res):
+  lcnt = 0
+  for i in xrange(pos, len(s)):
+    if arr[i] == "(":
+      lcnt += 1
+    else:
+      lcnt -= 1
+    if lcnt < 0:
+      for j in xrange(rmpos, i+1):
+        if arr[j] == ")" and (j == rmpos or arr[j-1] != ")"):
+          rmParenth(arr[:j]+arr[j+1:], i, j, res)
+      return
+  res.append(arr)
 
 """ anything we can do with recursion, we should do with bfs """
 from collections import deque
@@ -4206,23 +4238,6 @@ def nonDecreasingCount(n):
 assert(nonDecreasingCount(2), 55)
 assert(nonDecreasingCount(3), 220)
 
-''' count tot num of N digit with sum of even digits 1 more than sum of odds
-n=2, [10,21,32,43...] n=3,[100,111,122,...980]
-the key is tab[i,diff] = sigma(tab[i-1, k-diff])
-'''
-def evenonemore(n):
-  tab = [[0]*10 for i in xrange(n)]
-  for i in xrange(10):
-    tab[0][i] = i
-  for i in xrange(1,n):
-    for j in xrange(10):
-      for k in xrange(10):
-        tab[i][j] += tab[i-1][k-j]
-  return tab[n-1][1]
-assert evenonemore(2) == 9
-assert evenonemore(3) == 54
-
-
 ''' digitSum(2,5) = 14, 23, 32, 41 and 50
 bottom up each row of i digits, each val is a col, 
 [[1,2,..], [v1, v2, ...], ..] tab[i,v] = sum(tab[i-1,k] for k in 0..9)
@@ -4240,6 +4255,50 @@ assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
 
 
+''' count tot num of N digit with sum of even digits 1 more than sum of odds
+n=2, [10,21,32,43...] n=3,[100,111,122,...980]
+'''
+  
+''' sum of odd and even digit diff by one '''
+def digitSumDiffOne(n):
+  odd = [[0]*18 for i in xrange(n)]
+  even = [[0]*18 for i in xrange(n)]
+  for l in xrange(n):
+    for k in xrange(2*9):
+      for d in xrange(9):
+        if l%2 == 0:
+          even[l][k] += odd[l-1][k-d]
+        else:
+          odd[l][k] += even[l-1][k-d]
+
+""" odd[i,s] is up to ith odd digit, total sum of 1,3,ith digit sum to s.
+for digit xyzw, odd digits, y,w; sum to 4 has[1,3;2,2;3,1], even digit, sum to 5 is
+[1,4;2,3;3,2;4,1], so tot 3*4=12, [1143, 2133, ...]
+so diff by one is odd[i][s]*even[i][s+1]
+"""
+def diffone(n):
+  odd = [[0]*10*n for i in xrange(n)]
+  even = [[0]*10*n for i in xrange(n)]
+  for k in xrange(1,10):
+    even[0][k] = 1
+    odd[1][k] = 1
+  odd[1][0] = 1
+  for i in xrange(2,n):
+    for s in xrange((i+1)*10):
+      for v in xrange(min(s,10)):
+        if i%2 == 0:
+          even[i][s] += even[i-2][s-v]
+        if i%2 == 1:
+          odd[i][s] += odd[i-2][s-v]
+  cnt = 0
+  for s in xrange((n-1)*10):
+    if (n-1)%2 == 0:
+      cnt += odd[n-2][s] * even[n-1][s+1]
+    else:
+      cnt += odd[n-1][s] * even[n-2][s+1]
+  return cnt
+print diffone(3)
+
 """ comb sum, not some subset sum, subset sum is one ary, here each position
 can varying val 0-9. so can NOT cp prev row to cur row.
 bottom up, all start from 1 digit, val=[0..9]; dup at diff digit is allowed.
@@ -4250,7 +4309,7 @@ def combinationSum(n, s, distinct=False):  # n digits, sum to s.
   tab = [[None]*(s+1) for i in xrange(n)]
   for i in xrange(n):      # bottom up n digits
     for v in xrange(s+1):  # each digit, enum each value
-      for j in xrange(1, 10):  # each dig value, 1..9
+      for j in xrange(1, 10):  # each dig face value, 1..9
         if i == 0 and j == v and v < 10:   # tab[0][0..9] = [0..9]
           tab[i][j] = []
           tab[i][j].append([j])
@@ -4267,18 +4326,6 @@ def combinationSum(n, s, distinct=False):  # n digits, sum to s.
   return tab[n-1][s]
 print combinationSum(3,9,True)
 
-
-''' sum of odd and even digit diff by one '''
-def digitSumDiffOne(n):
-    odd = [[0]*18 for i in xrange(n)]
-    even = [[0]*18 for i in xrange(n)]
-    for l in xrange(n):
-        for k in xrange(2*9)
-            for d in xrange(9):
-                if l%2 == 0:
-                    even[l][k] += odd[l-1][k-d]
-                else:
-                    odd[l][k] += even[l-1][k-d]
 
 """ adding + in between. [1,2,0,6,9] and target 81.
 at each stop, enum all values t[0:i][v].
