@@ -215,23 +215,23 @@ def qsort(arr, lo, hi):
 
 """ Arrange given numbers to form the biggest number """
 def qsort(arr,l,r):
-    def comparator(arr, i, j):
-        return int(str(arr[i])+str(arr[j])) - int(str(arr[j])+str(arr[i]))
-    def swap(arr, i, j):
-        arr[i],arr[j] = arr[j],arr[i]
-    def partition(arr, l, r):
-        wi,pidx,pval = l,r,arr[r]
-        for i in xrange(l,r):
-            if comparator(arr, i, pidx) <= 0:
-                swap(arr, wi, i)
-                wi += 1
-        swap(arr, wi, pidx)
-        return wi
-    if l < r:
-        p = partition(arr, l, r)
-        qsort(arr, l, p-1)
-        qsort(arr, p+1, r)
-    return arr
+  def comparator(arr, i, j):
+    return int(str(arr[i])+str(arr[j])) - int(str(arr[j])+str(arr[i]))
+  def swap(arr, i, j):
+    arr[i],arr[j] = arr[j],arr[i]
+  def partition(arr, l, r):
+    wi,pidx,pval = l,r,arr[r]
+    for i in xrange(l,r):
+      if comparator(arr, i, pidx) <= 0:
+        swap(arr, wi, i)
+        wi += 1
+      swap(arr, wi, pidx)
+      return wi
+  if l < r:
+    p = partition(arr, l, r)
+    qsort(arr, l, p-1)
+    qsort(arr, p+1, r)
+  return arr
 arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
@@ -1433,10 +1433,10 @@ def test():
     node contains only 3 pointers, left < eq < rite, always descend down along eq pointer.
 """
 class Trie:
-    def __init__(self, val):
-        self.val = val
-        self.children = defaultdict(TrieNode)
-        self.leaf = False
+  def __init__(self, val):
+    self.val = val
+    self.next = defaultdict(TrieNode)
+    self.leaf = False
 class TernaryTree(object):
     def __init__(self, key=None):
         self.left = self.rite = self.eq = None
@@ -1523,6 +1523,37 @@ def test():
     print t.all("sta")
     print t.all("c")
 
+""" find all words in the board, dfs, backtracking and Trie """
+def findWords(board, words):
+  out = []
+  def buildTrie(words):
+    root = Trie(None)
+    for w in words:
+      cur = root
+      for c in w:
+        if not cur.next[c]:
+          cur.next[c] = Trie(c)
+        cur = cur.next[c]
+      cur.leaf = True
+      cur.word = w
+  def dfs(board, i, j, node):
+    c = board[i][j]
+    nxtnode = node.next[c]
+    if not nxtnode or c == "visited":
+      return
+    if nxtnode.leaf:
+      out.append(nxtnode.word)
+      return
+    board[i][j] = "visited"
+    for nxti,nxtj in nextmove(i,j):
+      dfs(board, nxti, nxtj, nextnode) # recur with next trie node
+    board[i][j] = c
+  # start pos can be any i,j
+  root = buildTrie(words)
+  for i,j in board:
+    dfs(board, i, j, root)
+  return out
+
 
 '''
 find the diameter(width) of a bin tree.
@@ -1550,7 +1581,7 @@ def diameter(root):
 
 '''
 min vertex set, dfs, when process vertex late, i.e., recursion of 
-all its children done and back to cur node, use greedy, if exist
+all its next done and back to cur node, use greedy, if exist
 children not in min vertex set, make cur node into min set. return
 recursion back to bottom up.
 '''
