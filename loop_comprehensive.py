@@ -3603,14 +3603,19 @@ def alterComb(a,b):
   return out
 print alterComb([10, 15, 25], [1,5,20,30])
 
-
+""" incl cur, put it into path, dfs recur. Not incl, next """
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
 def powerset(arr, offset, path, result):
-    result.append(path)
-    for i in xrange(offset, len(arr)):
-        l = path[:]
-        l.append(arr[i])
-        powerset(arr, i+1, l, result)
+  result.append(path)
+  for i in xrange(offset, len(arr)):
+    ''' compare i to i-1, not i to offset '''
+    if i > offset and arr[i] == arr[i-1]:
+        continue
+    l = path[:]
+    l.append(arr[i])
+    powerset(arr, i+1, l, result)
+path=[];result=[];powerset([1,2,2], 0, path, result);print result;
+
 
 """when recur to pos, carry the path to when we reach to pos.
 """
