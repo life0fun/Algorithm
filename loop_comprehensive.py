@@ -131,22 +131,22 @@ print merge([9,8,3], [6,5])
 """ the max num can be formed from k digits from a, preserve the order in ary.
 key point is drop digits along the way."""
 def maxKbits(a, k):
-    drops = len(a)-k   # how many ele from a to be dropped
-    out = []
-    for i in xrange(len(a)):
-        # when a[i] grt than pre and we have room to drop, then drop prev.
-        while drops > 0 and len(out) > 0 and a[i] > out[-1]:
-            out.pop()
-            drops -= 1
-        out.append(a[i])
-    return out[:k]  # only keep first k bits
+  drops = len(a)-k   # how many ele from a to be dropped
+  out = []
+  for i in xrange(len(a)):
+    # when a[i] grt than last in out and we have room to drop
+    while drops > 0 and len(out) > 0 and a[i] > out[-1]:
+      out.pop()
+      drops -= 1
+    out.append(a[i])
+  return out[:k]  # only keep first k bits
 print reduce(lambda x,y: x*10+y, maxKbits([3,9,5,6,8,2], 2))
 
 """ max k digit num can be formed from a, b, preserve the order in each ary 
 idea is i digits from a, k-i digits from b, then merge.
 """
 def maxNum(a,b,k):
-    def merge(a,b):  # one line version
+    def merge(a,b):  # merge two sorted ary
         return [max(a,b).pop(0) for _ in a+b]
     mxnum = 0
     for i in xrange(k+1):
@@ -435,27 +435,27 @@ two index at A, B array, and inc smaller array's index each step for k steps.
   otherwise, A[0..i] must less than B[j-1], chop off smaller A and larger B.
   recur A[i+1..m], B[0..j]
 """
-def find_kth(A, m, B, n, k):
+def findKth(A, m, B, n, k):
     if m > n:
-        return find_kth(B,n,A,m,k)
+        return findKth(B,n,A,m,k)
     if m == 0: return B[k-1]
     if k == 1: return min(A[0],B[0])
     ia = min(k/2, m)
     ib = k-ia
 
     if A[ia-1] < B[ib-1]:
-        return find_kth(A[ia:], m-ia, B, n, k-ia)
+        return findKth(A[ia:], m-ia, B, n, k-ia)
     elif A[ia-1] > B[ib-1]:
-        return find_kth(A, m, B[ib:], n-ib, k-ib)
+        return findKth(A, m, B[ib:], n-ib, k-ib)
     else:
         return A[ia-1]
 def testFindKth():
     A = [1, 5, 10, 15, 20, 25, 40]
     B = [2, 4, 8, 17, 19, 30]
     Z = sorted(A + B)
-    assert(Z[9] == find_kth(A, len(A), B, len(B), 10))
-    assert(Z[0] == find_kth(A, len(A), B, len(B), 1))
-    assert(Z[12] == find_kth(A, len(A), B, len(B), 13))
+    assert(Z[9] == findKth(A, len(A), B, len(B), 10))
+    assert(Z[0] == findKth(A, len(A), B, len(B), 1))
+    assert(Z[12] == findKth(A, len(A), B, len(B), 13))
 
 """ 
   selection algorithm, find the kth largest element with worst case O(n)
@@ -2024,78 +2024,79 @@ class MinStack:
     By this way, we have isolate subproblem (i,j) that can be recursively checked.
 '''
 class MaxHeap():
-    class Node():
-        def __init__(self, val, i, j):
-            self.val = val
-            self.ij = (i,j)   # the i,j index in the two array
-        ''' recursive in-order iterate the tree this node is the root '''
-        def inorder(self):
-            if self.lchild:
-                self.lchild.inorder()
-            self.toString()
-            if self.rchild:
-                self.rchild.inorder()
-    def __init__(self):
-        self.Q = []
-    def toString(self):
-        for n in self.Q:
-            print n.val, n.ij
-        print ' --- heap end ---- '
-    def head(self):
-        return self.Q[0]
-    def lchild(self, idx):
-        lc = 2*idx+1
-        if lc < len(self.Q):
-            return lc, self.Q[lc].val
-        return None, None
-    def rchild(self, idx):
-        rc = 2*idx+2
-        if rc < len(self.Q):
-            return rc, self.Q[rc].val
-        return None, None
-    def parent(self, idx):
-        if idx > 0:
-            return (idx-1)/2, self.Q[(idx-1)/2].val
-        return None, None
-    def swap(self,i, j):
-        self.Q[i], self.Q[j] = self.Q[j], self.Q[i]
-    def siftup(self, idx):
-        print self.toString()
-        while True:
-            pidx, pv = self.parent(idx)
-            print 'parent ', idx, pidx, pv, self.Q[idx].val
-            if pv and pv < self.Q[idx].val:
-                self.swap(pidx, idx)
-                idx = pidx
-            else:
-                return
-    def siftdown(self, idx):
-        while idx < len(self.Q):
-            lc, lcv = self.lchild(idx)
-            rc, rcv = self.rchild(idx)
-            if lcv and rcv:
-                maxcv = max(lcv, rcv)
-                maxc = lc if maxcv == lcv else rc
-            else:
-                maxcv = lcv if lcv else rcv
-                maxc = lc if lc else rc
+  class Node():
+    def __init__(self, val, i, j):
+      self.val = val
+      self.ij = (i,j)   # the i,j index in the two array
+    ''' recursive in-order iterate the tree this node is the root '''
+    def inorder(self):
+      if self.lchild:
+        self.lchild.inorder()
+      self.toString()
+      if self.rchild:
+        self.rchild.inorder()
 
-            if self.Q[idx].val < maxcv:
-                self.swap(idx, maxc)
-                idx = maxc
-            else:
-                return  # done when loop break
-    def insert(self, val, i, j):
-        print 'inserting ', val, i, j
-        node = MaxHeap.Node(val, i, j)
-        self.Q.append(node)
-        self.siftup(len(self.Q)-1)
-    def extract(self):
-        head = self.Q[0]
-        print 'extract ', head.val, head.ij
-        self.swap(0, len(self.Q)-1)
-        self.Q.pop()      # remove the end, the extracted hearder, first
-        self.siftdown(0)
+  def __init__(self):
+      self.heap = []
+  def toString(self):
+      for n in self.heap:
+          print n.val, n.ij
+      print ' --- heap end ---- '
+  def head(self):
+      return self.heap[0]
+  def lchild(self, idx):
+      lc = 2*idx+1
+      if lc < len(self.heap):
+          return lc, self.heap[lc].val
+      return None, None
+  def rchild(self, idx):
+      rc = 2*idx+2
+      if rc < len(self.heap):
+          return rc, self.heap[rc].val
+      return None, None
+  def parent(self, idx):
+      if idx > 0:
+          return (idx-1)/2, self.heap[(idx-1)/2].val
+      return None, None
+  def swap(self,i, j):
+      self.heap[i], self.heap[j] = self.heap[j], self.heap[i]
+  def siftup(self, idx):
+      print self.toString()
+      while True:
+          pidx, pv = self.parent(idx)
+          print 'parent ', idx, pidx, pv, self.heap[idx].val
+          if pv and pv < self.heap[idx].val:
+              self.swap(pidx, idx)
+              idx = pidx
+          else:
+              return
+  def siftdown(self, idx):
+      while idx < len(self.heap):
+          lc, lcv = self.lchild(idx)
+          rc, rcv = self.rchild(idx)
+          if lcv and rcv:
+              maxcv = max(lcv, rcv)
+              maxc = lc if maxcv == lcv else rc
+          else:
+              maxcv = lcv if lcv else rcv
+              maxc = lc if lc else rc
+
+          if self.heap[idx].val < maxcv:
+              self.swap(idx, maxc)
+              idx = maxc
+          else:
+              return  # done when loop break
+  def insert(self, val, i, j):
+      print 'inserting ', val, i, j
+      node = MaxHeap.Node(val, i, j)
+      self.heap.append(node)
+      self.siftup(len(self.heap)-1)
+  def extract(self):
+      head = self.heap[0]
+      print 'extract ', head.val, head.ij
+      self.swap(0, len(self.heap)-1)
+      self.heap.pop()      # remove the end, the extracted hearder, first
+      self.siftdown(0)
 
 def KthMaxSum(p, q, k):
     color = [[0 for i in xrange(len(q)) ] for i in xrange(len(p)) ]
@@ -2683,6 +2684,7 @@ def maxWin(arr, m):
   l,r,mx = 0,0,0
   out,stk = [],[]
   while r < len(arr):
+    # clean stk off arr[r]
     while len(stk) and stk[-1][1] < arr[r]:
       stk.pop()
     stk.append([r,arr[r]])
@@ -3136,8 +3138,8 @@ def firstMissing(L):
       while L[i] > 0 and L[i] != i+1:
         v = L[i]-1
         if L[v] < 0:  # arr[i] is a DUP as already detected and toggled
-          L[v] -= 1
           L[i] = 0    # Li is a dup, can not swap anymore, set it to 0, skip
+          L[v] -= 1
         else:         # L[v] >= 0: when dup, entry was set to 0, we still can swap to it.
           L[i],L[v] = L[v],L[i]
           L[v] = -1
@@ -3156,14 +3158,14 @@ def bucketsort_count(arr):
   def swap(arr, i,j):
     arr[i],arr[j] = arr[j],arr[i]
   for i in xrange(len(arr)):
-    while arr[i] != i+1 and arr[i] >= 0 and arr[i] != 999:
+    while arr[i] != i+1 and arr[i] >= 0 and arr[i] != 999:  # skip DUP
       v = arr[i]
       if arr[v] >= 0:    # arr[i] not a dup as 
         swap(arr, i, v)
         arr[v] = -1     # after swap, toggle to -1
-      else:             # already swapped, inc v, set current ith to 0
+      else:             # already swapped, current i is a dup. inc v
         arr[v] -= 1
-        arr[i] = 999  # set cur pos to 0 indicate it is dup and dup processed
+        arr[i] = 999  # set cur i to SENTI to indicate it is dup
     if arr[i] == i+1:
       arr[i] = -1
   return arr
@@ -3510,7 +3512,8 @@ def coinchangePerm(arr, V):
   return tab[V]
 print coinchangePerm([1, 2], 3)
 
-""" bottom up each val, a new row [c1,c2,...], loop coin col first, 
+""" tot ways for a change. Diff with min ways for a change
+bottom up each val, a new row [c1,c2,...], loop coin col first, 
 so at 2, no knowledge of 3, kind of sorted, so 5=[2,3], no [3,2]
 if for comb, loop val first, at each value, look for all coin.
 
@@ -3519,17 +3522,20 @@ for coin 10, tab[10]=tab[10]+tab[0], which is #{[5,5],[10]}
 hence, do not init tab[c]=1, and not tab[v]=tab[v-c]+1
 """
 def coinchange(arr, V):
-    tab = [0]*(V+1)
-    # can not init all coins. when v=8, iterate 3, will count(5,3), then iterate 5, double count(3,5)
-    # for v in xrange(1,V+1):
-    #     tab[v] = 1
-    tab[0] = 1
-    # outer loop enum each coin mean incl the coin, and excl when passed.
-    for i in xrange(len(arr)):
-        fv = arr[i]
-        for v in xrange(fv,V+1):
-            tab[v] += tab[v-fv]   # not tab[v]=tab[v-1]+1
-    return tab[V]
+  tab = [0]*(V+1)
+  # can not init all coins. v=8, at 3, count(5,3), at 5, double count(3,5)
+  # for v in xrange(1,V+1):
+  #     tab[v] = 1
+  tab[0] = 1
+  # outer loop enum each coin mean incl the coin, and excl when passed.
+  for i in xrange(len(arr)):
+    fv = arr[i]
+    for v in xrange(fv,V+1):
+      # sum up k-ways to reach this value.
+      tab[v] += tab[v-fv]
+      # to get min ways, tab[0]=0, tab[v]=999
+      # tab[v] = min(tab[v], 1+tab[v-fv])
+  return tab[V]
 print coinchange([2,3,5], 10)
 
 
@@ -3605,11 +3611,11 @@ print alterComb([10, 15, 25], [1,5,20,30])
 
 """ incl cur, put it into path, dfs recur. Not incl, next """
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
-def powerset(arr, offset, path, result):
+def powerset(arr, pos, path, result):
   result.append(path)
-  for i in xrange(offset, len(arr)):
-    ''' compare i to i-1, not i to offset '''
-    if i > offset and arr[i] == arr[i-1]:
+  for i in xrange(pos, len(arr)):
+    ''' compare i to i-1, not i to pos '''
+    if i > pos and arr[i] == arr[i-1]:
         continue
     l = path[:]
     l.append(arr[i])
@@ -3618,6 +3624,7 @@ path=[];result=[];powerset([1,2,2], 0, path, result);print result;
 
 
 """when recur to pos, carry the path to when we reach to pos.
+for dup, sort, skip current i is it is a dup of offset.
 """
 def perm(arr, pos, path, res):
   def swap(arr, i, j):
@@ -3654,7 +3661,7 @@ def perm(arr):
     return result
 
 
-""" next permutation, from l <- R, find first ele < next, partition, 
+""" next permutation, from L <- R, find first ele < next, partition, 
 then find first larger, then swap, the reverse right partition.
 """
 def nextPermutation(txt):
@@ -4528,7 +4535,7 @@ def palindromMincut(s):
     # expand to full string by the end
     return tab[n-1]
 
-""" next permutation """
+""" next palindrom """
 def nextPalindrom(v):
   # arr[0:li] -> arr[li+1:ri]
   def copyLeftToRite(arr, li, ri):
