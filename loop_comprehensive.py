@@ -2856,8 +2856,9 @@ print LAP([5, 10, 15, 20, 25, 30])
 
 """ 
 left < cur < rite, for each i, max smaller on left and max rite. 
-Only need to max left two items which is not max from rite.
-lmax smaller ary is the same as rmax smaller, need AVL tree with augmented size.
+first, populate max[i] = arr[i]*rmax. Then from left, avl tree find
+max left smaller, max = max(max[i]*lmax)
+lmax smaller ary is the same as rmax smaller, avl or merge sort
 """
 def triplet_maxprod(arr):
   maxl,maxtriplet = -1,1
@@ -2870,13 +2871,9 @@ def triplet_maxprod(arr):
 
   lmaxsmaller = AVL(arr[0])
   for i in xrange(1, len(arr)):
-    if rmax[i] == 0:
-      lmaxsmaller.insert(arr[i])
-      continue
-    else:
-      maxl = lmaxsmaller.maxSmaller(arr[i])
-      maxtriplet = max(maxtriplet, maxl*rmax[i])
-      lmaxsmaller.insert(arr[i])
+    maxl = lmaxsmaller.maxSmaller(arr[i])
+    maxtriplet = max(maxtriplet, maxl*rmax[i])
+    lmaxsmaller.insert(arr[i])
   return maxtriplet
 print triplet_maxprod([7, 6, 8, 1, 2, 3, 9, 10])
 print triplet_maxprod([5,4,3,10,2,7,8])
@@ -3048,7 +3045,7 @@ def profit_many_trans(arr):
   return sold
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
-""" FSM, bot/sold/rest, sold at day i is bot[i-1]+p[i],bot at i is rest[i-1]-p[i], rest[i] is sold[i-1]
+""" FSM, bot/sold/rest, sold at day i is bot[i-1]+p[i],bot at i is max of cur bot or rest[i-1]-p[i], rest[i] is sold[i-1]
 bot[i] = max(bot[i-1], rest[i-1]-price[i]);
 sold[i] = max(bot[i-1]+price[i], sold[i-1]; 
 rest[i] = sold[i-1], with cooldown, rest[i] = pre sold.
@@ -4342,16 +4339,16 @@ def diffone(n):
   return cnt
 print diffone(3)
 
-""" comb sum, not some subset sum, subset sum is one ary, here each position
-can varying val 0-9. so can NOT cp prev row to cur row.
-bottom up, all start from 1 digit, val=[0..9]; dup at diff digit is allowed.
+""" comb sum, not some subset sum, subset sum is one ary, here 
+each position can varying val 0-9. so can NOT cp prev row to cur row.
+bottom up, start from 1 digit, val=[0..9]; dup allowed.
 when each digit needs to be distinct, only append j when it is bigger
-tab[i,v] i digits, value v, = tab[i-1,v-[1..9]]+[1..9]
+tab[i,v] i digits, value v, <= tab[i-1,v-[1..9]]+[1..9]
 """
 def combinationSum(n, s, distinct=False):  # n digits, sum to s.
   tab = [[None]*(s+1) for i in xrange(n)]
   for i in xrange(n):      # bottom up n digits
-    for v in xrange(s+1):  # each digit, enum each value
+    for v in xrange(s+1):  # each digit, enum to s, tab[i,s]
       for j in xrange(1, 10):  # each dig face value, 1..9
         if i == 0 and j == v and v < 10:   # tab[0][0..9] = [0..9]
           tab[i][j] = []
@@ -4483,57 +4480,57 @@ assert nextPalindrom(1234) == 1331
 tab[i][j] = tab[i+1,j-1] or min(tab[i,j-1], tab[i+1,j])
 """
 def minInsertPalindrom(arr):
-    tab = [[0]*len(arr) for i in xrange(len(arr))]
-    for sublen in xrange(1,len(arr)):
-        for i in xrange(len(arr)-sublen):
-            j = i + sublen
-            if arr[i] == arr[j]:
-                tab[i][j] = tab[i+1][j-1]
-            else:
-                tab[i][j] = min(tab[i][j-1], tab[i+1][j])
-    return tab[0][len(arr)-1]
+  tab = [[0]*len(arr) for i in xrange(len(arr))]
+  for sublen in xrange(1,len(arr)):
+    for i in xrange(len(arr)-sublen):
+      j = i + sublen
+      if arr[i] == arr[j]:
+        tab[i][j] = tab[i+1][j-1]
+      else:
+        tab[i][j] = min(tab[i][j-1], tab[i+1][j])
+  return tab[0][len(arr)-1]
 
 def palindromMincut(s, offset):
-    ''' partition s into sets of palindrom substrings, with min # of cuts 
-        mincut[offset] = 1 + min(mincut[k] for k in [offset+1..n] where s[offset:k] is palindrom)
-    '''
-    mincut = INT_MAX
-    for i in xrange(offset+1, len(s)):
-        if isPalindrom(s, offset, i):
-            partial = palindromMincut(s, i)   # recursion to leaf, aggregate on top.
-            mincut = min(partial + 1, mincut)
-    return mincut
+  ''' partition s into sets of palindrom substrings, with min # of cuts 
+      mincut[offset] = 1 + min(mincut[k] for k in [offset+1..n] where s[offset:k] is palindrom)
+  '''
+  mincut = INT_MAX
+  for i in xrange(offset+1, len(s)):
+    if isPalindrom(s, offset, i):
+      partial = palindromMincut(s, i)   # recursion, aggregate on top.
+      mincut = min(partial + 1, mincut)
+  return mincut
 
 def palindromMincut(s):
-    ''' convert recursion Fn call to DP tab. F[i] is min cut of S[i:n], solve leaf, aggregate at top.
-        F[i] = min(F[k] for k in i..n). To aggregate at F[i], we need to recursive to leaf F[i+1].
-        For DP tabular lookup, we need to start from the end, which is minimal case, and expand
-        to the begining filling table from n -> 0.
-    '''
-    n = len(s)
-    tab[n-1] = 1  # one char is palindrom
-    for i in xrange(n-2, 0, -1):  # start from end that is minimal case, expand to full.
-        for j in xrange(i, n-1):
-            if s[i] == s[j] and palin[i+1, j-1] is True:   # palin[i,j] = palin[i+1,j-1]
-                palin[i,j] = True
-                tab[i] = min(tab[i], 1+tab[j+1])
-    # by the end, expand to full string.
-    return tab[0]
+  ''' convert recursion Fn call to DP tab. F[i] is min cut of S[i:n], solve leaf, aggregate at top.
+      F[i] = min(F[k] for k in i..n). To aggregate at F[i], we need to recursive to leaf F[i+1].
+      For DP tabular lookup, we need to start from the end, which is minimal case, and expand
+      to the begining filling table from n -> 0.
+  '''
+  n = len(s)
+  tab[n-1] = 1  # one char is palindrom
+  for i in xrange(n-2, 0, -1):  # start from end that is minimal case, expand to full.
+      for j in xrange(i, n-1):
+          if s[i] == s[j] and palin[i+1, j-1] is True:   # palin[i,j] = palin[i+1,j-1]
+              palin[i,j] = True
+              tab[i] = min(tab[i], 1+tab[j+1])
+  # by the end, expand to full string.
+  return tab[0]
 
 def palindromMincut(s):
-    ''' another way to build tab from 0 -> n. F[i] = min(F[i-k] for k in i->0 where s[k,i] is palin)
-        To aggregate fill F[i], we need know moving k, f[k], and s[k,i] is palin.
-        For DP tabular lookup, we can start from the begin, the minimal case, and expand to entire string.
-    '''
-    n = len(s)
-    tab[1] = 1  # tab[i], the mincut of string s[0:i]
-    for i in xrange(n):
-        for j in xrange(i, 0, -1):
-            if s[i] == s[j] and palin[j+1, i-1] is True:
-                palin[j,i] = True
-                tab[i] = min(tab[j+1] + 1, tab[i])
-    # expand to full string by the end
-    return tab[n-1]
+  ''' another way to build tab from 0 -> n. F[i] = min(F[i-k] for k in i->0 where s[k,i] is palin)
+      To aggregate fill F[i], we need know moving k, f[k], and s[k,i] is palin.
+      For DP tabular lookup, we can start from the begin, the minimal case, and expand to entire string.
+  '''
+  n = len(s)
+  tab[1] = 1  # tab[i], the mincut of string s[0:i]
+  for i in xrange(n):
+    for j in xrange(i, 0, -1):
+      if s[i] == s[j] and palin[j+1, i-1] is True:
+        palin[j,i] = True
+        tab[i] = min(tab[j+1] + 1, tab[i])
+  # expand to full string by the end
+  return tab[n-1]
 
 """ next palindrom """
 def nextPalindrom(v):
