@@ -289,6 +289,7 @@ def rotatedMin(arr):
     if mid == r:
       r = (l+r)/2  # r = old mid
       continue
+    ''' l - mid in the first same segment '''
     if arr[mid] > arr[l] and mid < r:
       l = mid+1
     else:
@@ -595,25 +596,26 @@ def clone(root, cloned):
   return nroot
 
 """ serde tree with arbi # of children """
-def serdeTree(root, out):
-    print root
-    out.append(root)
-    for c in root.children:
-        serdeTree(c, out)
-    print "$"
-    out.append("$")
+def dfsSerde(root, out):
+  print root
+  out.append(root)
+  for c in root.children:
+      dfsSerde(c, out)
+  print "$"
+  out.append("$")
+
 def serde(l):
-    hd = l.pop()
-    if hd == "$":
-        return True, None  # done
-    node = Node(val)
-    for i in xrange(n):  # do not know how many child, loop until done.
-        done, child = serde(l)
-        if done:
-            return node
-        else:
-            node.child[i] = child
-    return node
+  hd = l.pop()
+  if hd == "$":
+    return True, None  # done
+  node = Node(val)
+  for i in xrange(n):  # do not know how many child, loop until done.
+    done, child = serde(l)
+    if done:
+      return node
+    else:
+      node.child[i] = child
+  return node
 
 """ tree traverse, stk top always is parent """
 # 1 [2 [4 $] $] [3 [5 $] $] $
@@ -622,15 +624,15 @@ def deserTree(l):
     s = deque()
     while nxt = l.readLine():
         if nxt is "$":
-            s.pop()
+          s.pop()
         else:
-            n = Node(nxt)
-            if count(s) == 0:
-                s.append(n)
-            else:
-                parent = s[-1]
-                parent.children.append(n)
-                s.append(n)
+          n = Node(nxt)
+          if count(s) == 0:
+            s.append(n)
+          else:
+            parent = s[-1]
+            parent.children.append(n)
+            s.append(n)
 ''' lgn stack as cur node parent when tree traverse'''
 def morris(root):
     pre, cur = None, root
@@ -650,6 +652,18 @@ def morris(root):
                 out.append(cur)
                 leftmax.rite = None
                 pre,cur = cur, cur.rite
+
+''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
+def numBST(n):
+  tab = [0]*(n+1)
+  tab[0] = tab[1] = 1
+  for i in xrange(2,n):
+    tot = 0
+    for r in xrange(1,i+1):
+      tot += tab[r-1]*tab[i-r]
+    tab[i] = tot
+  return tab[n]
+
 
 ''' find pair node in bst tree sum to a given value, lgn 
 like loop ary, start from both end, in order traverse, and reverse in order
@@ -2309,39 +2323,39 @@ class SkipList:
 """
 from collections import defaultdict
 class HashTimeTable:
-    class Entry:   # Map.Entry value is a sorted list with k/v with timestamp
-        def __init__(self, k, v, ts):
-            self.key = k
-            self.next = None
-            # value list is a sorted list with entry as tuple of [v,ts]
-            self.valueList = [[v,ts]]   # volatile
-        def bisect(self, arr, ts=None):
-            if not ts:
-                return True, len(arr)-1
-            if ts > arr[-1][1]:
-                return False, len(arr)
-            l,r = 0, len(arr)-1
-            while l != r:
-                m = l + (r-l)/2
-                if ts > arr[m][1]:
-                    l = m+1
-                else:
-                    r = m
-            if arr[l][1] == ts:
-                return True, l
-            else:
-                return False, l
-        def getValue(self,k, ts=None):
-            found, idx = self.bisect(self.valueList, ts)
-            if found:
-                return self.valueList[idx][0]
-            return False
-        def insert(self, k, v, ts):
-            found, idx = self.bisect(self.valueList, ts)
-            if found:
-                self.valueList[idx][0] = v
-            else:
-                self.valueList.insert(idx, [v,ts])
+    class Entry:   # Map.Entry is a list of [v,ts] sorted by ts
+      def __init__(self, k, v, ts):
+          self.key = k
+          self.next = None
+          # value list is a sorted list with entry as tuple of [v,ts]
+          self.valueList = [[v,ts]]   # volatile
+      def bisect(self, arr, ts=None):
+          if not ts:
+              return True, len(arr)-1
+          if ts > arr[-1][1]:
+              return False, len(arr)
+          l,r = 0, len(arr)-1
+          while l != r:
+              m = l + (r-l)/2
+              if ts > arr[m][1]:
+                  l = m+1
+              else:
+                  r = m
+          if arr[l][1] == ts:
+              return True, l
+          else:
+              return False, l
+      def getValue(self,k, ts=None):
+          found, idx = self.bisect(self.valueList, ts)
+          if found:
+              return self.valueList[idx][0]
+          return False
+      def insert(self, k, v, ts):
+          found, idx = self.bisect(self.valueList, ts)
+          if found:
+              self.valueList[idx][0] = v
+          else:
+              self.valueList.insert(idx, [v,ts])
                     
     def __init__(self, size):
         self.size = size
@@ -2529,30 +2543,31 @@ consider n=2015: check the option of xxx1, xx1z, x1zz, 1zzz, sum them up
                       (b)xx is 20       , z from 0 to 5  => lowerNum + 1
 (3)consider 0: higherNum = 2; curDigit = 0; lowerNum = 15; weight =100
       choice of x1zz: (a)x from 0 to 1,   z from 0 to 99 => higherNum*wiehgt 
-                      (b)x is 2         , 21zz > 2015    => 0
+                      (b)x is 2         , 21zz > 2015    => right part 0 counts.
 (4)consider 2: higherNum = 0; curDigit = 2; lowerNum = 015; weight = 1000
       choice of 1zzz: (a)no x(x==0)     , z from 000 to 999 => (higherNum+1)*weight
 xyz, when y=0, tot += x*10, y=1, tot += x*10+z, y>1: tot += x*10+10
 """
 def countOnes(n):
-  width = 1
+  lowidth = 1
   cnt = 0
-  while n/width > 0:
-    hi,cur,lo = n/(width*10),(n/width)%10, n%width
+  while n/lowidth > 0:
+    hi,cur,lo = n/(lowidth*10),(n/lowidth)%10, n%lowidth
     if cur > 1:
-      cnt += (hi+1)*width
+      cnt += (hi+1)*lowidth
     elif cur == 1:
-      cnt += hi*width + lo + 1
-    else:  # cur = 0, borrow from hi, to set cur=1, so hi range 0..hi-1
-      cnt += hi*width
-    width *= 10
+      cnt += hi*lowidth + lo + 1
+    else:  # cur = 0, high part, 0..hi-1. and 20xx < 21xx, so xx does not count.
+      cnt += hi*lowidth   # and 
+    lowidth *= 10
   return cnt
 assert countOnes(13) == 6
 assert countOnes(219) == 152  # 2*10+9
 assert countOnes(229) == 153  # 3*10
 
-""" recursion; when msb > 1, 219, break to (0-99, 200-299)+(100-199)
-so, 100+sig*recur(100-1)+recur(19); when msb=1, n%w + 1 + recur(w-1) + recur(n%w)
+""" recursion; when msb > 1, 219, break to (100-199)+(0-99, 200-299), 100+msb*recur(100-1)
+msb=1, 123, 123%100+recur(100-1); so w + msb*recur(w-1) + recur(n%w)
+when msb=1, n%w + 1 + recur(w-1) + recur(n%w)
 """
 def countones(n):
   def expo(n):
@@ -3679,7 +3694,7 @@ def nextPermutation(txt):
         r -= 1
     return txt
 
-""" iter each substr head, rank += index(hd,substr)*(n-pos)! 
+""" iter each head, rank += index(hd,a[i:])*(n-i-1)! 
 the index calcu is based off smaller substr by removing current head
 """
 from math import factorial
@@ -3699,20 +3714,20 @@ from math import factorial
 def nthPerm(arr, n):
   out = []
   sz = len(arr)
-  tot = factorial(sz)
+  cnt = factorial(sz)
   for i in xrange(sz):
-    tot = tot/(sz-i)   # tot = (n-1)! = n!/n
-    idx = n/tot
+    cnt = cnt/(sz-i)   # cnt = (n-1)! = n!/n
+    idx = n/cnt
+    n -= idx*cnt
     out.append(arr[idx])
-    n -= idx*tot
     arr = arr[:idx] + arr[idx+1:]
   return "".join(out)
 assert(nthPerm("1234", 15), "3241")
 
-""" solution with a map track right smaller count. rank += rite smaller pack.
-At each pos, there are (n-pos)! perms. If there are k eles smaller than cur,
-means those k packs smaller than cur. so rank += k*(n-pos)!
-with dup, tot is (n-pos)!/A!*B!, and we need sum up all k copies of dup ele to rank
+""" iter each pos from 0 <- n. for width w, w! perms.
+At each i, there are (n-i)! perms. If there are k eles smaller than cur,
+means cur rank big than those k packs that is smaller than cur. so rank += k*(n-i)!
+with dup, tot is (n-i)!/A!*B!, and we need sum up all k copies of dup ele to rank
 """
 from collections import defaultdict
 from math import factorial
@@ -3726,12 +3741,12 @@ def permRankDup(arr):
   rank = 1
   counter = defaultdict(int)
   for i in range(len(arr)-1,-1,-1):
-      e = arr[i]
-      counter[e] += 1
-      tot = permTotal(len(arr)-i-1, counter)
-      for k,v in counter.items():
-        if e > k:  # rite smaller, sum up all v copies of char k smaller than arr[i]
-          rank += tot*v
+    e = arr[i]
+    counter[e] += 1
+    tot = permTotal(len(arr)-i-1, counter)
+    for k,v in counter.items():
+      if e > k:  # rite smaller, sum up all v copies of char k smaller than arr[i]
+        rank += tot*v
   return rank
 assert permRankDup('3241') == 16
 print permRankDup('baa')
@@ -4671,6 +4686,7 @@ def wordladder(start, end, dict):
         nextwd = "".join(e)
         if nextwd == end or (nextwd in dict and not nextwd in seen):
           nextwds.append(nextwd)
+          seen.add(nextwd)
     return nextwds
 
   ladder = []
@@ -4686,7 +4702,6 @@ def wordladder(start, end, dict):
         path.append(nextwd)
         ladder.append(path)
       else:
-        seen.add(nextwd)
         npath = path[:]
         npath.append(wd)
         q.append([nextwd, npath])
@@ -4701,36 +4716,35 @@ reset visited map for each dfs iteration.
 Optimization: build Trie for all words, then backtrack bail out early
 """
 def boggle(G, dictionary):
-    def isValid(r,c,M,N,seen):
-        if r >= 0 and r < M and c >= 0 and c < N:
-            if G[r][c] not in seen:
-                return True
-        return False
-    def dfs(G, dictionary, r, c, seen, path, out):
-        if "".join(path) in dictionary:
-            out.append("".join(path))
-        for nr,nc in [[-1,-1],[-1,0],[-1,1]...]:
-            if isValid(nr,nc,M,N,seen):
-                path.append(G[nr][nc])
-                seen.add(G[nr][nc])
-                dfs(G, dictionary, nr, nc, seen, path, out)
-                path.pop()
-                seen.remove(G[nr][nc])
-        return out
-    M,N = len(G),len(G[0])
-    out, seen = [], set()
-    for i in xrange(M):
-        for j in xrange(N):
-            seen.add(G[i][j])
-            path = []
-            path.append(G[i][j])
-            dfs(G, dictionary, i, j, seen, path, out)
-            path.pop()
-            seen.remove(G[i][j])
-    return out
+  def isValid(r,c,M,N,seen):
+    if r >= 0 and r < M and c >= 0 and c < N and G[r][c] not in seen:
+      return True
+    return False
+  ''' dfs recur from r,c search for all cells '''
+  def dfs(G, dictionary, r, c, seen, path, out):
+    if "".join(path) in dictionary:
+      out.append("".join(path))
+    for nr,nc in [[-1,-1],[-1,0],[-1,1]...]:
+      if isValid(nr,nc,M,N,seen):
+        path.append(G[nr][nc])
+        seen.add(G[nr][nc])
+        dfs(G, dictionary, nr, nc, seen, path, out)
+        path.pop()
+        seen.remove(G[nr][nc])
+      return out
+  M,N = len(G),len(G[0])
+  out, seen = [], set()
+  for i in xrange(M):
+    for j in xrange(N):
+      seen.add(G[i][j])
+      path = []
+      path.append(G[i][j])
+      dfs(G, dictionary, i, j, seen, path, out)
+      path.pop()
+      seen.remove(G[i][j])
+  return out
 
-""" word wrap, w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j], w
-"""
+""" w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j]"""
 def wordWrap(words, m):
     sz = len(words)
     #extras[i][j] extra spaces if words from i to j are put in a single line
@@ -4744,7 +4758,6 @@ def wordWrap(words, m):
         for j in xrange(i):
             lc[i] = min(lc[i] + extras[j][i])
     return lc[sz-1]
-
 
 
 """
