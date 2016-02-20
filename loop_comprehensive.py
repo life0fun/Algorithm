@@ -1854,17 +1854,17 @@ def nfactor(n):
     filter(lambda x: n%x==0, [x for x in xrange(2,100)])
 
 def factors_of(n):
-    f = 2
-    for step in chain([0,1,2,2], cycle([4,2,4,2,4,6,2,6])):
-        f += step
-        if f*f > n:
-            if n != 1:
-                yield n
-            break
-        if n%f == 0:
-            yield f
-            while n%f == 0:
-                n /= f
+  f = 2
+  for step in chain([0,1,2,2], cycle([4,2,4,2,4,6,2,6])):
+    f += step
+    if f*f > n:
+      if n != 1:
+          yield n
+      break
+    if n%f == 0:
+      yield f
+      while n%f == 0:
+          n /= f
 
 def is_prime(n):
     '''proves primality of n using Lucas test.'''
@@ -3638,7 +3638,7 @@ path=[];result=[];powerset([1,2,2], 0, path, result);print result;
 """when recur to pos, carry the path to when we reach to pos.
 for dup, sort, skip current i is it is a dup of offset.
 """
-def perm(arr, pos, path, res):
+def permDup(arr, pos, path, res):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
   if pos == len(arr):
@@ -3659,18 +3659,18 @@ path=[];res=[];perm(list("112"), 0, [], res);print res
 
 # need to pass different arr upon each recursion, vs. different offset.
 def perm(arr):
-    result = []
-    if len(arr) == 1:
-        result.append([arr[0]])
-        return result
-    for i in xrange(len(arr)):
-        hd = arr[i]
-        l = arr[:]
-        del l[i]   # change arr for next iteration
-        for e in perm(l):
-            e.insert(0,hd)
-            result.append(e)
-    return result
+  result = []
+  if len(arr) == 1:
+      result.append([arr[0]])
+      return result
+  for i in xrange(len(arr)):
+      hd = arr[i]
+      l = arr[:]
+      del l[i]   # change arr for next iteration
+      for e in perm(l):
+          e.insert(0,hd)
+          result.append(e)
+  return result
 
 
 """ next permutation, from L <- R, find first ele < next, partition, 
@@ -4080,14 +4080,13 @@ def distinctSeq(s,t):
   for i in xrange(len(s)):     # bottom up, i
     for j in xrange(len(t)):
       if i == 0:
-        if s[i] == t[j]:
+        if s[0] == t[j]:
           tab[0][j] = 1
         continue
       tab[i][j] = tab[i-1][j]   # exclude s[i]
       if t[j] == s[i]:   # incl s[i] only when equals
-        if j == 0:
-          #tab[i][j] += 1  # t[0] == s[i], head of t[0] eqs S[i]
-          tab[i][j] = tab[i-1][j] + 1
+        if j == 0:  # s[i]==t[0], match in s can start from s[i]
+          tab[i][0] = tab[i-1][0] + 1
         else:
           tab[i][j] += tab[i-1][j-1]
   return tab[len(s)-1][len(t)-1]
@@ -4191,18 +4190,30 @@ def subsetsum(l, offset, n, path, result):
     subsetsum(l, offset-1, n, path, result)
 
 """ the combination, recur i+1, dup not allowed, recur i, dup allowed. """
-def comb(arr, n, pos, path, res):
-  if n == 0:
+def comb(arr, t, pos, path, res):
+  if pos >= len(arr):
+    return
+  if t == 0:
     p = path[:]
     res.append(p)
     return
-  if pos == len(arr):
+  if arr[pos] <= t:
+    path.append(arr[pos])
+    comb(arr, t-arr[pos], pos, path, res)
+    path.pop()
+  comb(arr, t, pos+1, path, res)
+path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
+
+def comb(arr, t, pos, path, res):
+  if t == 0:
+    p = path[:]
+    res.append(p)
     return
   for i in xrange(pos, len(arr)):
-    if arr[i] <= n:
+    if arr[i] <= t:
       path.append(arr[i])
-      comb(arr, n-arr[i], i, path, res)     # dup allowed
-      comb(arr, n-arr[i], i+1, path, res)   # distinct
+      comb(arr, t-arr[i], i, path, res)     # dup allowed
+      #comb(arr, n-arr[i], i+1, path, res)   # distinct
       path.pop()
   return res
 path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
@@ -4356,15 +4367,15 @@ print diffone(3)
 
 """ comb sum, not some subset sum, subset sum is one ary, here 
 each position can varying val 0-9. so can NOT cp prev row to cur row.
-bottom up, start from 1 digit, val=[0..9]; dup allowed.
-when each digit needs to be distinct, only append j when it is bigger
-tab[i,v] i digits, value v, <= tab[i-1,v-[1..9]]+[1..9]
+bottom up, start from 1 slot, val=[0..9]; dup allowed.
+when each slot needs to be distinct, only append j when it is bigger
+tab[i,v] i slots, value v, <= tab[i-1,v-[1..9]]+[1..9]
 """
-def combinationSum(n, s, distinct=False):  # n digits, sum to s.
+def combinationSum(n, s, distinct=False):  # n slots, sum to s.
   tab = [[None]*(s+1) for i in xrange(n)]
-  for i in xrange(n):      # bottom up n digits
-    for v in xrange(s+1):  # each digit, enum to s, tab[i,s]
-      for j in xrange(1, 10):  # each dig face value, 1..9
+  for i in xrange(n):      # bottom up n slots
+    for v in xrange(s+1):  # enum to s for each slot, tab[i,s]
+      for j in xrange(1, 10):  # each slot face value, 1..9
         if i == 0 and j == v and v < 10:   # tab[0][0..9] = [0..9]
           tab[i][j] = []
           tab[i][j].append([j])
@@ -4374,7 +4385,7 @@ def combinationSum(n, s, distinct=False):  # n digits, sum to s.
             if distinct and j <= e[-1]:
               continue
             p = e[:]
-            p.append(j)
+            p.append(j)   # append i's slot, j value to result list of tab[i-1,v-j]
             if tab[i][v] == None:
               tab[i][v] = []
             tab[i][v].append(p)
