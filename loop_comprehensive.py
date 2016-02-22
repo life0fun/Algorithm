@@ -635,33 +635,32 @@ def deserTree(l):
             s.append(n)
 ''' lgn stack as cur node parent when tree traverse'''
 def morris(root):
-    pre, cur = None, root
-    while cur:
-        if not cur.left:  # no left, down to rite directly
-            out.append(cur)
-            pre,cur = cur,cur.rite
-        else:
-        ''' if cur has left, setup thread of cur.left.max before descend to left'''
-            leftmax = cur.left
-            while leftmax.rite and leftmax.rite != cur:
-                leftmax = leftmax.rite
-            if not leftmax.rite:
-                leftmax.rite = cur
-                cur = cur.left  # setup thread before descend to left
-            else:
-                out.append(cur)
-                leftmax.rite = None
-                pre,cur = cur, cur.rite
+  pre, cur = None, root
+  while cur:
+    if not cur.left:  # no left, down to rite directly
+      out.append(cur)
+      pre,cur = cur,cur.rite
+    else:
+      ''' if cur has left, setup thread of cur.left.max before descend to left'''
+      leftmax = cur.left
+      while leftmax.rite and leftmax.rite != cur:
+        leftmax = leftmax.rite
+      if not leftmax.rite:
+        leftmax.rite = cur
+        cur = cur.left  # setup thread before descend to left
+      else:
+        out.append(cur)
+        leftmax.rite = None
+        pre,cur = cur, cur.rite
+
 
 ''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
 def numBST(n):
   tab = [0]*(n+1)
   tab[0] = tab[1] = 1
   for i in xrange(2,n):
-    tot = 0
     for r in xrange(1,i+1):
-      tot += tab[r-1]*tab[i-r]
-    tab[i] = tot
+      tab[i] += tab[r-1]*tab[i-r]
   return tab[n]
 
 
@@ -2588,37 +2587,61 @@ def countones(n):
   return tot
 
 """ 
-loop each char, note down expected count and fount cnt. squeeze left edge.
+loop each char, note down expected count and fount cnt. 
 """
-''' find min substring in S that contains all chars from T'''
-def minWindow(S, T):
-    ctx.found_chars = 0     # matched char len
-    ctx.expected_cnt = defaultdict(int)    # need to match dict keyed by char
-    ctx.found_cnt = defaultdict(int)
-    ctx.cur_beg = cur_end = min_beg = min_eng = 0
+from collections import defaultdict
+def minwin(arr,t):
+  expected = defaultdict(int)
+  for c in t:
+    expected[c] += 1
+  cnt,l,mnw = len(t),0,99
+  for i in xrange(len(arr)):
+    c = arr[i]
+    if not c in t:
+      continue
+    expected[c] -= 1
+    if expected[c] == 0:
+      cnt -= 1
+      while cnt == 0:
+        while l < len(arr) and not arr[l] in t:
+          l += 1
+        if i-l+1 < mnw:
+          mnw = i-l+1
+          print arr[l:i+1]
+        expected[arr[l]] += 1
+        if expected[arr[l]] > 0:
+          cnt += 1
+        l += 1
+  return mnw
+print minwin("aab", "ab")
+print minwin("ADOBECODEBANC", "ABC")
 
-    for c in T:   # populate dict of expected char cnt
-        ctx.expected_cnt[c] += 1
-    # sliding thru src string S
-    for idx, val in enumerate(S):
-        if ctx.expected_cnt[c] == 0:  # do not interested in this char
-            continue
-        ctx.found_cnt[val] += 1
-        if ctx.found_cnt[val] <= ctx.expected_cnt[val]:        
-            ctx.found_chars += 1  # contribute to found_chars only when new found.
-
-        # a window found, maintain the window while squeeze left edge.
-        if ctx.found_chars == len(T):
-            # squeeze left edge, already found > expected
-            while ctx.found_cnt[S[cur_beg]] > ctx.expected_cnt[S[cur_beg]] or
-                  ctx.expected_cnt[S[cur_beg] == 0:
-                ctx.found_cnt[S[cur_beg]] -= 1
-                cur_beg += 1
-            # upbeat optimal solution
-            if idx - cur_beg < min_end - min_beg:
-                min_beg, min_end = cur_beg, idx
-
-    return min_beg, min_end
+''' allow dups in target '''
+def minwin(arr,t):
+  expected = defaultdict(int)
+  found = defaultdict(int)
+  for c in t:
+    expected[c] += 1
+  l,cnt,mnw = 0,0,99
+  for i in xrange(len(arr)):
+    c = arr[i]
+    if not c in t:
+      continue
+    found[c] += 1
+    if found[c] <= expected[c]:
+      cnt += 1
+      while cnt == len(t):
+        while arr[l] not in t or found[arr[l]] > expected[arr[l]]:
+          if found[arr[l]] > 0:
+            found[arr[l]] -= 1
+          l += 1
+        if i-l+1 < mnw:
+          mnw = i-l+1
+          print arr[l:i+1]
+        l += 1
+        cnt -= 1
+  return mnw
+print minwin("azcaaxbb", "aab")
 
 
 """ sub string by concat all same length keys 
@@ -3553,36 +3576,50 @@ print coinchange([2,3,5], 10)
 
 # comb can exam head, branch at header incl and excl
 def combination(arr, path, sz, pos, result):
-    if sz == 0:
-        result.append(path)  # add to result only when sz
-        return result
-    if pos >= len(arr):
-        result.append(path)
-        return result
-    l = path[:]  # deep copy path before recursion
-    l.append(arr[pos])
-    combination(arr, l,    sz-1, pos+1, result)
-    combination(arr, path, sz, pos+1, result)
-    return
+  if sz == 0:
+    result.append(path)  # add to result only when sz
+    return result
+  if pos >= len(arr):
+    result.append(path)
+    return result
+  l = path[:]  # deep copy path before recursion
+  l.append(arr[pos])
+  combination(arr, l,    sz-1, pos+1, result)
+  combination(arr, path, sz, pos+1, result)
+  return
 
-""" recur with partial result, when path in, iter each, incl/excl each """
-def combRecur(arr, pos, r, path, res):
-    if r == 0:  # stop recursion when r = 1
-        cp = path[:]
-        res.append(cp)
-        return res
-    for i in xrange(pos, len(arr)-r+1):  # can be [pos..n]
-        path.append(arr[i])
-        combRecur(arr, i+1, r-1, path, res)  # iter from idx+1, as not swap before/after
-        path.pop()   # deep copy path for each recursion, or pop path after recursion
+""" recur with partial path, for loop each, as incl/excl """
+def comb(arr, pos, r, path, res):
+  if r == 0:  # stop recursion when r = 1
+    cp = path[:]
+    res.append(cp)
     return res
-res = [];combRecur([1,2,3,4],0,2,[],res);print res;
+  for i in xrange(pos, len(arr)-r+1):  # can be [pos..n]
+    path.append(arr[i])
+    comb(arr, i+1, r-1, path, res)  # iter from idx+1, as not 
+    path.pop()   # deep copy path or pop
+  return res
+res=[];comb([1,2,3,4],0,2,[],res);print res;
+
+""" incl cur, put it into path, dfs recur. Not incl, next """
+# [a, ..] [b, ...], [c, ...]
+# [a [ab [abc]] [ac]] , [b [bc]] , [c]
+def powerset(arr, pos, path, result):
+  result.append(path)
+  for i in xrange(pos, len(arr)):
+    ''' compare i to i-1, not i to pos '''
+    if i > pos and arr[i] == arr[i-1]:
+        continue
+    l = path[:]
+    l.append(arr[i])
+    powerset(arr, i+1, l, result)
+path=[];result=[];powerset([1,2,2], 0, path, result);print result;
 
 def comb(arr,r):
   res = []
   if r == 1:  # leaf, need ret a list, wrap leaf as first element.
     for e in arr:
-        res.append([e])
+      res.append([e])
     return res
   # incl/excl each hd
   for i in xrange(len(arr)-r+1):
@@ -3621,19 +3658,6 @@ def alterComb(a,b):
   return out
 print alterComb([10, 15, 25], [1,5,20,30])
 
-""" incl cur, put it into path, dfs recur. Not incl, next """
-# [a [ab [abc]] [ac]] , [b [bc]] , [c]
-def powerset(arr, pos, path, result):
-  result.append(path)
-  for i in xrange(pos, len(arr)):
-    ''' compare i to i-1, not i to pos '''
-    if i > pos and arr[i] == arr[i-1]:
-        continue
-    l = path[:]
-    l.append(arr[i])
-    powerset(arr, i+1, l, result)
-path=[];result=[];powerset([1,2,2], 0, path, result);print result;
-
 
 """when recur to pos, carry the path to when we reach to pos.
 for dup, sort, skip current i is it is a dup of offset.
@@ -3642,20 +3666,18 @@ def permDup(arr, pos, path, res):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
   if pos == len(arr):
-    l = path[:]
-    res.append(l)
-    return
+    return res.append(path[:])
   for i in xrange(pos, len(arr)):
     # if i is dup of pos, skip it.
     if i != pos and arr[pos] == arr[i]:
         continue
     swap(arr, pos, i)
     path.append(arr[pos])
-    perm(arr, pos+1, path, res)
+    permDup(arr, pos+1, path, res)
     path.pop()
     swap(arr, pos, i)
-path=[];res=[];perm(list("123"), 0, [], res);print res
-path=[];res=[];perm(list("112"), 0, [], res);print res
+path=[];res=[];permDup(list("123"), 0, [], res);print res
+path=[];res=[];permDup(list("112"), 0, [], res);print res
 
 # need to pass different arr upon each recursion, vs. different offset.
 def perm(arr):
@@ -3677,22 +3699,22 @@ def perm(arr):
 then find first larger, then swap, the reverse right partition.
 """
 def nextPermutation(txt):
-    for i in xrange(len(txt)-2, -1, -1):
-        if txt[i] < txt[i+1]:
-            break
-    if i < 0:
-        return ''.join(reversed(txt))
-    part = txt[i]
-    for j in xrange(len(txt)-1, i, -1):
-        if txt[j] > part:
-            break
-    txt[i],txt[j] = txt[j],txt[i]
-    l,r = i+1, len(txt)-1
-    while l < r:
-        txt[l],txt[r] = txt[r],txt[l]
-        l += 1
-        r -= 1
-    return txt
+  for i in xrange(len(txt)-2, -1, -1):
+    if txt[i] < txt[i+1]:
+      break
+  if i < 0:
+    return ''.join(reversed(txt))
+  part = txt[i]
+  for j in xrange(len(txt)-1, i, -1):
+    if txt[j] > part:
+      break
+  txt[i],txt[j] = txt[j],txt[i]
+  l,r = i+1, len(txt)-1
+  while l < r:
+    txt[l],txt[r] = txt[r],txt[l]
+    l += 1
+    r -= 1
+  return txt
 
 """ iter each head, rank += index(hd,a[i:])*(n-i-1)! 
 the index calcu is based off smaller substr by removing current head
@@ -4699,7 +4721,7 @@ def wordladder(start, end, dict):
           nextwds.append(nextwd)
           seen.add(nextwd)
     return nextwds
-
+  ''' bfs search '''
   ladder = []
   seen = set()     # global visited/seen map for all bfs iterations
   if start == end:
