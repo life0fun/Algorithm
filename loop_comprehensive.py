@@ -3939,37 +3939,40 @@ print bfsParath(3)
 
 
 """ remove invalid (, at each invalid pos, dfs excl/incl recursion """
-def rmInvalidParenth(s,pos,path,lcnt,rcnt,res):
-  def firstRite(path, i):
-    while path[i] == ")":
-      i -= 1
-    return i+1
-
-  if pos == len(s):
-    print lcnt, rcnt, path
-    res.append(path)
-    return
-  if s[pos] == "(":
-    p = path[:]
-    p.append("(")
-    return rmInvalidParenth(s,pos+1,p,lcnt+1,rcnt,res)
-  if s[pos] == ")":
-    if lcnt > rcnt:
-      p = path[:]
-      p.append(")")
-      return rmInvalidParenth(s,pos+1,p,lcnt,rcnt+1,res)
+def rmInvalidParenth(s, res):
+  path = []
+  rmL,rmR = 0,0
+  for i in xrange(s):
+    if s[i] == "(":
+      rmL += 1
     else:
-      p = path[:]  # skip pos )
-      rmInvalidParenth(s,pos+1,p,lcnt,rcnt,res)
-      # replace only the first ) in a batch of consecutive ))) makes diff
-      r = firstRite(path, len(path)-1)
-      for i in xrange(r-1, 0, -1):
-        if path[i] == ")":
-          k = firstRite(path, i)
-          p = path[0:k] + path[k+1:]   # skip each prev )
-          p.append(")")
-          rmInvalidParenth(s,pos+1,p,lcnt,rcnt,res)
-  return res
+      if rmL != 0:
+        rmL -= 1
+      else:
+        rmR += 1
+    dfs(res, s, 0, rmL, rmR, 0, path)
+    return res
+
+  def dfs(res, s, pos, rmL, rmR, openParen, path):
+    if pos == len(s) and rmL == 0 and rmR == 0 and openParen == 0:
+      p = path[:]
+      res.append(p)
+      return
+    if pos == len(s) or rmL < 0 or rmR < 0 or openParen < 0:
+      return
+
+    if s[pos] == "(":
+      dfs(res, s, pos+1, rmL, rmR, openParen+1, path)
+      dfs(res, s, pos+1, rmL-1, rmR, openParen, path.append("("))
+      path.pop()
+    else if s[pos] == ")":
+      dfs(res, s, pos+1, rmL, rmR-1, openParen, path)
+      dfs(res, s, pos+1, rmL, rmR, openParen-1, path.append(")"))
+      path.pop()
+    else:
+      dfs(res, s, pos+1, rmL, rmR, openParen, path.append(s[pos]))
+    return
+
 s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
 s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
 
@@ -4022,20 +4025,57 @@ def bfsInvalidParen(s):
   return res
 print bfsInvalidParen("()())()")
 
+""" add operator, or parenth to exp forms. divide and conquer at 
+each brkpoint, for each left foreach op rite """
+def addOperator(arr, l, r, t):
+  def dfs(arr, l, r):
+    out = []
+    if l == r:
+      return [[arr[l],"{}".format(arr[l])]]
+    # arr[l:r] as one num, no divide
+    out.append([int(''.join(map(str,arr[l:r+1]))), "{}".format(''.join(map(str,arr[l:r+1])))])
+    for i in xrange(l,r):
+      L = dfs(arr, l, i)
+      R = dfs(arr, i+1, r)
+      for lv, lexp in L:
+        for rv, rexp in R:
+          out.append([lv+rv, "{}+{}".format(lexp,rexp)])
+          out.append([lv*rv, "{}*{}".format(lexp,rexp)])
+          out.append([lv-rv, "{}-{}".format(lexp,rexp)])
+    return out
 
-""" word break, O(n2) """
-# result=[];path=[];word="catsanddog";print wordbreak(word,0,path,result)
-def wordbreak(word, offset, path, result):
-    dict = ["cat", "cats", "and", "sand", "dog"]
-    if offset == len(word):
-        result.append(path)
-        return result
-    for i in xrange(offset, len(word)):
-        if word[offset:i+1] in dict:
-            l = path[:]
-            l.append(word[offset:i+1])
-            wordbreak(word, i+1, l, result)
-    return result
+  out = []
+  for v,exp in dfs(arr, l, r):
+    if v == t:
+      out.append(exp)
+  return out
+print addOperator([1,2,3],0,2,6)
+print addOperator([1,0,5],0,2,5)
+
+""" dfs recur on each segment moving idx """
+def addOperator(arr, target):
+  def dfs(a, exp, t, prepre, pre, sign):
+    out = []
+    preval = sign ? prepre + pre : prepre - pre
+    if len(a) == 0:
+      if preval == t:
+        out.append(exp)
+        return
+    for i in xrange(1, len(a)):
+      if i >= 2 and a[i] == 0:
+        continue
+      cur = a[:i+1]
+      dfs(a[i:], "{}+{}".format(exp, cur), t, preval, cur, True)
+      dfs(a[i:], "{}-{}".format(exp, cur), t, preval, cur, False)
+      dfs(a[i:], "{}*{}".format(exp, cur), t, prepre, pre*cur, sign)
+    return out
+
+  for i in xrange(len(arr)):
+    if i >= 2 and arr[i] == 0:
+      continue
+    dfs(arr[i:], arr[:i+1], target, 0, int(arr[:i+1]), True)
+
+
 
 ''' bottom up, enum pos row up, [[wd1,wd2,...], [wd3,wd4],...]
 tab[i]=arr[0:i] is break. tab[i] = tab[k] and arr[k:i] in dict
@@ -4115,7 +4155,6 @@ def distinctSeq(s,t):
 print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
-
 
 """ as tab[i][j] only from tab[i-1][j-1], two rows solution """
 def distinct(s,t):
