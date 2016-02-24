@@ -2823,22 +2823,29 @@ def max_distance(l):
     then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
 """
 def triplet(arr):
-    sz = len(arr)
-    lmin,rmax = [999]*sz, [-1]*sz
-    lmin[0], rmax[sz-1] = arr[0], arr[sz-1]
-    for i in xrange(1, sz):
-        v = arr[i]       
-        lmin[i] = v
-        if v > lmin[i-1]:
-            lmin[i] = lmin[i-1]
-        v = arr[sz-1-i]
-        rmax[sz-1-i] = v
-        if v < rmax[sz-1-i+1]:
-            rmax[sz-1-i] = rmax[sz-1-i+1]
-    for i in xrange(1,sz):
-        v = arr[i]
-        if lmin[i] < v and v < rmax[i]:
-            print lmin[i], v, rmax[i]
+  sz = len(arr)
+  lmin,rmax = [999]*sz, [-1]*sz
+  lmin[0], rmax[sz-1] = arr[0], arr[sz-1]
+  for i in xrange(1, sz):
+    if arr[i] > lmin[i-1]:
+      lmin[i] = lmin[i-1]
+    if arr[sz-1-i] < rmax[sz-1-i+1]:
+      rmax[sz-1-i] = rmax[sz-1-i+1]
+  for i in xrange(1,sz):
+    if lmin[i] < arr[i] and arr[i] < rmax[i]:
+      print lmin[i], v, rmax[i]
+
+def triplet(arr):
+  mn,nxtmn = 99,99
+  for i in xrange(len(arr)):
+    v = arr[i]
+    if v < mn:
+      mn = v
+    elif v < nxtmn:
+      nxtmn = v
+    else:
+      return [mn,nxtmn,v]
+print triplet([5,4,3,6,2,7])
 
 """ long arithmath progression. tab[i,j] = lap of arr[i:j] with i,j as first 2 ele.
 tab[i,j] = tab[k,i]+1, iff arr[k]+arr[j]=2*arr[i] """
