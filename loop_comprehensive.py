@@ -621,37 +621,81 @@ def serde(l):
 # 1 [2 [4 $] $] [3 [5 $] $] $
 from collections import deque
 def deserTree(l):
-    s = deque()
-    while nxt = l.readLine():
-        if nxt is "$":
-          s.pop()
-        else:
-          n = Node(nxt)
-          if count(s) == 0:
-            s.append(n)
-          else:
-            parent = s[-1]
-            parent.children.append(n)
-            s.append(n)
-''' lgn stack as cur node parent when tree traverse'''
+  s = deque()
+  while nxt = l.readLine():
+    if nxt is "$":
+      s.pop()
+    else:
+      n = Node(nxt)
+      if count(s) == 0:
+        s.append(n)
+      else:
+        parent = s[-1]
+        parent.children.append(n)
+        s.append(n)
+
+""" track pre, cur when traverse, and threading left rite most """
 def morris(root):
   pre, cur = None, root
   while cur:
     if not cur.left:  # no left, down to rite directly
       out.append(cur)
-      pre,cur = cur,cur.rite
+      pre = cur
+      cur = cur.rite
     else:
-      ''' if cur has left, setup thread of cur.left.max before descend to left'''
-      leftmax = cur.left
-      while leftmax.rite and leftmax.rite != cur:
-        leftmax = leftmax.rite
-      if not leftmax.rite:
-        leftmax.rite = cur
-        cur = cur.left  # setup thread before descend to left
-      else:
+      # threading left's rite most to root rite before descend
+      tmp = cur.left
+      # descend to left's rite most child
+      while tmp.rite and tmp.rite != cur:
+        tmp = tmp.rite
+
+      if tmp.rite == None:
+        tmp.rite = cur      # threading to cur
+        cur = cur.left      # theb descend to left
+      else:  # already threaded, visit, reset, to rite
         out.append(cur)
-        leftmax.rite = None
+        tmp.rite = None
         pre,cur = cur, cur.rite
+
+""" threading rite child's left most's left to root's left """
+def postorderMorris(self, root):
+  out = []
+  while root:
+    out.append(root)
+    if root.rite:     # threading rite's left most to parent left
+      tmp = root.rite
+      while tmp.left:
+        tmp = tmp.left
+      # rite child's left most child point to parent left
+      tmp.left = root.left
+      root = root.rite
+    else:
+      root = root.left  # descend to left
+  return out[::-1]
+
+""" pre-order with rite first, then reverse, got post-order """
+def postOrder(root):
+  stk = []
+  pre,cur = None,root
+  while cur or len(stk) > 0:
+    if cur:
+      if cur.left:
+        stk.append(cur.left)
+      out.insert(0, cur)
+      cur = cur.rite
+    else:
+      cur = stk.pop()
+  return out
+
+def postorderTraversal(self, root):
+  ans, stack = [], [root]
+  while stack:
+    tmp = stack.pop()
+    if tmp:
+      ans.append(tmp.val)
+      stack.append(tmp.left)
+      stack.append(tmp.right)
+  return ans[::-1]
 
 
 ''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
@@ -2586,63 +2630,6 @@ def countones(n):
     tot += sig*countones(w-1) + countones(n%w)
   return tot
 
-""" 
-loop each char, note down expected count and fount cnt. 
-"""
-from collections import defaultdict
-def minwin(arr,t):
-  expected = defaultdict(int)
-  for c in t:
-    expected[c] += 1
-  cnt,l,mnw = len(t),0,99
-  for i in xrange(len(arr)):
-    c = arr[i]
-    if not c in t:
-      continue
-    expected[c] -= 1
-    if expected[c] == 0:
-      cnt -= 1
-      while cnt == 0:
-        while l < len(arr) and not arr[l] in t:
-          l += 1
-        if i-l+1 < mnw:
-          mnw = i-l+1
-          print arr[l:i+1]
-        expected[arr[l]] += 1
-        if expected[arr[l]] > 0:
-          cnt += 1
-        l += 1
-  return mnw
-print minwin("aab", "ab")
-print minwin("ADOBECODEBANC", "ABC")
-
-''' allow dups in target '''
-def minwin(arr,t):
-  expected = defaultdict(int)
-  found = defaultdict(int)
-  for c in t:
-    expected[c] += 1
-  l,cnt,mnw = 0,0,99
-  for i in xrange(len(arr)):
-    c = arr[i]
-    if not c in t:
-      continue
-    found[c] += 1
-    if found[c] <= expected[c]:
-      cnt += 1
-      while cnt == len(t):
-        while arr[l] not in t or found[arr[l]] > expected[arr[l]]:
-          if found[arr[l]] > 0:
-            found[arr[l]] -= 1
-          l += 1
-        if i-l+1 < mnw:
-          mnw = i-l+1
-          print arr[l:i+1]
-        l += 1
-        cnt -= 1
-  return mnw
-print minwin("azcaaxbb", "aab")
-
 
 """ sub string by concat all same length keys 
 continue mov r when each r+k is in dict. skip exceeding dups.
@@ -2716,6 +2703,7 @@ def concatKeys(s, arr):
     r += k
   return out
 
+
 """ sliding win, outer while loop move rite, inner while loop mov left 
 always enque r first, then check r-l+1==m"""
 def maxWin(arr, m):
@@ -2775,21 +2763,64 @@ def maxWinSizeWithMzero(arr,m):
   return maxWinsize
 print maxWinSizeWithMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
+""" 
+loop each char, note down expected count and fount cnt. 
+"""
+from collections import defaultdict
+def minwin(arr,t):
+  expected = defaultdict(int)
+  for c in t:
+    expected[c] += 1
+  cnt,l,mnw = len(t),0,99
+  for i in xrange(len(arr)):
+    c = arr[i]
+    if not c in t:
+      continue
+    expected[c] -= 1
+    if expected[c] == 0:
+      cnt -= 1
+      while cnt == 0:   # squeeze left window while all chars are found.
+        while l < len(arr) and not arr[l] in t:
+          l += 1
+        if i-l+1 < mnw:
+          mnw = i-l+1
+          print arr[l:i+1]
+        expected[arr[l]] += 1
+        if expected[arr[l]] > 0:
+          cnt += 1
+        l += 1
+  return mnw
+print minwin("aab", "ab")
+print minwin("ADOBECODEBANC", "ABC")
 
-''' in a seq of nums, find max(Aj - Ai) where j > i '''
-def maxDelta(A):
-    cur_beg = cur_end = max_beg = max_end = 0
-    for idx, val in enumerate(A):
-        if val < A[cur_beg]:
-            cur_beg = idx
-            continue
-        else if val > A[cur_end]:
-            cur_end = idx
-            if val-A[cur_beg] > A[max_end] - A[max_beg]:
-                max_beg, max_end = cur_beg, cur_end
-        else:
-            # do nothing if it is between cur_beg, cur_end
-    return max_beg, max_end
+
+''' allow dups in target '''
+def minwin(arr,t):
+  expected = defaultdict(int)
+  found = defaultdict(int)
+  for c in t:
+    expected[c] += 1
+  l,cnt,mnw = 0,0,99
+  for i in xrange(len(arr)):
+    c = arr[i]
+    if not c in t:
+      continue
+    found[c] += 1
+    if found[c] <= expected[c]:
+      cnt += 1
+      while cnt == len(t):
+        while arr[l] not in t or found[arr[l]] > expected[arr[l]]:
+          if found[arr[l]] > 0:
+            found[arr[l]] -= 1
+          l += 1
+        if i-l+1 < mnw:
+          mnw = i-l+1
+          print arr[l:i+1]
+        l += 1
+        cnt -= 1
+  return mnw
+print minwin("azcaaxbb", "aab")
+
 
 """
 max distance between two items where right item > left items.
@@ -2804,18 +2835,18 @@ def max_distance(l):
     Lmin = [l[0]]*sz
     Rmax = [l[sz-1]]*sz
     for i in xrange(1, sz-1:
-        Lmin[i] = min(Lmin[i-1], l[i])
+        Lmin[i] = min(Lmin[i-1], l[i])  # lmin mono decrease
     for j in xrange(sz-2,0,-1):
-        Rmax[j] = max(Rmax[j+1], l[j])
+        Rmax[j] = max(Rmax[j+1], l[j])  # rmax flat decrease
     i = j = 0   # both start from 0, Lmin/Rmax 
     maxdiff = -1
     while j < sz and i < sz:
-        # found one, upbeat, Rmax also mono decrease, stretch
-        if Lmin[i] < Rmax[j]:
-            maxdiff = max(maxdiff, j-i)
-            j += 1
-        else: # Lmin is bigger, mov, Lmin is mono decrease
-            i += 1
+      # found one, upbeat, Rmax also mono decrease, stretch
+      if Lmin[i] < Rmax[j]:
+          maxdiff = max(maxdiff, j-i)
+          j += 1
+      else: # Lmin is bigger, mov lmin as Lmin is mono decrease
+          i += 1
     return maxdiff
 
 """ Lmin[i] contains idx in the left arr[i] < cur, or -1
@@ -2847,7 +2878,7 @@ def triplet(arr):
       return [mn,nxtmn,v]
 print triplet([5,4,3,6,2,7])
 
-""" long arithmath progression. tab[i,j] = lap of arr[i:j] with i,j as first 2 ele.
+""" long arithmath progress. tab[i,j]=LAP of arr[i:j] with i,j as first 2.
 tab[i,j] = tab[k,i]+1, iff arr[k]+arr[j]=2*arr[i] """
 def longestArithmathProgress(arr):
   mx = 0
@@ -2956,19 +2987,19 @@ mx[i] = max(mx[i-1]*v, mn[i-1]*v, v),
 at each idx, either it starts a new seq, or it join prev sum
 '''
 def maxProduct(a):
-    maxProd = cur_max = cur_min = a[0]  # first el as cur_max/min
-    cur_beg, cur_end, max_beg, max_end = 0,0,0,0
-    for cur in a[1:]:
-        new_min = cur_min*cur
-        new_max = cur_max*cur
-        # update max/min of cur after applying cur el
-        cur_min = min([cur, new_max, new_min])
-        cur_max = max([cur, new_max, new_min])
-        maxProd = max([maxProd, cur_max])
-        if maxProd is cur_max:
-            cur_end, max_end = i,i
-            #upbeat(max_beg, max_end)
-    return maxProd
+  maxProd = cur_max = cur_min = a[0]  # first el as cur_max/min
+  cur_beg, cur_end, max_beg, max_end = 0,0,0,0
+  for cur in a[1:]:
+      new_min = cur_min*cur
+      new_max = cur_max*cur
+      # update max/min of cur after applying cur el
+      cur_min = min([cur, new_max, new_min])
+      cur_max = max([cur, new_max, new_min])
+      maxProd = max([maxProd, cur_max])
+      if maxProd is cur_max:
+          cur_end, max_end = i,i
+          #upbeat(max_beg, max_end)
+  return maxProd
 
 ''' track prepre, pre, cur idx of zeros '''
 def maxones(arr):
@@ -2990,18 +3021,18 @@ print maxones([1, 1, 1, 1, 0])
 
 # 1-d array, max length, like slideing wind, track l/r edge.
 def maxWinM(arr,m):
-    l,r,win,maxwinsize = 0,0,0,0
-    while r < len(arr):
-        if win <= m:
-            if arr[r] == 0:
-                win += 1
-            r += 1  # park r to next window rite edge
-        else:
-            if arr[l] == 0:
-                win -= 1
-            l += 1  # park l to next window left edge
-        maxwinsize = max(maxwinsize, r-l)  # dist is half include.
-    return maxwinsize
+  l,r,win,maxwinsize = 0,0,0,0
+  while r < len(arr):
+      if win <= m:
+          if arr[r] == 0:
+              win += 1
+          r += 1  # park r to next window rite edge
+      else:
+          if arr[l] == 0:
+              win -= 1
+          l += 1  # park l to next window left edge
+      maxwinsize = max(maxwinsize, r-l)  # dist is half include.
+  return maxwinsize
 print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
 
 
@@ -3458,32 +3489,41 @@ def minpath(G, src, dst):
 
 ''' mobile pad k edge, tab[src][dst][k] '''
 def minpath(G, src, dst, k):
-    for gap in xrange(k):
-      for s in G.vertices():
-        for d in G.vertices():
+  for gap in xrange(k):
+    for s in G.vertices():
+      for d in G.vertices():
+        tab[s][d][gap] = 0
+        if gap == 1 and G[s][d] != sys.maxint:
+          tab[s][d][gap] = G[s][d]
+        elif s == d and gap == 0:
           tab[s][d][gap] = 0
-          if gap == 1 and G[s][d] != sys.maxint:
-            tab[s][d][gap] = G[s][d]
-          elif s == d and gap == 0:
-            tab[s][d][gap] = 0
-          if s != d and gap > 1:
-            for k in src.neighbor():
-              tab[s][d][gap] = min(tab[k][d][gap-1]+G[src][k])
-    return tab[src][dst][k]
+        if s != d and gap > 1:
+          for k in src.neighbor():
+            tab[s][d][gap] = min(tab[k][d][gap-1]+G[src][k])
+  return tab[src][dst][k]
 
 ''' topology sort, tab[i] = min cost to reach dst from i'''
 def minpath(G, src, dst):
-    toplist = topsort(G)
-    for i in g.vertices():
-      tab[i] = sys.maxint
-    # after topsort, leave at the end of the list.
-    tab[d] = 0
-    for nb in d.neighbor():
-        tab[nb] = cost[nb][d]
-    for i in xrange(len(toplist)-1,-1,-1):
-        for j in i.neighbor():
-            tab[j] = min(tab[i]+cost[i][j], tab[j])
-    return tab[src]
+  def topsort(G,src,stk):
+    def dfs(s,G,stk):
+      for v in neighbor(G,s):
+        if not visited[v]:
+          dfs(v,G,stk)
+      stk.append(v)
+    for v in G:
+      dfs(v,G,stk)
+    return stk
+  toplist = topsort(G,src,stk)
+  for i in g.vertices():
+    tab[i] = sys.maxint
+  # after topsort, leave at the end of the list.
+  tab[d] = 0
+  for nb in d.neighbor():
+      tab[nb] = cost[nb][d]
+  for i in xrange(len(toplist)-1,-1,-1):
+      for j in i.neighbor():
+          tab[j] = min(tab[i]+cost[i][j], tab[j])
+  return tab[src]
 
 
 ''' start from minimal, only item 0, i loop items, w loops weights at each item. 
@@ -4443,22 +4483,43 @@ def combinationSum(n, s, distinct=False):  # n slots, sum to s.
   tab = [[None]*(s+1) for i in xrange(n)]
   for i in xrange(n):      # bottom up n slots
     for v in xrange(s+1):  # enum to s for each slot, tab[i,s]
-      for j in xrange(1, 10):  # each slot face value, 1..9
-        if i == 0 and j == v and v < 10:   # tab[0][0..9] = [0..9]
-          tab[i][j] = []
-          tab[i][j].append([j])
-        if v > j and tab[i-1][v-j] and len(tab[i-1][v-j]) > 0:
-          for e in tab[i-1][v-j]:
+      if tab[i][v] == None:
+        tab[i][v] = []
+      for f in xrange(1, 10):  # each slot face value, 1..9
+        if i == 0 and f == v and v < 10:   # tab[0][0..9] = [0..9]
+          tab[i][j].append([f])
+        if v > f and tab[i-1][v-f] and len(tab[i-1][v-f]) > 0:
+          for e in tab[i-1][v-f]:
             # if need to be distinct, append j only when it is bigger.
             if distinct and j <= e[-1]:
               continue
-            p = e[:]
-            p.append(j)   # append i's slot, j value to result list of tab[i-1,v-j]
-            if tab[i][v] == None:
-              tab[i][v] = []
-            tab[i][v].append(p)
+            de = e[:]
+            de.append(f)
+            tab[i][v].append(de)
   return tab[n-1][s]
 print combinationSum(3,9,True)
+
+''' contain sol sz < n, [1,6], [7], [1, 0, 6] '''
+def combsum(n, t):
+  tab = [[None]*(t+1) for i in xrange(n)]
+  for i in xrange(n):
+    for v in xrange(10):
+      for s in xrange(max(1,v), t+1):
+        if not tab[i][s]:
+          tab[i][s] = []
+        if v == s:
+          tab[i][s].append([v])
+        else:
+          if tab[i-1][s-v]:
+            for e in tab[i-1][s-v]:
+              de = e[:]
+              de.append(v)
+              tab[i][s].append(de)
+          else:
+            if i > 0:
+              tab[i][s] = tab[i-1][s][:]
+  return tab[n-1][t]
+print combsum(3,7)
 
 
 """ adding + in between. [1,2,0,6,9] and target 81.
@@ -4769,7 +4830,7 @@ def wordladder(start, end, dict):
     return nextwds
   ''' bfs search '''
   ladder = []
-  seen = set()     # global visited/seen map for all bfs iterations
+  seen = set()     # global visited map for all bfs iterations
   if start == end:
     return
   q = deque()
@@ -4781,6 +4842,7 @@ def wordladder(start, end, dict):
         path.append(nextwd)
         ladder.append(path)
       else:
+        seen.add(nextwd)
         npath = path[:]
         npath.append(wd)
         q.append([nextwd, npath])
