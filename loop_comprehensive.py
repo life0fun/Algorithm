@@ -290,7 +290,7 @@ def rotatedMin(arr):
       r = (l+r)/2  # r = old mid
       continue
     ''' l - mid in the first same segment '''
-    if arr[mid] > arr[l] and mid < r:
+    if arr[l] < arr[mid] and mid < r:
       l = mid+1
     else:
       r = mid
@@ -609,30 +609,28 @@ def serde(l):
   if hd == "$":
     return True, None  # done
   node = Node(val)
-  for i in xrange(n):  # do not know how many child, loop until done.
-    done, child = serde(l)
-    if done:
+  # node.left, node.rite = serde(l), serde(l)
+  while True:  # if forest, loop until children done.
+    node.children.append(serde(l))
+    if node.children[-1] == None:
       return node
-    else:
-      node.child[i] = child
   return node
 
 """ tree traverse, stk top always is parent """
 # 1 [2 [4 $] $] [3 [5 $] $] $
 from collections import deque
 def deserTree(l):
-  s = deque()
+  parent, parentStk = None, deque()
   while nxt = l.readLine():
     if nxt is "$":
-      s.pop()
+      parentStk.pop()
     else:
       n = Node(nxt)
-      if count(s) == 0:
-        s.append(n)
+      parentStk.append(n)
+      if not parent:
+        parent = parentStk[-1]
       else:
-        parent = s[-1]
         parent.children.append(n)
-        s.append(n)
 
 """ track pre, cur when traverse, and threading left rite most """
 def morris(root):
@@ -651,9 +649,9 @@ def morris(root):
 
       if tmp.rite == None:
         tmp.rite = cur      # threading to cur
-        cur = cur.left      # theb descend to left
+        cur = cur.left      # descend to left
       else:  # already threaded, visit, reset, to rite
-        out.append(cur)
+        out.append(cur)     # visit
         tmp.rite = None
         pre,cur = cur, cur.rite
 
@@ -2854,19 +2852,6 @@ def max_distance(l):
     then loop both Lmin/Rmax, at i when Lmin[i] > Rmax[i], done
 """
 def triplet(arr):
-  sz = len(arr)
-  lmin,rmax = [999]*sz, [-1]*sz
-  lmin[0], rmax[sz-1] = arr[0], arr[sz-1]
-  for i in xrange(1, sz):
-    if arr[i] > lmin[i-1]:
-      lmin[i] = lmin[i-1]
-    if arr[sz-1-i] < rmax[sz-1-i+1]:
-      rmax[sz-1-i] = rmax[sz-1-i+1]
-  for i in xrange(1,sz):
-    if lmin[i] < arr[i] and arr[i] < rmax[i]:
-      print lmin[i], v, rmax[i]
-
-def triplet(arr):
   mn,nxtmn = 99,99
   for i in xrange(len(arr)):
     v = arr[i]
@@ -3233,13 +3218,13 @@ def bucketsort_count(arr):
   for i in xrange(len(arr)):
     while arr[i] != i+1 and arr[i] >= 0 and arr[i] != 999:  # skip DUP
       v = arr[i]
-      if arr[v] >= 0:    # arr[i] not a dup as 
+      if arr[v] >= 0:    # swap and toggle!
         swap(arr, i, v)
-        arr[v] = -1     # after swap, toggle to -1
-      else:             # already swapped, current i is a dup. inc v
+        arr[v] = -1
+      else:             # inc and sentinel
         arr[v] -= 1
-        arr[i] = 999  # set cur i to SENTI to indicate it is dup
-    if arr[i] == i+1:
+        arr[i] = 999    # set cur i to SENTI to indicate it is dup
+    if arr[i] == i+1:   # toggle
       arr[i] = -1
   return arr
 print bucket([1, 2, 4, 3, 2])
@@ -3795,7 +3780,7 @@ assert(nthPerm("1234", 15), "3241")
 
 """ iter each pos from 0 <- n. for width w, w! perms.
 At each i, there are (n-i)! perms. If there are k eles smaller than cur,
-means cur rank big than those k packs that is smaller than cur. so rank += k*(n-i)!
+means cur rank += those k packs that is smaller than cur. so rank += k*(n-i)!
 with dup, tot is (n-i)!/A!*B!, and we need sum up all k copies of dup ele to rank
 """
 from collections import defaultdict
@@ -3812,9 +3797,10 @@ def permRankDup(arr):
   for i in range(len(arr)-1,-1,-1):
     e = arr[i]
     counter[e] += 1
+    # tot perms i..n. arr[i]'s rank
     tot = permTotal(len(arr)-i-1, counter)
     for k,v in counter.items():
-      if e > k:  # rite smaller, sum up all v copies of char k smaller than arr[i]
+      if e > k:  # arr[i] > k at rite, sum up v dups of k.
         rank += tot*v
   return rank
 assert permRankDup('3241') == 16
@@ -4075,7 +4061,12 @@ print bfsInvalidParen("()())()")
 """ add operator, or parenth to exp forms. divide and conquer at 
 each brkpoint, for each left foreach op rite """
 def addOperator(arr, l, r, t):
+  '''recursion must use memoize'''
   def dfs(arr, l, r):
+    if not tab[l][r]:
+      tab[l][r] = defaultdict(list)
+    else:
+      return tab[l][r]
     out = []
     if l == r:
       return [[arr[l],"{}".format(arr[l])]]
@@ -4089,8 +4080,10 @@ def addOperator(arr, l, r, t):
           out.append([lv+rv, "{}+{}".format(lexp,rexp)])
           out.append([lv*rv, "{}*{}".format(lexp,rexp)])
           out.append([lv-rv, "{}-{}".format(lexp,rexp)])
+    tab[l][r] = out
     return out
 
+  tab = [[None]*(l+1) for i in xrange(r+1)]
   out = []
   for v,exp in dfs(arr, l, r):
     if v == t:
@@ -4099,7 +4092,8 @@ def addOperator(arr, l, r, t):
 print addOperator([1,2,3],0,2,6)
 print addOperator([1,0,5],0,2,5)
 
-""" dfs recur on each segment moving idx """
+""" dfs recur on each segment moving idx, note down prepre, pre,
+and calulate this cur in next iteration"""
 def addOperator(arr, target):
   def dfs(a, exp, t, prepre, pre, sign):
     out = []
@@ -4121,7 +4115,6 @@ def addOperator(arr, target):
     if i >= 2 and arr[i] == 0:
       continue
     dfs(arr[i:], arr[:i+1], target, 0, int(arr[:i+1]), True)
-
 
 
 ''' bottom up, enum pos row up, [[wd1,wd2,...], [wd3,wd4],...]
@@ -4192,8 +4185,8 @@ def distinctSeq(s,t):
         if s[0] == t[j]:
           tab[0][j] = 1
         continue
-      tab[i][j] = tab[i-1][j]   # exclude s[i]
-      if t[j] == s[i]:   # incl s[i] only when equals
+      tab[i][j] = tab[i-1][j]   # not using s[i]
+      if t[j] == s[i]:   # use s[i] only when equals
         if j == 0:  # s[i]==t[0], match in s can start from s[i]
           tab[i][0] = tab[i-1][0] + 1
         else:
@@ -4257,9 +4250,9 @@ def decode(dstr):
   tab[0] = 1
   tab[1] = 1
   for i in xrange(2,len(dstr)+1):
-      tab[i] = tab[i-1]
-      if dstr[i-1-1] == "1" or (dstr[i-1-1] == "2" and dstr[i-1] <= "6"):
-          tab[i] += tab[i-2]
+    tab[i] = tab[i-1]
+    if dstr[i-1-1] == "1" or (dstr[i-1-1] == "2" and dstr[i-1] <= "6"):
+      tab[i] += tab[i-2]
   return tab[len(dstr)]
 print decode("122")
 
@@ -4271,6 +4264,7 @@ def decode(dstr):
   for i in xrange(1,len(dstr)+1):
     cur = pre
     if dstr[i] == '0':
+      prepre = 0
       continue
     if dstr[i-1-1] == '1' or (dstr[i-1-1]=='2' and dstr[i-1]<='6'):
       cur += prepre  # fib seq here.
@@ -4282,20 +4276,20 @@ print decode("122")
 """ top down offset n -> 1 when dfs inclusion recursion """
 # path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 def subsetsum(l, offset, n, path, result):
-    if offset < 0:
-        return    
-    if n == l[offset]:
-        p = path[:]
-        p.append(l[offset])
-        result.append(p)
-    if n > l[offset]:  # branch incl when when l.i smaller
-        p = path[:]   # deep copy new path before recursion.
-        p.append(l[offset])
-        # dup allowed, offset stay when include, incl 1+ times.
-        # subsetsum(l, offset,   n-l[offset], p, result)
-        subsetsum(l, offset-1, n-l[offset], p, result)
-    # always reduce when excl current, with excl l[i] path.
-    subsetsum(l, offset-1, n, path, result)
+  if offset < 0:
+    return    
+  if n == l[offset]:
+    p = path[:]
+    p.append(l[offset])
+    result.append(p)
+  if n > l[offset]:  # branch incl when when l.i smaller
+    p = path[:]   # deep copy new path before recursion.
+    p.append(l[offset])
+    # dup allowed, offset stay when include, incl 1+ times.
+    # subsetsum(l, offset,   n-l[offset], p, result)
+    subsetsum(l, offset-1, n-l[offset], p, result)
+  # always reduce when excl current, with excl l[i] path.
+  subsetsum(l, offset-1, n, path, result)
 
 """ the combination, recur i+1, dup not allowed, recur i, dup allowed. """
 def comb(arr, t, pos, path, res):
@@ -4327,13 +4321,13 @@ def comb(arr, t, pos, path, res):
 path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
 
 def coinchange(arr, V):
-    tab = [0]*(V+1)
-    tab[0] = 1
-    # outer loop enum each coin mean incl the coin, and excl when passed.
-    for i in xrange(len(arr)):
-      for v in xrange(arr[i],V+1):
-        tab[v] += tab[v-arr[i]]   # not tab[v]=tab[v-1]+1
-    return tab[V]
+  tab = [0]*(V+1)
+  tab[0] = 1
+  # outer loop enum each coin mean incl the coin, and excl when passed.
+  for i in xrange(len(arr)):
+    for v in xrange(arr[i],V+1):
+      tab[v] += tab[v-arr[i]]   # not tab[v]=tab[v-1]+1
+  return tab[V]
 print coinchange([2,3,5], 10)
 
 """ if different coins count the same as 1 coin only, the same as diff ways to stair """
@@ -4350,25 +4344,25 @@ when dup allowed, recur same pos, tab[pos], else tab[pos-1] """
 def subsetSum(arr, t, dupAllowed=False):
   tab = [[None]*(t+1) for i in xrange(len(arr))]
   for i in xrange(len(arr)):
-    for j in xrange(1, t+1):
+    for s in xrange(1, t+1): # iterate to target sum at each arr[i]
       if i == 0:   # boundary, init
-        tab[i][j] = []
-      else:        # cp prev row, some subset 0..pre has value j
-        tab[i][j] = tab[i-1][j][:]
-      if j == arr[i]:
-        tab[i][j].append([j])
-      if j > arr[i]:
-        if len(tab[i][j-arr[i]]) > 0:  # there
-          if dupAllowed:  # from the same row, otherwise, from prev row.
-            for e in tab[i][j-arr[i]]:
+        tab[i][s] = []
+      else:        # cp prev row, some subset 0..pre has value s
+        tab[i][s] = tab[i-1][s][:]
+      if s == arr[i]:
+        tab[i][s].append([s])
+      if s > arr[i]:
+        if len(tab[i][s-arr[i]]) > 0:  # there
+          if dupAllowed: # incl arr[i] multiple times
+            for e in tab[i][s-arr[i]]:
               p = e[:]
               p.append(arr[i])
-              tab[i][j].append(p)
+              tab[i][s].append(p)
           elif i > 0:
-            for e in tab[i-1][j-arr[i]]:
+            for e in tab[i-1][s-arr[i]]:
               p = e[:]
               p.append(arr[i])
-              tab[i][j].append(p)
+              tab[i][s].append(p)
   return tab[len(arr)-1][t]
 print subsetSum([2,3,6,7],9)
 print subsetSum([2,3,6,7],7, True)
@@ -4487,11 +4481,11 @@ def combinationSum(n, s, distinct=False):  # n slots, sum to s.
         tab[i][v] = []
       for f in xrange(1, 10):  # each slot face value, 1..9
         if i == 0 and f == v and v < 10:   # tab[0][0..9] = [0..9]
-          tab[i][j].append([f])
+          tab[i][f].append([f])
         if v > f and tab[i-1][v-f] and len(tab[i-1][v-f]) > 0:
           for e in tab[i-1][v-f]:
             # if need to be distinct, append j only when it is bigger.
-            if distinct and j <= e[-1]:
+            if distinct and f <= e[-1]:
               continue
             de = e[:]
             de.append(f)
@@ -4579,7 +4573,7 @@ def isInterleave(a, b, c):
   return tab[len(a)][len(b)]
 
 """ 2 string, i, j, and i is not fixed at 0, so 3 dim tab[length][ia][ib];
-whether a[ia:ia+length] is scrabme of b[ib:ib+length] """
+whether a[ia:ia+k] is scramble of b[ib:ib+k] """
 def isScramble(a, b):
   tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
   for length in xrange(len(a)):
@@ -4587,10 +4581,10 @@ def isScramble(a, b):
       for ib in xrange(len(b)-length):
         if length == 0:
           tab[length][ia][ib] = a[ia] == b[ib]
-        for sublen in xrange(length):
-          if tab[sublen][ia][ib] and tab[length-sublen][ia+sublen][ib+sublen]:
+        for k in xrange(length):
+          if tab[k][ia][ib] and tab[length-k][ia+k][ib+k]:
             tab[length][ia][ib] = True
-          elif tab[sublen][ia][ib+length-sublen] and tab[length-sublen][ia+sublen][ib]:
+          elif tab[k][ia][ib+length-k] and tab[length-k][ia+k][ib]:
             tab[length][i][j] = True
   return tab[len(a)-1][0][0]
 
@@ -4823,10 +4817,10 @@ def wordladder(start, end, dict):
     replace = [a + c + b[1:] for a,b in splits for c in alphabet if b]
     nextwds = []
     for e in replace:
-        nextwd = "".join(e)
-        if nextwd == end or (nextwd in dict and not nextwd in seen):
-          nextwds.append(nextwd)
-          seen.add(nextwd)
+      nextwd = "".join(e)
+      if nextwd == end or (nextwd in dict and not nextwd in seen):
+        nextwds.append(nextwd)
+        seen.add(nextwd)
     return nextwds
   ''' bfs search '''
   ladder = []
