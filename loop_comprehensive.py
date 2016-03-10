@@ -236,22 +236,22 @@ arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
 
-# bisect ret the starting pos where val shall be inserted, even with dups.
-# when find high end, idx-1 is the first ele smaller than searching val.
+"""bisect ret the insertion point. a[idx-1]<t<=a[idx]. even with dups.
+when find high end, idx-1 is the first ele smaller than searching val."""
 def bisect(arr, val):
-    lo,hi = 0, len(arr)-1
-    if val > arr[-1]:
-        return False, len(arr)
-    while lo != hi:
-        md = (lo+hi)/2
-        if val > arr[md]:  # lift lo only when absolutely big
-            lo = md+1
-        else:
-            hi = md   # drag down hi to mid when equal to find begining.
-    if arr[lo] == val:
-        return True, lo
+  lo,hi = 0, len(arr)-1
+  if val > arr[-1]:
+    return False, len(arr)
+  while lo != hi:
+    md = (lo+hi)/2
+    if arr[md] < val:  # lift l only when mid is abs smaller
+      lo = md+1
     else:
-        return False, lo
+      hi = md   # drag down hi to mid when equals.
+    if arr[lo] == val:
+      return True, lo
+    else:
+      return False, lo
 print bisect([1 1 3 5 7])
 
 def bisectRotated(arr,t):
@@ -305,7 +305,7 @@ print rotatedMin([5,6,6,7,0,1,3])
 print rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
 
 
-''' bisect always check l,r boundary first '''
+''' bisect always check l,r boundary first  a[l-1]<t<=a[l] '''
 def floorceil(arr, t):
   f,c = -1,-1
   l,r = 0,len(arr)-1
@@ -345,6 +345,26 @@ print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 1)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
 
+""" put 0 at head, 2 at tail, 1 in the middle """
+def partition(arr):
+  def swap(arr, i, j):
+    arr[i],arr[j] = arr[j],arr[i]
+  i,wr,wb=0,0,len(arr)-1
+  while i < len(arr):
+    if arr[i] == 0 and wr < i:   # swap only when wr < i
+      swap(arr, i, wr)
+      wr += 1
+    elif arr[i] == 2 and i < wb:
+      swap(arr, i, wb)
+      wb -= 1
+    else:
+      i += 1
+      continue
+  return arr
+print color([2,0,1])
+print color([1,2,1,0,1,2,0,1,2,0,1])
+
+
 """ find the max in a ^ ary """
 def findMax(arr):
   l,r=0,len(arr)-1
@@ -364,31 +384,31 @@ print findMax([120, 100, 80, 20, 0])
 
 """ inverse count with merge sort """
 def mergesort(arr, lo, hi):
-    def merge(arr, ai, bi, hi):
-      out = []
-      i,j,k=ai,bi,hi
-      cnt = 0
-      while i < bi and j < hi:
-        if arr[i] <= arr[j]:
-          out.append(arr[i])
-          i += 1
-        else:
-          out.append(arr[j])
-          cnt += j-i  # entire left from i->end is bigger than rite[j]
-      while i < bi:
+  def merge(arr, ai, bi, hi):
+    out = []
+    i,j,k=ai,bi,hi
+    cnt = 0
+    while i < bi and j < hi:
+      if arr[i] <= arr[j]:
         out.append(arr[i])
         i += 1
-      while j < hi:
+      else:
         out.append(arr[j])
-        j += 1
-      return cnt
-    inv = 0
-    if lo < hi:
-        mid = (lo+hi)/2
-        inv = mergesort(arr, lo, mid)
-        inv += mergesort(arr, mid+1, hi)
-        inv += merge(arr, lo, mid+1, hi)
-    return inv
+        cnt += j-i  # entire left from i->end is bigger than rite[j]
+    while i < bi:
+      out.append(arr[i])
+      i += 1
+    while j < hi:
+      out.append(arr[j])
+      j += 1
+    return cnt
+  inv = 0
+  if lo < hi:
+      mid = (lo+hi)/2
+      inv = mergesort(arr, lo, mid)
+      inv += mergesort(arr, mid+1, hi)
+      inv += merge(arr, lo, mid+1, hi)
+  return inv
 
 """ rite smaller with merge sort, when merging left and rite,
 left[l] > rite[0..r-1], because we mov r when rite[r] < left[l].
@@ -463,25 +483,25 @@ def testFindKth():
   http://www.ardendertat.com/2011/10/27/programming-interview-questions-10-kth-largest-element-in-array/
 """
 def selectKth(A, beg, end, k):
-    def partition(A, l, r, pivotidx):
-        A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
-        widx = l   # all ele smaller than pivot, stored in left, started from begining
-        for i in xrange(l, r):
-            if A.i <= A[r]: # r is pivot value
-                A.widx, A.i = A.i, A.widx
-                widx += 1
-        A.r, A.widx = A.widx, A.r
-        return widx  # the start idx of all items > than pivot
+  def partition(A, l, r, pivotidx):
+    A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
+    widx = l   # all ele smaller than pivot, stored in left, started from begining
+    for i in xrange(l, r):
+        if A.i <= A[r]: # r is pivot value
+            A.widx, A.i = A.i, A.widx
+            widx += 1
+    A.r, A.widx = A.widx, A.r
+    return widx  # the start idx of all items > than pivot
 
-    if beg == end: return A.beg
-    if not 1 <= k < (end-beg): return None
+  if beg == end: return A.beg
+  if not 1 <= k < (end-beg): return None
 
-    while True:   # continue to loop 
-        pivotidx = random.randint(l, r)
-        rank = partition(A, l, r, pivotidx)  # the start idx of items grter than pivot.
-        if rank == k: return A.rank
-        if rank < k: return selectKth(A, l, rank, k-rank)
-        else: return selectKth(A, rank, r, k-rank)
+  while True:   # continue to loop 
+    pivotidx = random.randint(l, r)
+    rank = partition(A, l, r, pivotidx)  # the start idx of items grter than pivot.
+    if rank == k: return A.rank
+    if rank < k: return selectKth(A, l, rank, k-rank)
+    else: return selectKth(A, rank, r, k-rank)
 
 # median of median of divide to n groups with each group has 5 items,
 def medianmedian(A, beg, end, k):
@@ -987,83 +1007,83 @@ class Interval(object):
     def __init__(self):
         self.arr = []
         self.size = 0
-    # bisect ret the starting index where val shall be inserted.
+    # bisect ret i as insertion point. arr[i-1] < val <= arr[i]
     # when find high end, idx-1 is the first ele smaller than searching val.
     def bisect(self, arr, val):
-        lo,hi = 0, len(self.arr)-1
-        if val > arr[-1]:
-            return False, len(arr)
-        while lo != hi:
-            md = (lo+hi)/2
-            if val > arr[md]:  # lift lo only when absolutely big
-                lo = md+1
-            else:
-                hi = md   # drag down hi to mid when equal to find begining.
-        if arr[lo] == val:
-            return True, lo
-        else:
-            return False, lo
+      lo,hi = 0, len(self.arr)-1
+      if val > arr[-1]:
+          return False, len(arr)
+      while lo != hi:
+          md = (lo+hi)/2
+          if arr[md] < val:  # lift lo only when absolutely big
+              lo = md+1
+          else:
+              hi = md   # drag down hi to mid when equal to find begining.
+      if arr[lo] == val:
+          return True, lo
+      else:
+          return False, lo
     def overlap(self, st1, ed1, st2, ed2):
-        if st2 > ed1 or ed2 < st1:
-            return False
-        return True
+      if st2 > ed1 or ed2 < st1:
+          return False
+      return True
     # which slot in the arr this new interval shall be inserted
     def findStartSlot(self, st, ed):
-        """ pre-ed < start < next-ed, bisect insert pos is next """
-        endvals = map(lambda x: x[1], self.arr)
-        found, idx = self.bisect(endvals, st)  # insert position
-        return idx
+      """ pre-ed < start < next-ed, bisect insert pos is next """
+      endvals = map(lambda x: x[1], self.arr)
+      found, idx = self.bisect(endvals, st)  # insert position
+      return idx
     # the last slot in the arr that this new interval may overlap
     def findEndSlot(self, st, ed):
-        """ pre-start < ed < next-start, bisect ret insert pos, pre-start +1, so left shift"""
-        startvals = map(lambda x: x[0], self.arr)
-        found, idx = self.bisect(startvals, ed)        
-        return idx-1  # to find pre-interval slot less than ed, so ed-1
+      """ pre-start < ed < next-start, bisect ret insert pos, pre-start +1, so left shift"""
+      startvals = map(lambda x: x[0], self.arr)
+      found, idx = self.bisect(startvals, ed)        
+      return idx-1  # bisect ret i arr[i] >= ed. ret i-1
     def merge(self, st1, ed1, st2, ed2):
-        return [min(st1,st2), max(ed1,ed2)]
+      return [min(st1,st2), max(ed1,ed2)]
     def insertMerge(self, sted):
-        [st,ed] = sted
-        if len(self.arr) == 0:
-            self.arr.append([st,ed])
-            return 0
-        stslot = self.findStartSlot(st,ed)
-        edslot = self.findEndSlot(st,ed)
-        print "insert ", sted, stslot, edslot
-        if stslot >= len(self.arr):
-            self.arr.insert(stslot, [st, ed])
-        elif stslot > edslot:  # find ed slot is ed slot-1
-            self.arr.insert(stslot, [st, ed])
-        else:
-            minst = min(self.arr[stslot][0], st)
-            maxed = max(self.arr[edslot][1], ed)
-            for i in xrange(stslot+1, edslot+1):
-                del self.arr[stslot+1]
-            self.arr[stslot][0] = minst
-            self.arr[stslot][1] = maxed
-        return stslot
+      [st,ed] = sted
+      if len(self.arr) == 0:
+          self.arr.append([st,ed])
+          return 0
+      stslot = self.findStartSlot(st,ed)
+      edslot = self.findEndSlot(st,ed)
+      print "insert ", sted, stslot, edslot
+      if stslot >= len(self.arr):
+        self.arr.insert(stslot, [st, ed])
+      elif stslot > edslot:  # find ed slot is ed slot-1
+        self.arr.insert(stslot, [st, ed])
+      else:
+        minst = min(self.arr[stslot][0], st)
+        maxed = max(self.arr[edslot][1], ed)
+        for i in xrange(stslot+1, edslot+1):
+            del self.arr[stslot+1]
+        self.arr[stslot][0] = minst
+        self.arr[stslot][1] = maxed
+      return stslot
     def insertToggle(self, sted):
-        [st,ed] = sted
-        if len(self.arr) == 0:
-            self.arr.append([st,ed])
-            return 0
-        stslot = self.findStartSlot(st,ed)
-        edslot = self.findEndSlot(st,ed)
-        if stslot >= len(self.arr):
-            self.arr.append([st,ed])
-        elif stslot > edslot:
-            self.arr.insert(stslot, [st,ed])
-        else:
-            output = []
-            for i in xrange(0, stslot):
-                output.append(self.arr[i])
-            output.append([min(st, self.arr[stslot][0]), max(st, self.arr[stslot][0])])
-            # toggle to create [ed->st]
-            for i in xrange(stslot+1, edslot+1):
-                output.append([self.arr[i-1][1], self.arr[i][0]])
-            output.append([min(ed, self.arr[edslot][1]), max(ed, self.arr[edslot][1])])
-            for i in xrange(edslot+1, len(self.arr)):
-                output.append(self.arr[i])
-            self.arr = output
+      [st,ed] = sted
+      if len(self.arr) == 0:
+        self.arr.append([st,ed])
+        return 0
+      stslot = self.findStartSlot(st,ed)
+      edslot = self.findEndSlot(st,ed)
+      if stslot >= len(self.arr):
+        self.arr.append([st,ed])
+      elif stslot > edslot:
+        self.arr.insert(stslot, [st,ed])
+      else:
+        output = []
+        for i in xrange(0, stslot):
+          output.append(self.arr[i])
+        output.append([min(st, self.arr[stslot][0]), max(st, self.arr[stslot][0])])
+        # toggle to create [ed->st]
+        for i in xrange(stslot+1, edslot+1):
+          output.append([self.arr[i-1][1], self.arr[i][0]])
+        output.append([min(ed, self.arr[edslot][1]), max(ed, self.arr[edslot][1])])
+        for i in xrange(edslot+1, len(self.arr)):
+          output.append(self.arr[i])
+        self.arr = output
     def insertToggleIter(self, sted):
         [st,ed] = sted
         output = []
@@ -2791,7 +2811,6 @@ def minwin(arr,t):
 print minwin("aab", "ab")
 print minwin("ADOBECODEBANC", "ABC")
 
-
 ''' allow dups in target '''
 def minwin(arr,t):
   expected = defaultdict(int)
@@ -2804,6 +2823,7 @@ def minwin(arr,t):
     if not c in t:
       continue
     found[c] += 1
+    # always mov left edge after found[c] and cnt.
     if found[c] <= expected[c]:
       cnt += 1
       while cnt == len(t):
@@ -2811,9 +2831,10 @@ def minwin(arr,t):
           if found[arr[l]] > 0:
             found[arr[l]] -= 1
           l += 1
-        if i-l+1 < mnw:
+        if i-l+1 < mnw:   # only update min when cnt.
           mnw = i-l+1
           print arr[l:i+1]
+        # always advance left edge after full
         l += 1
         cnt -= 1
   return mnw
@@ -3605,7 +3626,6 @@ def coinchange(arr, V):
   return tab[V]
 print coinchange([2,3,5], 10)
 
-
 # comb can exam head, branch at header incl and excl
 def combination(arr, path, sz, pos, result):
   if sz == 0:
@@ -3702,7 +3722,7 @@ def permDup(arr, pos, path, res):
   for i in xrange(pos, len(arr)):
     # if i is dup of pos, skip it.
     if i != pos and arr[pos] == arr[i]:
-        continue
+      continue
     swap(arr, pos, i)
     path.append(arr[pos])
     permDup(arr, pos+1, path, res)
@@ -3727,8 +3747,8 @@ def perm(arr):
   return result
 
 
-""" next permutation, from L <- R, find first ele < next, partition, 
-then find first larger, then swap, the reverse right partition.
+""" from L <- R, find first a[i] < a[i+1] = pivot.
+then find first larger, then swap, the reverse right part.
 """
 def nextPermutation(txt):
   for i in xrange(len(txt)-2, -1, -1):
@@ -3736,9 +3756,9 @@ def nextPermutation(txt):
       break
   if i < 0:
     return ''.join(reversed(txt))
-  part = txt[i]
+  pivot = txt[i]
   for j in xrange(len(txt)-1, i, -1):
-    if txt[j] > part:
+    if txt[j] > pivot:
       break
   txt[i],txt[j] = txt[j],txt[i]
   l,r = i+1, len(txt)-1
@@ -4467,30 +4487,30 @@ def diffone(n):
   return cnt
 print diffone(3)
 
-""" comb sum, not some subset sum, subset sum is one ary, here 
-each position can varying val 0-9. so can NOT cp prev row to cur row.
-bottom up, start from 1 slot, val=[0..9]; dup allowed.
+""" tab[i,s] i slots, sum s, <= tab[i-1,s-[1..9]]+[1..9]
+comb sum, not some subset sum, subset sum is one ary, here 
+each position can varying face 0-9. so can NOT cp prev row to cur row.
+bottom up, start from 1 slot, face=[0..9]; dup allowed.
 when each slot needs to be distinct, only append j when it is bigger
-tab[i,v] i slots, value v, <= tab[i-1,v-[1..9]]+[1..9]
 """
-def combinationSum(n, s, distinct=False):  # n slots, sum to s.
-  tab = [[None]*(s+1) for i in xrange(n)]
+def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
+  tab = [[None]*(sm+1) for i in xrange(n)]
   for i in xrange(n):      # bottom up n slots
-    for v in xrange(s+1):  # enum to s for each slot, tab[i,s]
-      if tab[i][v] == None:
-        tab[i][v] = []
-      for f in xrange(1, 10):  # each slot face value, 1..9
-        if i == 0 and f == v and v < 10:   # tab[0][0..9] = [0..9]
+    for s in xrange(sm+1):  # enum to sm for each slot, tab[i,sm]
+      if tab[i][s] == None:
+        tab[i][s] = []
+      for f in xrange(1, 10):  # each slot face, 1..9
+        if i == 0 and f == s and s < 10:   # tab[0][0..9] = [0..9]
           tab[i][f].append([f])
-        if v > f and tab[i-1][v-f] and len(tab[i-1][v-f]) > 0:
-          for e in tab[i-1][v-f]:
+        if s > f and tab[i-1][s-f] and len(tab[i-1][s-f]) > 0:
+          for e in tab[i-1][s-f]:
             # if need to be distinct, append j only when it is bigger.
             if distinct and f <= e[-1]:
               continue
             de = e[:]
             de.append(f)
-            tab[i][v].append(de)
-  return tab[n-1][s]
+            tab[i][s].append(de)
+  return tab[n-1][sm]
 print combinationSum(3,9,True)
 
 ''' contain sol sz < n, [1,6], [7], [1, 0, 6] '''
