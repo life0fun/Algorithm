@@ -236,7 +236,7 @@ arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
 
-"""bisect ret the insertion point. a[idx-1]<t<=a[idx]. even with dups.
+"""bisect ret the insertion pos. a[idx-1] < t <= a[idx]. even with dups.
 when find high end, idx-1 is the first ele smaller than searching val."""
 def bisect(arr, val):
   lo,hi = 0, len(arr)-1
@@ -248,11 +248,11 @@ def bisect(arr, val):
       lo = md+1
     else:
       hi = md   # drag down hi to mid when equals.
-    if arr[lo] == val:
-      return True, lo
-    else:
-      return False, lo
-print bisect([1 1 3 5 7])
+  if arr[lo] == val:
+    return True, lo
+  else:
+    return False, lo
+print bisect([1,1,3,5,7])
 
 def bisectRotated(arr,t):
   l,r=0,len(arr)-1
@@ -346,7 +346,7 @@ print floorceil([1, 2, 8, 10, 10, 12, 19], 1)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
 
 """ put 0 at head, 2 at tail, 1 in the middle """
-def partition(arr):
+def sortColor(arr):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
   i,wr,wb=0,0,len(arr)-1
@@ -364,6 +364,23 @@ def partition(arr):
 print color([2,0,1])
 print color([1,2,1,0,1,2,0,1,2,0,1])
 
+""" mid start point of 1, which sep 0/2. swap mid """
+def sortColor(arr):
+  def swap(arr, i, j):
+    arr[i],arr[j] = arr[j],arr[i]
+  lo,mid,hi = 0,0,len(arr)-1
+  while mid <= hi:
+    if arr[mid] == 0:
+      swap(arr, lo, mid)
+      lo += 1
+      mid += 1
+    elif arr[mid] == 2:
+      swap(arr, mid, hi)
+      hi -= 1
+    else:
+      mid += 1
+  return arr
+print sortColor([0,0,2,1])
 
 """ find the max in a ^ ary """
 def findMax(arr):
@@ -404,10 +421,10 @@ def mergesort(arr, lo, hi):
     return cnt
   inv = 0
   if lo < hi:
-      mid = (lo+hi)/2
-      inv = mergesort(arr, lo, mid)
-      inv += mergesort(arr, mid+1, hi)
-      inv += merge(arr, lo, mid+1, hi)
+    mid = (lo+hi)/2
+    inv = mergesort(arr, lo, mid)
+    inv += mergesort(arr, mid+1, hi)
+    inv += merge(arr, lo, mid+1, hi)
   return inv
 
 """ rite smaller with merge sort, when merging left and rite,
@@ -421,8 +438,8 @@ def riteSmaller(arr):
     out = []
     while l < len(left) and r < len(rite):
       lidx,ridx = left[l],rite[r]
-      if arr[lidx] < arr[ridx]:
-        rank[lidx] += r    # update rite smaller only when move left edge
+      if arr[lidx] < arr[ridx]:  # mov l until could not. rank+=r
+        rank[lidx] += r
         out.append(lidx)
         l += 1
       else:
@@ -487,9 +504,9 @@ def selectKth(A, beg, end, k):
     A.r, A.pivotidx = A.pivotidx, A.r   # first, swap pivot to end
     widx = l   # all ele smaller than pivot, stored in left, started from begining
     for i in xrange(l, r):
-        if A.i <= A[r]: # r is pivot value
-            A.widx, A.i = A.i, A.widx
-            widx += 1
+      if A.i <= A[r]: # r is pivot value
+        A.widx, A.i = A.i, A.widx
+        widx += 1
     A.r, A.widx = A.widx, A.r
     return widx  # the start idx of all items > than pivot
 
@@ -854,16 +871,16 @@ class AVLTree(object):
         else:
             return self.rite.height
     def updateHeightSize(self):
-        self.height = 0
-        self.size = 0
-        if self.left:
-            self.height = self.left.height
-            self.size = self.left.size
-        if self.rite:
-            self.height = max(self.height, self.rite.height)
-            self.size += self.rite.size
-        self.height += 1
-        self.size += 1
+      self.height = 0
+      self.size = 0
+      if self.left:
+          self.height = self.left.height
+          self.size = self.left.size
+      if self.rite:
+          self.height = max(self.height, self.rite.height)
+          self.size += self.rite.size
+      self.height += 1
+      self.size += 1
     def rotate(self, key):
         bal = self.balance()
         if bal > 1 and self.left and key < self.left.key:
@@ -927,42 +944,42 @@ class AVLTree(object):
       return self
     ''' rank is num of node smaller than key '''
     def getRank(self, key):
-        if key == self.key:
-            if self.left:
-                return self.left.size + 1
-            else:
-                return 1
-        elif self.key > key: 
-            if self.left:
-                return self.left.getRank(key)
-            else:
-                return 0
+      if key == self.key:
+        if self.left:
+          return self.left.size + 1
         else:
-            r = 1
-            if self.left:
-                r += self.left.size
-            if self.rite:
-                r += self.rite.getRank(key)
-            return r
+          return 1
+      elif self.key > key: 
+        if self.left:
+          return self.left.getRank(key)
+        else:
+          return 0
+      else:
+        r = 1
+        if self.left:
+            r += self.left.size
+        if self.rite:
+            r += self.rite.getRank(key)
+        return r
     # return subtree root, and # of node smaller or equal
     def insert(self,key):
-        if self.key == key:
-            return self
-        elif key < self.key:
-            if not self.left:
-                self.left = AVLTree(key)
-            else:
-                self.left = self.left.insert(key)
+      if self.key == key:
+        return self
+      elif key < self.key:
+        if not self.left:
+          self.left = AVLTree(key)
         else:
-            if not self.rite:
-                self.rite = AVLTree(key)
-            else:
-                self.rite = self.rite.insert(key)
-        # after insersion, rotate if needed.
-        self.updateHeightSize()  # rotation may changed left. re-calculate
-        newself = self.rotate(key)
-        print "insert ", key, " new root after rotated ", newself
-        return newself  # ret rotated new root
+          self.left = self.left.insert(key)
+      else:
+        if not self.rite:
+          self.rite = AVLTree(key)
+        else:
+          self.rite = self.rite.insert(key)
+      # after insersion, rotate if needed.
+      self.updateHeightSize()  # rotation may changed left. re-calculate
+      newself = self.rotate(key)
+      print "insert ", key, " new root after rotated ", newself
+      return newself  # ret rotated new root
     # delete a node.
     def delete(self,key):
         if key < self.key:
@@ -1599,7 +1616,7 @@ def test():
     print t.all("c")
 
 """ find all words in the board, dfs, backtracking and Trie """
-def findWords(board, words):
+def wordSearch(board, words):
   out = []
   def buildTrie(words):
     root = Trie(None)
@@ -1623,6 +1640,7 @@ def findWords(board, words):
     for nxti,nxtj in nextmove(i,j):
       dfs(board, nxti, nxtj, nextnode) # recur with next trie node
     board[i][j] = c
+    board[i][j] = "un-visited"
   # start pos can be any i,j
   root = buildTrie(words)
   for i,j in board:
@@ -2746,20 +2764,19 @@ print maxWin([5,3,4,6,9,7,2],3)
 Always process rite edge first. You can check arr[i], or check win size.
 """
 def maxWinSizeMzero(arr, m):
-    l,r,zeros,mx=0,0,0,0
-    while r < len(arr):
-      if arr[r] == 0:
-        # shrink by park left edge to next rite zero.
-        zeros += 1
-        if zeros > m:
-          while arr[l] != 0:
-            l += 1
-          # left edge shrink mov over zero
+  l,r,zeros,mx=0,0,0,0
+  while r < len(arr):
+    if arr[r] == 0:
+      zeros += 1
+      if zeros > m:  # squeeze to win=m
+        while arr[l] != 0:
           l += 1
-          zeros -= 1
-      r += 1
-      mx = max(mx, r-l)
-    return mx
+        # left edge shrink mov over zero
+        l += 1
+        zeros -= 1
+    r += 1
+    mx = max(mx, r-l)
+  return mx
 print maxWinSizeMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
 ''' when sliding, always inc r, and only inc win size when r edge is 0 '''
@@ -2823,12 +2840,12 @@ def minwin(arr,t):
     if not c in t:
       continue
     found[c] += 1
-    # always mov left edge after found[c] and cnt.
+    # no value when not expected. dup does not count
     if found[c] <= expected[c]:
       cnt += 1
       while cnt == len(t):
         while arr[l] not in t or found[arr[l]] > expected[arr[l]]:
-          if found[arr[l]] > 0:
+          if found[arr[l]] > 0:  # squeeze left when it is dup.
             found[arr[l]] -= 1
           l += 1
         if i-l+1 < mnw:   # only update min when cnt.
@@ -2839,6 +2856,29 @@ def minwin(arr,t):
         cnt -= 1
   return mnw
 print minwin("azcaaxbb", "aab")
+
+""" min window with 3 letter words """
+def minwin(arr, words):
+  found, expected = defaultdict(int), defaultdict(words)
+  for i in xrange(len(arr)):
+    if arr[i:i+4] not in words:
+      continue
+    w = arr[i:i+4]
+    found[w] += 1
+    if found[w] <= expected[w]:
+      cnt += 1
+      while cnt == len(words):
+        if lw = arr[l:l+4] not in words:
+          l += 1
+          continue
+        mnw = min(mnw, r-l+1)
+        found[lw] -= 1  # always adv l, r will cover
+        if found[lw] >= expected[lw]:
+          l += 4
+          continue
+        l += 4
+        cnt -= 1
+  return mnw
 
 
 """
@@ -3029,15 +3069,15 @@ print maxones([1, 1, 1, 1, 0])
 def maxWinM(arr,m):
   l,r,win,maxwinsize = 0,0,0,0
   while r < len(arr):
-      if win <= m:
-          if arr[r] == 0:
-              win += 1
-          r += 1  # park r to next window rite edge
-      else:
-          if arr[l] == 0:
-              win -= 1
-          l += 1  # park l to next window left edge
-      maxwinsize = max(maxwinsize, r-l)  # dist is half include.
+    if win <= m:
+      if arr[r] == 0:
+          win += 1
+      r += 1  # park r to next window rite edge
+    else:
+      if arr[l] == 0:
+          win -= 1
+      l += 1  # park l to next window left edge
+    maxwinsize = max(maxwinsize, r-l)  # dist is half include.
   return maxwinsize
 print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
 
@@ -3657,7 +3697,7 @@ res=[];comb([1,2,3,4],0,2,[],res);print res;
 # [a, ..] [b, ...], [c, ...]
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
 def powerset(arr, pos, path, result):
-  result.append(path)
+  result.append(path)   # all intermediate result in result.
   for i in xrange(pos, len(arr)):
     ''' compare i to i-1, not i to pos '''
     if i > pos and arr[i] == arr[i-1]:
@@ -3735,15 +3775,15 @@ path=[];res=[];permDup(list("112"), 0, [], res);print res
 def perm(arr):
   result = []
   if len(arr) == 1:
-      result.append([arr[0]])
-      return result
+    result.append([arr[0]])
+    return result
   for i in xrange(len(arr)):
-      hd = arr[i]
-      l = arr[:]
-      del l[i]   # change arr for next iteration
-      for e in perm(l):
-          e.insert(0,hd)
-          result.append(e)
+    hd = arr[i]
+    l = arr[:]
+    del l[i]   # change arr for next iteration
+    for e in perm(l):
+      e.insert(0,hd)
+      result.append(e)
   return result
 
 
@@ -3950,7 +3990,7 @@ def restoreIp(s, pos, path, res):
 s="25525511135";path=[];res=[];restoreIp(s,0,path,res);print res;
 
 """ valid parenthese, dfs recursion, when reaching pos, carry path"""
-def recurParenth(n, l, r, path, res):
+def addParenth(n, l, r, path, res):
   if l == n:
     p = path[:]
     for i in xrange(r,n):
@@ -3958,14 +3998,14 @@ def recurParenth(n, l, r, path, res):
     res.append("".join(p))
     return res
   path.append("(")
-  recurParenth(n,l+1,r, path, res)
+  addParenth(n,l+1,r, path, res)
   path.pop()
   if l > r:
     path.append(")")
-    recurParenth(n,l,r+1, path, res)
+    addParenth(n,l,r+1, path, res)
     path.pop()
   return res
-path=[];res=[];recurParenth(3,0,0,path,res);print res;
+path=[];res=[];addParenth(3,0,0,path,res);print res;
 
 from collections import deque
 def bfsParath(n):
@@ -3991,7 +4031,7 @@ def bfsParath(n):
 print bfsParath(3)
 
 
-""" remove invalid (, at each invalid pos, dfs excl/incl recursion """
+""" iterate at each pos, dfs excl/incl each pos, no dp short """
 def rmInvalidParenth(s, res):
   path = []
   rmL,rmR = 0,0
@@ -4015,12 +4055,12 @@ def rmInvalidParenth(s, res):
       return
 
     if s[pos] == "(":
-      dfs(res, s, pos+1, rmL, rmR, openParen+1, path)
-      dfs(res, s, pos+1, rmL-1, rmR, openParen, path.append("("))
+      dfs(res, s, pos+1, rmL,   rmR, openParen+1, path)  # skip
+      dfs(res, s, pos+1, rmL-1, rmR, openParen,   path.append("("))
       path.pop()
     else if s[pos] == ")":
-      dfs(res, s, pos+1, rmL, rmR-1, openParen, path)
-      dfs(res, s, pos+1, rmL, rmR, openParen-1, path.append(")"))
+      dfs(res, s, pos+1, rmL, rmR-1, openParen,   path)    # skip
+      dfs(res, s, pos+1, rmL, rmR,   openParen-1, path.append(")"))
       path.pop()
     else:
       dfs(res, s, pos+1, rmL, rmR, openParen, path.append(s[pos]))
@@ -4270,7 +4310,10 @@ def decode(dstr):
   tab[0] = 1
   tab[1] = 1
   for i in xrange(2,len(dstr)+1):
-    tab[i] = tab[i-1]
+    if dstr[i] == "0" and dist[i-1] > "2":
+      tab[i] = 0
+    else:
+      tab[i] = tab[i-1]
     if dstr[i-1-1] == "1" or (dstr[i-1-1] == "2" and dstr[i-1] <= "6"):
       tab[i] += tab[i-2]
   return tab[len(dstr)]
@@ -4295,7 +4338,7 @@ print decode("122")
 
 """ top down offset n -> 1 when dfs inclusion recursion """
 # path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
-def subsetsum(l, offset, n, path, result):
+def subsetsumDfs(l, offset, n, path, result):
   if offset < 0:
     return    
   if n == l[offset]:
@@ -4388,6 +4431,55 @@ print subsetSum([2,3,6,7],9)
 print subsetSum([2,3,6,7],7, True)
 print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
+
+
+""" tab[i,s] i digits sum to s, <= tab[i-1,s-[1..9]]+[1..9]
+comb sum, not some subset sum, subset sum is one ary, here 
+each position can varying face 0-9. so can NOT cp prev row to cur row.
+bottom up, start from 1 slot, face=[0..9]; dup allowed.
+when each slot needs to be distinct, only append j when it is bigger
+"""
+def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
+  tab = [[None]*(sm+1) for i in xrange(n)]
+  for i in xrange(n):      # bottom up n slots
+    for s in xrange(sm+1):  # enum to sm for each slot, tab[i,sm]
+      if tab[i][s] == None:
+        tab[i][s] = []
+      for f in xrange(1, 10):  # each slot face, 1..9
+        if i == 0 and f == s and s < 10:   # tab[0][0..9] = [0..9]
+          tab[i][f].append([f])
+        if s > f and tab[i-1][s-f] and len(tab[i-1][s-f]) > 0:
+          for e in tab[i-1][s-f]:
+            # if need to be distinct, append j only when it is bigger.
+            if distinct and f <= e[-1]:
+              continue
+            de = e[:]
+            de.append(f)
+            tab[i][s].append(de)
+  return tab[n-1][sm]
+print combinationSum(3,9,True)
+
+''' contain sol sz < n, [1,6], [7], [1, 0, 6] '''
+def combsum(n, t):
+  tab = [[None]*(t+1) for i in xrange(n)]
+  for i in xrange(n):
+    for v in xrange(10):
+      for s in xrange(max(1,v), t+1):
+        if not tab[i][s]:
+          tab[i][s] = []
+        if v == s:
+          tab[i][s].append([v])
+        else:
+          if tab[i-1][s-v]:
+            for e in tab[i-1][s-v]:
+              de = e[:]
+              de.append(v)
+              tab[i][s].append(de)
+          else:
+            if i > 0:
+              tab[i][s] = tab[i-1][s][:]
+  return tab[n-1][t]
+print combsum(3,7)
 
 
 """ m faces, n dices, num of ways to get value x.
@@ -4487,54 +4579,6 @@ def diffone(n):
   return cnt
 print diffone(3)
 
-""" tab[i,s] i slots, sum s, <= tab[i-1,s-[1..9]]+[1..9]
-comb sum, not some subset sum, subset sum is one ary, here 
-each position can varying face 0-9. so can NOT cp prev row to cur row.
-bottom up, start from 1 slot, face=[0..9]; dup allowed.
-when each slot needs to be distinct, only append j when it is bigger
-"""
-def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
-  tab = [[None]*(sm+1) for i in xrange(n)]
-  for i in xrange(n):      # bottom up n slots
-    for s in xrange(sm+1):  # enum to sm for each slot, tab[i,sm]
-      if tab[i][s] == None:
-        tab[i][s] = []
-      for f in xrange(1, 10):  # each slot face, 1..9
-        if i == 0 and f == s and s < 10:   # tab[0][0..9] = [0..9]
-          tab[i][f].append([f])
-        if s > f and tab[i-1][s-f] and len(tab[i-1][s-f]) > 0:
-          for e in tab[i-1][s-f]:
-            # if need to be distinct, append j only when it is bigger.
-            if distinct and f <= e[-1]:
-              continue
-            de = e[:]
-            de.append(f)
-            tab[i][s].append(de)
-  return tab[n-1][sm]
-print combinationSum(3,9,True)
-
-''' contain sol sz < n, [1,6], [7], [1, 0, 6] '''
-def combsum(n, t):
-  tab = [[None]*(t+1) for i in xrange(n)]
-  for i in xrange(n):
-    for v in xrange(10):
-      for s in xrange(max(1,v), t+1):
-        if not tab[i][s]:
-          tab[i][s] = []
-        if v == s:
-          tab[i][s].append([v])
-        else:
-          if tab[i-1][s-v]:
-            for e in tab[i-1][s-v]:
-              de = e[:]
-              de.append(v)
-              tab[i][s].append(de)
-          else:
-            if i > 0:
-              tab[i][s] = tab[i-1][s][:]
-  return tab[n-1][t]
-print combsum(3,7)
-
 
 """ adding + in between. [1,2,0,6,9] and target 81.
 at each stop, enum all values t[0:i][v].
@@ -4549,7 +4593,8 @@ def plusBetween(arr, target):
     for j in xrange(i,-1,-1):  # one loop j:i to coerce current num
       num = toInt(arr,j,i)
       if j == 0 and num <= target:
-        tab[i][num] = True
+        tab[i][num] = True   # tab[i,num], not tab[i,target]
+      # enum all values between num to target, for tab[i,s]
       for v in xrange(num, target+1):
         tab[i][v] |= tab[j-1][v-num]
   return tab[len(arr)-1][target]
@@ -4592,7 +4637,7 @@ def isInterleave(a, b, c):
         tab[i][j] = tab[i][j-1]
   return tab[len(a)][len(b)]
 
-""" 2 string, i, j, and i is not fixed at 0, so 3 dim tab[length][ia][ib];
+""" 2 string, ia,ib,and size; 3 dim tab[length][ia][ib];
 whether a[ia:ia+k] is scramble of b[ib:ib+k] """
 def isScramble(a, b):
   tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
