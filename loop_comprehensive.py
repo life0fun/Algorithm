@@ -637,37 +637,23 @@ def dfsSerde(root, out):
   print root
   out.append(root)
   for c in root.children:
-      dfsSerde(c, out)
+    dfsSerde(c, out)
   print "$"
   out.append("$")
 
-def serde(l):
-  hd = l.pop()
-  if hd == "$":
-    return True, None  # done
-  node = Node(val)
-  # node.left, node.rite = serde(l), serde(l)
-  while True:  # if forest, loop until children done.
-    node.children.append(serde(l))
-    if node.children[-1] == None:
-      return node
-  return node
-
-""" tree traverse, stk top always is parent """
+""" deserialize, use stk to track parent """
 # 1 [2 [4 $] $] [3 [5 $] $] $
 from collections import deque
 def deserTree(l):
-  parent, parentStk = None, deque()
+  stk = deque()
   while nxt = l.readLine():
-    if nxt is "$":
-      parentStk.pop()
+    if nxt is not "$":
+      if len(stk) > 0:
+        p = stk.top()
+        p.children.append(nxt)
+      stk.append(nxt)
     else:
-      n = Node(nxt)
-      parentStk.append(n)
-      if not parent:
-        parent = parentStk[-1]
-      else:
-        parent.children.append(n)
+      stk.pop()
 
 """ track pre, cur when traverse, and threading left rite most """
 def morris(root):
@@ -717,9 +703,9 @@ def postOrder(root):
       if cur.left:
         stk.append(cur.left)
       out.insert(0, cur)
-      cur = cur.rite
     else:
       cur = stk.pop()
+      cur = cur.rite
   return out
 
 def postorderTraversal(self, root):
@@ -1530,90 +1516,90 @@ class Trie:
     self.next = defaultdict(TrieNode)
     self.leaf = False
 class TernaryTree(object):
-    def __init__(self, key=None):
-        self.left = self.rite = self.eq = None
-        self.key = key
-        self.leaf = False
-        self.cnt = 1  # when leaf is true, the cnt, freq of the node
-    def insert(self, word):
-        hd = word[0]
-        if not self.key:  # at first, root does not have key.
-            self.key = hd
-        if hd == self.key:
-            if len(word) == 1:
-                self.leaf = True
-                return self
-            else:  # more keys, advance and descend
-                if not self.eq:
-                    self.eq = TernaryTree(word[1])  # new eq point to next char.
-                self.eq.insert(word[1:])
-        elif hd < self.key:
-            if not self.left:
-                self.left = TernaryTree(hd)  # left tree root is hd
-            self.left.insert(word)
-        else:
-            if not self.rite:
-                self.rite = TernaryTree(hd)  # rite tree root is hd
-            self.rite.insert(word)
-    def search(self, word):   # return parent where eq originated
-        if not len(word):
-            return False, self
-        hd = word[0]
-        if hd == self.key:
-            if len(word) == 1:
-                return True, self # when leaf flag is set
-            elif self.eq:
-                return self.eq.search(word[1:])
-            else:
-                return False, self
-        elif hd < self.key:
-            if self.left:
-                return self.left.search(word)
-            else:
-                return False, self
-        elif hd > self.key:
-            if self.rite:
-                return self.rite.search(word)
-            else:
-                return False, self
-    def all(self, prefix):
-        result = set()
-        found, node = self.search(prefix)
-        if not found:
-            return result
-        if node.leaf:
-            result.add(prefix)
-        if node.eq:   # dfs on eq branch of prefix parent only.
-            node.eq.dfs(prefix, result)
-        return result
-    def dfs(self, prefix, result):
-        if self.leaf:
-            result.add(prefix+self.key)
-        if self.left:
-            self.left.dfs(prefix, result)
-        if self.eq:
-            self.eq.dfs(prefix+self.key, result)
-        if self.rite:
-            self.rite.dfs(prefix, result)
-        return result
+  def __init__(self, key=None):
+    self.key = key
+    self.cnt = 1  # when leaf is true, the cnt, freq of the node
+    self.leaf = False
+    self.left = self.rite = self.eq = None
+  def insert(self, word):
+    hd = word[0]
+    if not self.key:  # at first, root does not have key.
+      self.key = hd
+    if hd == self.key:
+      if len(word) == 1:
+        self.leaf = True
+        return self
+      else:  # more keys, advance and descend
+        if not self.eq:  # new eq point to new node 
+          self.eq = TernaryTree(word[1])  # eq point to next char.
+        self.eq.insert(word[1:])
+      elif hd < self.key:
+        if not self.left:
+          self.left = TernaryTree(hd)  # left tree root is hd
+        self.left.insert(word)
+      else:
+        if not self.rite:
+          self.rite = TernaryTree(hd)  # rite tree root is hd
+        self.rite.insert(word)
+  def search(self, word):   # return parent where eq originated
+    if not len(word):
+      return False, self
+    hd = word[0]
+    if hd == self.key:
+      if len(word) == 1:
+        return True, self # when leaf flag is set
+      elif self.eq:
+        return self.eq.search(word[1:])
+      else:
+        return False, self
+    elif hd < self.key:
+      if self.left:
+        return self.left.search(word)
+      else:
+        return False, self
+    elif hd > self.key:
+      if self.rite:
+        return self.rite.search(word)
+      else:
+        return False, self
+  def all(self, prefix):
+    result = set()
+    found, node = self.search(prefix)
+    if not found:
+      return result
+    if node.leaf:
+      result.add(prefix)
+    if node.eq:   # dfs on eq branch of prefix parent only.
+      node.eq.dfs(prefix, result)
+    return result
+  def dfs(self, prefix, result):
+    if self.leaf:
+      result.add(prefix+self.key)
+    if self.left:
+      self.left.dfs(prefix, result)
+    if self.eq:
+      self.eq.dfs(prefix+self.key, result)
+    if self.rite:
+      self.rite.dfs(prefix, result)
+    return result
 
 def test():
-    t = TernaryTree()
-    t.insert("af")
-    t.insert("ab")
-    t.insert("abd")
-    t.insert("abe")
-    t.insert("standford")
-    t.insert("stace")
-    t.insert("cpq")
-    t.insert("cpq")
-    found, node = t.search("b") 
-    print found, node.key
-    print t.all("abc")
-    print t.all("ab")
-    print t.all("af")
-    print t.all("sta")
-    print t.all("c")
+  t = TernaryTree()
+  t.insert("af")
+  t.insert("ab")
+  t.insert("abd")
+  t.insert("abe")
+  t.insert("standford")
+  t.insert("stace")
+  t.insert("cpq")
+  t.insert("cpq")
+  found, node = t.search("b") 
+  print found, node.key
+  print t.all("abc")
+  print t.all("ab")
+  print t.all("af")
+  print t.all("sta")
+  print t.all("c")
 
 """ find all words in the board, dfs, backtracking and Trie """
 def wordSearch(board, words):
@@ -4043,10 +4029,10 @@ def rmInvalidParenth(s, res):
         rmL -= 1
       else:
         rmR += 1
-    dfs(res, s, 0, rmL, rmR, 0, path)
+    recur(res, s, 0, rmL, rmR, 0, path)
     return res
-
-  def dfs(res, s, pos, rmL, rmR, openParen, path):
+  # at each pos, use it or skip it.
+  def recur(res, s, pos, rmL, rmR, openParen, path):
     if pos == len(s) and rmL == 0 and rmR == 0 and openParen == 0:
       p = path[:]
       res.append(p)
@@ -4055,15 +4041,15 @@ def rmInvalidParenth(s, res):
       return
 
     if s[pos] == "(":
-      dfs(res, s, pos+1, rmL,   rmR, openParen+1, path)  # skip
-      dfs(res, s, pos+1, rmL-1, rmR, openParen,   path.append("("))
+      recur(res, s, pos+1, rmL,   rmR, openParen,  path)  # skip
+      recur(res, s, pos+1, rmL-1, rmR, openParen+1,path.append("("))
       path.pop()
     else if s[pos] == ")":
-      dfs(res, s, pos+1, rmL, rmR-1, openParen,   path)    # skip
-      dfs(res, s, pos+1, rmL, rmR,   openParen-1, path.append(")"))
+      recur(res, s, pos+1, rmL, rmR-1, openParen,   path)    # skip
+      recur(res, s, pos+1, rmL, rmR,   openParen-1, path.append(")"))
       path.pop()
     else:
-      dfs(res, s, pos+1, rmL, rmR, openParen, path.append(s[pos]))
+      recur(res, s, pos+1, rmL, rmR, openParen, path.append(s[pos]))
     return
 
 s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
@@ -4122,7 +4108,7 @@ print bfsInvalidParen("()())()")
 each brkpoint, for each left foreach op rite """
 def addOperator(arr, l, r, t):
   '''recursion must use memoize'''
-  def dfs(arr, l, r):
+  def recur(arr, l, r):
     if not tab[l][r]:
       tab[l][r] = defaultdict(list)
     else:
@@ -4131,10 +4117,11 @@ def addOperator(arr, l, r, t):
     if l == r:
       return [[arr[l],"{}".format(arr[l])]]
     # arr[l:r] as one num, no divide
-    out.append([int(''.join(map(str,arr[l:r+1]))), "{}".format(''.join(map(str,arr[l:r+1])))])
+    out.append([int(''.join(map(str,arr[l:r+1]))),
+      "{}".format(''.join(map(str,arr[l:r+1])))])
     for i in xrange(l,r):
-      L = dfs(arr, l, i)
-      R = dfs(arr, i+1, r)
+      L = recur(arr, l, i)
+      R = recur(arr, i+1, r)
       for lv, lexp in L:
         for rv, rexp in R:
           out.append([lv+rv, "{}+{}".format(lexp,rexp)])
