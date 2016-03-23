@@ -623,13 +623,16 @@ END;
   [f form]
   (walk (partial prewalk f) identity (f form)))
 
-""" dfs clone, keep track what node has been cloned."""
-def clone(root, cloned):
-  nroot = Node(root)
-  cloned[root] = nroot
-  for c in root.children:
-    if not cloned[c]:
-      nroot.children.push(clone(c, cloned))
+""" keep track what node has been cloned."""
+def clone(root, storeMap):
+  if not storeMap.get(root):
+    nroot = Node(root)
+    for c in children(root):
+      nc = clone(c, storeMap)
+      nroot.children.append(nc)
+    storeMap.set(root, nroot)
+  else:
+    nroot = cloneMap.get(root)
   return nroot
 
 """ serde tree with arbi # of children """
@@ -1140,124 +1143,125 @@ def testInterval():
     interval tree annotate with max.
 """
 class IntervalTree(object):
-    def __init__(self, lo=None, hi=None):
+  def __init__(self, lo=None, hi=None):
+      self.lo = lo
+      self.hi = hi
+      self.max = max(lo, hi)
+      self.left = self.rite = None
+  def overlap(self, intv):
+      [lo,hi] = intv
+      if lo > self.hi or hi < self.lo:
+          return False
+      return True
+  def toString(self):
+      val = "[ " + str(self.lo) + ":" + str(self.hi) + ":" + str(self.max)
+      if self.left:
+          val += " / :" + self.left.toString()
+      if self.rite:
+          val += " \ :" + self.rite.toString()
+      val += " ] "
+      return val
+  def insert(self, intv):  # lo as BST key
+      [lo,hi] = intv
+      if not self.lo:  # cur tree, self node is empty, add.
         self.lo = lo
         self.hi = hi
-        self.max = max(lo, hi)
-        self.left = self.rite = None
-    def overlap(self, intv):
-        [lo,hi] = intv
-        if lo > self.hi or self.lo > hi:
-            return False
-        return True
-    def toString(self):
-        val = "[ " + str(self.lo) + ":" + str(self.hi) + ":" + str(self.max)
-        if self.left:
-            val += " / :" + self.left.toString()
-        if self.rite:
-            val += " \ :" + self.rite.toString()
-        val += " ] "
-        return val
-    def insert(self, intv):  # lo as BST key
-        [lo,hi] = intv
-        if not self.lo:  # cur tree, self node is empty, add.
-            self.lo = lo
-            self.hi = hi
-            self.max = max(self.lo, self.hi)
-            self.left = self.rite = None
-            return self
-        if self.max < hi:
-            self.max = hi
-        if lo < self.lo:
-            if not self.left:
-                self.left = IntervalTree(lo, hi)
-            else:
-                self.left = self.left.insert(intv)
-            return self.left
-        else:
-            if not self.rite:
-                self.rite = IntervalTree(lo, hi)
-            else:
-                self.rite = self.rite.insert(intv)
-            return self.rite
-    def search(self, intv):
-        [lo,hi] = intv
-        if self.overlap(intv):
-            return self
-        if self.left and lo <= self.left.max:
-            return self.left.search(intv)
-        elif self.rite:
-            return self.rite.search(intv)
-        else:
-            return None   
-    def riteMin(self):  # ret the min from self's rite, either rite, or leftmost of rite.
-        if not self.rite:
-            return self
-        node = self.rite
-        while node.left:
-            node = node.left
-        return node
-    def dfs(self, intv, result):
-        [lo,hi] = intv
-        if self.overlap(intv):
-            result.add(self)   # update result upon base condition.
-        if self.left and lo < self.left.max:
-            self.left.dfs(intv, result)
-        if self.rite and hi > self.riteMin().lo:
-            self.rite.dfs(intv, result)
-        return result
-    def delete(self, intv):
-        [lo,hi] = intv
-        if lo == self.lo and hi == self.hi:
-            if not self.left:
-                return self.rite
-            elif not self.rite:
-                return self.left
-            else:
-                # find in order successor, leftmost of rite branch.
-                node = self.rite
-                while node.left:
-                    node = node.left
-                self.lo = node.lo
-                self.hi = node.hi
-                # recursive delete in order successor
-                self.rite = self.rite.delete([node.lo, node.hi])
-                self.max = max(self.lo, self.hi, self.left.max)
-                if self.rite:
-                    self.max = max(self.max, self.rite.max)
-                return self
-        if lo <= self.lo:
-            self.left = self.left.delete(intv)
-        else:
-            self.rite = self.rite.delete(intv)
-        # update max after deletion
         self.max = max(self.lo, self.hi)
-        if self.left:
-            self.max = max(self.left.max, self.max)
-        if self.rite:
-            self.max = max(self.rite.max, self.max)
+        self.left = self.rite = None
         return self
-    def inorder(self):
-        result = set()
-        pre, cur = None, self
-        if not cur:
-            return cur
-        while cur:
-            if not cur.left:
-                result.add(cur)
-                pre,cur = cur, cur.rite
-            else:
-                node = cur.left
-                while node.rite and node.rite != cur:
-                    node = node.rite
-                if not node.rite:
-                    node.rite = cur
-                    cur = cur.left    # descend to left, recur
-                else:
-                    result.add(cur)
-                    pre,cur = cur, cur.rite
-                    node.rite = None
-        return result
+      if self.max < hi:
+        self.max = hi
+      if lo < self.lo:
+        if not self.left:
+          self.left = IntervalTree(lo, hi)
+        else:
+          self.left = self.left.insert(intv)
+        return self.left
+      else:
+        if not self.rite:
+          self.rite = IntervalTree(lo, hi)
+        else:
+          self.rite = self.rite.insert(intv)
+        return self.rite
+  def search(self, intv):
+      [lo,hi] = intv
+      if self.overlap(intv):
+          return self
+      if self.left and lo <= self.left.max:
+          return self.left.search(intv)
+      elif self.rite:
+          return self.rite.search(intv)
+      else:
+          return None   
+  def riteMin(self):  # ret the min from self's rite, either rite, or leftmost of rite.
+      if not self.rite:
+          return self
+      node = self.rite
+      while node.left:
+          node = node.left
+      return node
+  # branch out left/rite to find all nodes that overlap with the intv.
+  def dfs(self, intv, result):
+      [lo,hi] = intv
+      if self.overlap(intv):
+          result.add(self)   # update result upon base condition.
+      if self.left and lo < self.left.max:
+          self.left.dfs(intv, result)
+      if self.rite and hi > self.riteMin().lo or lo > self.lo:
+          self.rite.dfs(intv, result)
+      return result
+  def delete(self, intv):
+      [lo,hi] = intv
+      if lo == self.lo and hi == self.hi:
+          if not self.left:
+              return self.rite
+          elif not self.rite:
+              return self.left
+          else:
+              # find in order successor, leftmost of rite branch.
+              node = self.rite
+              while node.left:
+                  node = node.left
+              self.lo = node.lo
+              self.hi = node.hi
+              # recursive delete in order successor
+              self.rite = self.rite.delete([node.lo, node.hi])
+              self.max = max(self.lo, self.hi, self.left.max)
+              if self.rite:
+                  self.max = max(self.max, self.rite.max)
+              return self
+      if lo <= self.lo:
+          self.left = self.left.delete(intv)
+      else:
+          self.rite = self.rite.delete(intv)
+      # update max after deletion
+      self.max = max(self.lo, self.hi)
+      if self.left:
+          self.max = max(self.left.max, self.max)
+      if self.rite:
+          self.max = max(self.rite.max, self.max)
+      return self
+  def inorder(self):
+      result = set()
+      pre, cur = None, self
+      if not cur:
+          return cur
+      while cur:
+        if not cur.left:
+          result.add(cur)
+          pre,cur = cur, cur.rite
+        else:
+          node = cur.left
+          while node.rite and node.rite != cur:
+            node = node.rite
+          if not node.rite:
+            node.rite = cur
+            cur = cur.left    # descend to left, recur
+          else:
+            result.add(cur)
+            pre,cur = cur, cur.rite
+            node.rite = None
+      return result
 
 def test():
     intvtree = IntervalTree()
@@ -2857,12 +2861,11 @@ def minwin(arr, words):
         if lw = arr[l:l+4] not in words:
           l += 1
           continue
-        mnw = min(mnw, r-l+1)
-        found[lw] -= 1  # always adv l, r will cover
         if found[lw] >= expected[lw]:
+          found[lw] -= 1
           l += 4
           continue
-        l += 4
+        mnw = min(mnw, r-l+1)
         cnt -= 1
   return mnw
 
@@ -2910,30 +2913,30 @@ def triplet(arr):
       return [mn,nxtmn,v]
 print triplet([5,4,3,6,2,7])
 
-""" long arithmath progress. tab[i,j]=LAP of arr[i:j] with i,j as first 2.
+""" tab[i,j]=LAP of arr[i:j] with k,i,j as first 3.
 tab[i,j] = tab[k,i]+1, iff arr[k]+arr[j]=2*arr[i] """
 def longestArithmathProgress(arr):
   mx = 0
   tab = [[0]*len(arr) for i in xrange(len(arr))]
-  # boundary cond, tab[i][n] = 2, arr[i],arr[n] is an AP with len 2
+  # boundary, tab[i][n] = 2, arr[i],arr[n] is an AP with len 2
   for i in xrange(len(arr)-2, -1, -1):
     tab[i][len(arr)-1] = 2
-  for j in xrange(len(arr)-2, -1, -1): # start from n-2
-    i,k = j-1,j+1
-    while i >= 0 and k < len(arr):
-      if 2*arr[j] == arr[i] + arr[k]:
-        tab[i][j] = tab[j][k] + 1
-        print arr[i],arr[j],arr[k], " :: ", i, j, tab[i]
-        mx = max(mx, tab[i][j])
-        i -= 1
-        k += 1
-      elif 2*arr[j] > arr[i] + arr[k]:
-        k += 1
+  for i in xrange(len(arr)-2, -1, -1): # start from n-2
+    k,j = i-1,i+1
+    while k >= 0 and j < len(arr):
+      if 2*arr[i] == arr[k] + arr[j]:
+        tab[k][i] = tab[i][j] + 1
+        print arr[k],arr[i],arr[j], " :: ", k, i, j, tab[k]
+        mx = max(mx, tab[k][i])
+        k -= 1
+        j += 1
+      elif 2*arr[i] > arr[k] + arr[j]:
+        j += 1
       else:
-        i -= 1
-    if i >= 0:  # if k is out, then [i:j] as header 2.
-      tab[i][j] = 2
-      i -= 1
+        k -= 1
+    if k >= 0:  # if k is out, then [i:j] as header 2.
+      tab[k][i] = 2
+      k -= 1
   return mx
 print longestArithmathProgress([1, 7, 10, 15, 27, 29])
 print longestArithmathProgress([5, 10, 15, 20, 25, 30])
@@ -3477,6 +3480,17 @@ bottom up each row, inside each row, iter each col.
 At each row/col, recur incl/excl situation.
 Boundary condition: check when i/j=0 can not i/j-1.
 """ """ """ """ """
+def minjp(arr):
+  mjp,rite,nxtrite=1,arr[0],arr[0]
+  for i in xrange(1,n):
+    if i < rite:
+      nxtrite = max(nxtrite, i+arr[i])
+    else:
+      mjp += 1
+      rite = nxtrite
+    if rite >= n:
+      return mjp
+
 # tab[i] : min cost from start->i
 import sys
 def minjp(arr):
@@ -3487,15 +3501,6 @@ def minjp(arr):
       if arr[j]+j >= i:  # can reach i
         tab[i] = min(tab[i], tab[j] + 1)
   return tab[len(arr)-1]
-# tab[i] : min cost from i->dst
-def minjp(arr):
-  tab = [sys.maxint]*len(arr)
-  tab[len(arr)-1] = 0
-  for i in xrange(len(arr)-1-1, -1, -1):  # top down
-    for j in xrange(i+1, i+arr[i]+1):
-      if j < len(arr):
-        tab[i] = min(tab[i], tab[j] + 1)
-  return tab[0]
 assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
@@ -3679,13 +3684,13 @@ def comb(arr, pos, r, path, res):
   return res
 res=[];comb([1,2,3,4],0,2,[],res);print res;
 
-""" incl cur, put it into path, dfs recur. Not incl, next """
+""" incl pos into path, recur. skip ith of this path, next """
 # [a, ..] [b, ...], [c, ...]
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
 def powerset(arr, pos, path, result):
   result.append(path)   # all intermediate result in result.
   for i in xrange(pos, len(arr)):
-    ''' compare i to i-1, not i to pos '''
+    ''' compare i to i-1 !!! not i to pos '''
     if i > pos and arr[i] == arr[i-1]:
         continue
     l = path[:]
@@ -3737,7 +3742,7 @@ def alterComb(a,b):
 print alterComb([10, 15, 25], [1,5,20,30])
 
 
-"""when recur to pos, carry the path to when we reach to pos.
+"""when recur to pos, incl pos with passed in path, or skip pos.
 for dup, sort, skip current i is it is a dup of offset.
 """
 def permDup(arr, pos, path, res):
@@ -3745,9 +3750,10 @@ def permDup(arr, pos, path, res):
     arr[i],arr[j] = arr[j],arr[i]
   if pos == len(arr):
     return res.append(path[:])
+  # swap each to head as next perm iteration.
   for i in xrange(pos, len(arr)):
-    # if i is dup of pos, skip it.
-    if i != pos and arr[pos] == arr[i]:
+    # if i is dup of *pos*, skip it. not compare to i-1
+    if i > pos and arr[pos] == arr[i]:
       continue
     swap(arr, pos, i)
     path.append(arr[pos])
@@ -4232,12 +4238,12 @@ def distinctSeq(s,t):
         if s[0] == t[j]:
           tab[0][j] = 1
         continue
-      tab[i][j] = tab[i-1][j]   # not using s[i]
+      tab[i][j] = tab[i-1][j]   # not using s[i], so use tab[i-1]
       if t[j] == s[i]:   # use s[i] only when equals
         if j == 0:  # s[i]==t[0], match in s can start from s[i]
           tab[i][0] = tab[i-1][0] + 1
         else:
-          tab[i][j] += tab[i-1][j-1]
+          tab[i][j] += tab[i-1][j-1]  # reduce one j to j-1
   return tab[len(s)-1][len(t)-1]
 print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
@@ -4324,8 +4330,7 @@ print decode("122")
 
 
 """ top down offset n -> 1 when dfs inclusion recursion """
-# path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
-def subsetsumDfs(l, offset, n, path, result):
+def subsetsumRecur(l, offset, n, path, result):
   if offset < 0:
     return    
   if n == l[offset]:
@@ -4336,12 +4341,13 @@ def subsetsumDfs(l, offset, n, path, result):
     p = path[:]   # deep copy new path before recursion.
     p.append(l[offset])
     # dup allowed, offset stay when include, incl 1+ times.
-    # subsetsum(l, offset,   n-l[offset], p, result)
-    subsetsum(l, offset-1, n-l[offset], p, result)
+    # subsetsumRecur(l, offset,   n-l[offset], p, result)
+    subsetsumRecur(l, offset-1, n-l[offset], p, result)
   # always reduce when excl current, with excl l[i] path.
-  subsetsum(l, offset-1, n, path, result)
+  subsetsumRecur(l, offset-1, n, path, result)
+#path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 
-""" the combination, recur i+1, dup not allowed, recur i, dup allowed. """
+""" recur i+1, dup not allowed, recur i, dup allowed. """
 def comb(arr, t, pos, path, res):
   if pos >= len(arr):
     return
@@ -4361,6 +4367,7 @@ def comb(arr, t, pos, path, res):
     p = path[:]
     res.append(p)
     return
+  # recur with incl each a.i
   for i in xrange(pos, len(arr)):
     if arr[i] <= t:
       path.append(arr[i])
