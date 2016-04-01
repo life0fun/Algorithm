@@ -76,16 +76,16 @@ def convert(num, src, trg):
 
 """ out[i+j+1]=a[j]*b[i] """
 def multiplyStr(a,b):
-    la,lb = list(a),list(b)
-    out = [0]*(len(la)+len(lb))
-    for ib in xrange(len(lb)-1,-1,-1):
-        vb = int(lb[ib])
-        for ia in xrange(len(la)-1,-1,-1):
-            va = int(la[ia])
-            out[ia+ib+1] += va*vb
-            out[ia+ib] += out[ia+ib+1]/10
-            out[ia+ib+1] %= 10
-    return out
+  la,lb = list(a),list(b)
+  out = [0]*(len(la)+len(lb))
+  for ib in xrange(len(lb)-1,-1,-1):
+    vb = int(lb[ib])
+    for ia in xrange(len(la)-1,-1,-1):
+      va = int(la[ia])
+      out[ia+ib+1] += va*vb
+      out[ia+ib] += out[ia+ib+1]/10
+      out[ia+ib+1] %= 10
+  return out
 print multiplyStr("234","5678")
 
 """ a[0..n]*b, out[i]=a[i]*b % 10 """
@@ -146,14 +146,14 @@ print reduce(lambda x,y: x*10+y, maxKbits([3,9,5,6,8,2], 2))
 idea is i digits from a, k-i digits from b, then merge.
 """
 def maxNum(a,b,k):
-    def merge(a,b):  # merge two sorted ary
-        return [max(a,b).pop(0) for _ in a+b]
-    mxnum = 0
-    for i in xrange(k+1):
-        lout = merge(maxKbits(a,i), maxKbits(b,k-i))
-        v = reduce(lambda x,y:x*10+y, lout)
-        mxnum = max(mxnum,v)
-    return mxnum
+  def merge(a,b):  # merge two sorted ary
+    return [max(a,b).pop(0) for _ in a+b]
+  mxnum = 0
+  for i in xrange(k+1):
+    lout = merge(maxKbits(a,i), maxKbits(b,k-i))
+    v = reduce(lambda x,y:x*10+y, lout)
+    mxnum = max(mxnum,v)
+  return mxnum
 print maxNum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)
 
 
@@ -235,8 +235,20 @@ def qsort(arr,l,r):
 arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
+""" only search, not find insertion point """
+def binarySearch(arr, k):
+  lo,hi = 0, len(arr)-1
+  while lo <= hi:
+    mid = lo+(hi-lo)/2
+    if arr[mid] == k:
+      return mid
+    elif arr[mid] < k:
+      lo = mid + 1
+    else:
+      hi = mid - 1
+  return -1
 
-"""bisect ret the insertion pos. a[idx-1] < t <= a[idx]. even with dups.
+""" try to find insertion pos. a[idx-1] < t <= a[idx]. even with dups.
 when find high end, idx-1 is the first ele smaller than searching val."""
 def bisect(arr, val):
   lo,hi = 0, len(arr)-1
@@ -254,9 +266,10 @@ def bisect(arr, val):
     return False, lo
 print bisect([1,1,3,5,7])
 
+""" not trying to find insertion point """
 def bisectRotated(arr,t):
   l,r=0,len(arr)-1
-  while l <= r:     # check l <= r
+  while l != r:     # check l <= r
     mid = l+(r-l)/2
     if t == arr[mid]:
       return True, mid
@@ -265,13 +278,16 @@ def bisectRotated(arr,t):
         r = mid
       else:
         l = mid+1
-    else:
+    elif arr[l] > arr[mid]:
       if arr[mid] < t and t <= arr[r]:
         l = mid+1
       else:
         r = mid
+    else:
+      l += 1
   return False, None
 print bisectRotated([3, 4, 5, 1, 2], 2)
+print bisectRotated([3], 2)
 
 """ find min in rotated. with dup, advance mid, and check on each mov """
 def rotatedMin(arr):
@@ -305,7 +321,7 @@ print rotatedMin([5,6,6,7,0,1,3])
 print rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
 
 
-''' bisect always check l,r boundary first  a[l-1]<t<=a[l] '''
+''' bisect always check l,r boundary first a[l-1]<t<=a[l] '''
 def floorceil(arr, t):
   f,c = -1,-1
   l,r = 0,len(arr)-1
@@ -463,6 +479,30 @@ def riteSmaller(arr):
   mergesort(arr, 0, len(arr)-1)
   return rank
 print riteSmaller([5, 4, 7, 6, 5, 1])
+
+""" find all pairs sum[l:r] within range [mn,mx]. merge sort """
+def countrangesum(arr,mn,mx):
+  def mergesort(arr, lo, hi, mn, mx):
+    if lo == hi:
+      return [arr[lo]] if mn <= arr[lo] <= mx
+    mid = (lo+hi)/2
+    lout = mergesort(arr, lo, mid)
+    rout = mergesort(arr, mid+1, hi)
+    mnidx,mxidx = mid+1,hi
+    for l in arr[lo:mid+1]:
+      while arr[mnidx] - arr[l] < mn:
+        mnidx += 1
+      while arr[mxidx] - arr[l] > mx:
+        mxidx -= 1
+      out.append([l, mnidx, mxidx])
+    out.extend(lout, rout)
+    sorted(arr, lo, hi)
+    return out
+  # use prefix sum ary
+  prefixsum = [0]*len(arr)
+  for i in xrange(1, len(arr)):
+    prefixsum[i] = prefixsum[i-1] + arr[i]
+  return mergesort(prefixsum, 0, len(arr), mn, mx)
 
 """
 find kth smallest ele in a union of two sorted list
@@ -1207,7 +1247,7 @@ class IntervalTree(object):
           result.add(self)   # update result upon base condition.
       if self.left and lo < self.left.max:
           self.left.dfs(intv, result)
-      if self.rite and hi > self.riteMin().lo or lo > self.lo:
+      if self.rite and lo > self.lo or hi > self.riteMin().lo:
           self.rite.dfs(intv, result)
       return result
   def delete(self, intv):
@@ -1366,74 +1406,74 @@ class BITree:
         for i in xrange(len(self.arr)):
             self.update(i, self.arr[i])
 
-""" segment tree. first segment 0 cover 0-n, segment 1 covers 0-mid, seg 2, mid+1..n
+""" segment tree. first segment 1 cover 0-n, second segment covers 0-mid, seg 3, mid+1..n. Segment num is btree, child[i] = 2*i,2*i+1.
 search always starts from seg 0, and found which segment [lo,hi] lies.
 """
 import math
 import sys
 class RMQ(object):
-    class Node():
-        def __init__(self, lo=0, hi=0, minval=0, minvalidx=0, segidx=0):
-            self.lo = lo
-            self.hi = hi
-            self.segidx = segidx      # segment idx in rmq heap tree.
-            self.minval = minval
-            self.minvalidx = minvalidx  # idx in origin val arr
-            self.left = self.rite = None
-    def __init__(self, arr=[]):
-        self.arr = arr  # original arr
-        self.size = len(self.arr)
-        self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
-        self.root = self.build(0, self.size-1, 0)[0]
-    # 0th segment covers tot ary, 1th, left half, 2th, rite half
-    def build(self, lo, hi, segidx):
-        if lo == hi:
-            n = RMQ.Node(lo, hi, self.arr[lo], lo, segidx)
-            self.heap[segidx] = n
-            return [n, lo]
-        mid = (lo+hi)/2
-        left,lidx = self.build(lo, mid, 2*segidx+1)
-        rite,ridx = self.build(mid+1, hi, 2*segidx+2)
-        minval = min(left.minval, rite.minval)
-        minidx = lidx if minval == left.minval else ridx
-        n = RMQ.Node(lo, hi, minval, minidx, segidx)
-        n.left = left
-        n.rite = rite
-        self.heap[segidx] = n
-        return [n,minidx]
-    # segment tree in bst, search always from root.
-    def query(self, root, lo, hi):
-        # out of cur node scope, ret max, as we looking for range min.
-        if lo > root.hi or hi < root.lo:
-            return sys.maxint, -1
-        if lo <= root.lo and hi >= root.hi:
-            return root.minval, root.minvalidx
-        lmin,rmin = root.minval, root.minval
-        # ret min of both left/rite.
-        if root.left:
-            lmin,lidx = self.query(root.left, lo, hi)
-        if root.rite:
-            rmin,ridx = self.query(root.rite, lo, hi)
-        minidx = lidx if lmin < rmin else ridx
-        return min(lmin,rmin),minidx
-    # segment tree in heap tree. always search from root, idx=0
-    def queryIdx(self, idx, lo, hi):
-        node = self.heap[idx]
-        if lo > node.hi or hi < node.lo:
-            return sys.maxint, -1
-        if lo <= node.lo and hi >= node.hi:
-            return node.minval, node.minvalidx
-        lmin,rmin = node.minval, node.minval
-        if self.heap[2*idx+1]:
-            lmin,lidx = self.queryIdx(2*idx+1, lo, hi)
-        if self.heap[2*idx+2]:
-            rmin,ridx = self.queryIdx(2*idx+2, lo, hi)
-        minidx = lidx if lmin < rmin else ridx
-        return min(lmin,rmin), minidx
+  class Node():
+    def __init__(self, lo=0, hi=0, minval=0, minvalidx=0, segidx=0):
+      self.lo = lo
+      self.hi = hi
+      self.segidx = segidx      # segment idx in rmq heap tree.
+      self.minval = minval      # range minimal, can be range sum
+      self.minvalidx = minvalidx  # idx in origin val arr
+      self.left = self.rite = None
+  def __init__(self, arr=[]):
+    self.arr = arr  # original arr
+    self.size = len(self.arr)
+    self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
+    self.root = self.build(0, self.size-1, 0)[0]
+  # 0th segment covers tot ary, 1th, left half, 2th, rite half
+  def build(self, lo, hi, segidx):
+    if lo == hi:
+      n = RMQ.Node(lo, hi, self.arr[lo], lo, segidx)
+      self.heap[segidx] = n
+      return [n, lo]
+    mid = (lo+hi)/2
+    left,lidx = self.build(lo, mid, 2*segidx+1)
+    rite,ridx = self.build(mid+1, hi, 2*segidx+2)
+    minval = min(left.minval, rite.minval)
+    minidx = lidx if minval == left.minval else ridx
+    n = RMQ.Node(lo, hi, minval, minidx, segidx)
+    n.left = left
+    n.rite = rite
+    self.heap[segidx] = n
+    return [n,minidx]
+  # segment tree in bst, search always from root.
+  def rangeMin(self, root, lo, hi):
+    # out of cur node scope, ret max, as we looking for range min.
+    if lo > root.hi or hi < root.lo:
+      return sys.maxint, -1
+    if lo <= root.lo and hi >= root.hi:
+      return root.minval, root.minvalidx
+    lmin,rmin = root.minval, root.minval
+    # ret min of both left/rite.
+    if root.left:
+      lmin,lidx = self.rangeMin(root.left, lo, hi)
+    if root.rite:
+      rmin,ridx = self.rangeMin(root.rite, lo, hi)
+    minidx = lidx if lmin < rmin else ridx
+    return min(lmin,rmin),minidx
+  # segment tree in heap tree. always search from root, idx=0
+  def queryRangeMinIdx(self, idx, lo, hi):
+    node = self.heap[idx]
+    if lo > node.hi or hi < node.lo:
+      return sys.maxint, -1
+    if lo <= node.lo and hi >= node.hi:
+          return node.minval, node.minvalidx
+      lmin,rmin = node.minval, node.minval
+      if self.heap[2*idx+1]:
+          lmin,lidx = self.queryRangeMinIdx(2*idx+1, lo, hi)
+      if self.heap[2*idx+2]:
+          rmin,ridx = self.queryRangeMinIdx(2*idx+2, lo, hi)
+      minidx = lidx if lmin < rmin else ridx
+      return min(lmin,rmin), minidx
 def test():
     r = RMQ([4,7,3,5,12,9])
-    print r.query(r.root,0,5)
-    print r.queryIdx(0,0,5)
+    print r.rangeMin(r.root,0,5)
+    print r.queryRangeMinIdx(0,0,5)
 
 
 """ 2d tree, key=[x,y] """
@@ -2634,6 +2674,24 @@ assert countOnes(13) == 6
 assert countOnes(219) == 152  # 2*10+9
 assert countOnes(229) == 153  # 3*10
 
+def countones(n):
+  ln = list(str(n))
+  cnt = 0
+  for i in xrange(len(ln)-1,-1,-1):
+    d = int(ln[i])
+    left = int("".join(ln[:i]))
+    rite = 0
+    if i < len(ln)-1:
+      rite = int("".join(ln[i+1:]))
+    tens = power(10, len(ln)-1-i)
+    if d > 1:
+      cnt += (left+1)*tens
+    if d == 1:
+      cnt += left*tens + rite + 1
+    if d == 1:
+      cnt += left*tens
+  return cnt
+
 """ recursion; when msb > 1, 219, break to (100-199)+(0-99, 200-299), 100+msb*recur(100-1)
 msb=1, 123, 123%100+recur(100-1); so w + msb*recur(w-1) + recur(n%w)
 when msb=1, n%w + 1 + recur(w-1) + recur(n%w)
@@ -2735,7 +2793,7 @@ always enque r first, then check r-l+1==m"""
 def maxWin(arr, m):
   l,r,mx = 0,0,0
   out,stk = [],[]
-  while r < len(arr):
+  for r in xrange(len(arr)):
     # clean stk off arr[r]
     while len(stk) and stk[-1][1] < arr[r]:
       stk.pop()
@@ -2745,7 +2803,6 @@ def maxWin(arr, m):
       if l == stk[0][0]:
         stk.pop(0)
       l += 1
-    r += 1
   return out
 print maxWin([5,3,4,6,9,7,2],2)
 print maxWin([5,3,4,6,9,7,2],3)
@@ -2755,7 +2812,7 @@ Always process rite edge first. You can check arr[i], or check win size.
 """
 def maxWinSizeMzero(arr, m):
   l,r,zeros,mx=0,0,0,0
-  while r < len(arr):
+  for r in xrange(len(arr)):
     if arr[r] == 0:
       zeros += 1
       if zeros > m:  # squeeze to win=m
@@ -2764,7 +2821,6 @@ def maxWinSizeMzero(arr, m):
         # left edge shrink mov over zero
         l += 1
         zeros -= 1
-    r += 1
     mx = max(mx, r-l)
   return mx
 print maxWinSizeMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
@@ -2861,12 +2917,14 @@ def minwin(arr, words):
         if lw = arr[l:l+4] not in words:
           l += 1
           continue
-        if found[lw] >= expected[lw]:
+        if found[lw] > expected[lw]:
           found[lw] -= 1
           l += 4
           continue
-        mnw = min(mnw, r-l+1)
-        cnt -= 1
+        if found[lw] == expected[lw]:
+          l += 4
+          cnt -= 1
+        mnw = min(mnw, r-l)        
   return mnw
 
 
@@ -3261,7 +3319,8 @@ def firstMissing(L):
   return i+1
 print firstMissing([4,2,5,2,1])
 
-""" toggle arr[i] -= 1 for count """
+""" For each item, if it in rite place, toggle arr[i] -= 1 for count,
+if it's dup and its rite place already taken, -= 1, otherwise, swap """
 def bucketsort_count(arr):
   def swap(arr, i,j):
     arr[i],arr[j] = arr[j],arr[i]
@@ -3594,40 +3653,39 @@ def backpack(arr, W):
 print backpack([2, 3, 5, 7], 11)
 
 
-""" bottom up each val, a new row [c1,c2,...], this way, at each val,
-all coins are considered, so coin order matters, like permutation.
-if not, then outer loop coin first, then enum each val under each coin"""
+""" when outer loop value, at each value, each coin tested, so coin order matters, permutation. When outer loop coins, its like incl/excl coin for a value, no order, like combination.
+"""
 # tab[3,2] = [12],[21] t(3,2) = [111]+[[2,(1,2)]=[2][1]]+[[1,2]]
-def coinchangeSet(arr, V):
-  tab = [[0]*len(arr) for i in xrange(V+1)]
-  tab2 = [[0]*len(arr) for i in xrange(V+1)]
-  for c in xrange(len(arr)):
+def coinchangeSet(coins, V):
+  tab = [[0]*len(coins) for i in xrange(V+1)]
+  tab2 = [[0]*len(coins) for i in xrange(V+1)]
+  for c in xrange(len(coins)):
     tab[0][c] = 1  # when v = coin_value, init pre subproblem tab[0][c] to 1
-    tab2[arr[c]][c] = 1  # or init real tab[arr[c]][c] to 1, the accumulate later.
+    tab2[coins[c]][c] = 1  # or init real tab[coins[c]][c] to 1, the accumulate later.
   # outer loops enum each value, check all coins under each value.
   for v in xrange(1,V+1):
-    for c in xrange(len(arr)):
-        excl = 0
-        if c >= 1:
-            excl = tab[v][c-1]
-          incl = 0
-          if v >= arr[c]:   # when v = coin value, tab[0][c]
-              incl = tab[v-arr[c]][c]
-          tab[v][c] = excl + incl
-          tab2[v][c] += excl + incl   # accumulate on top, as tab2[0][c]=0 here.
-  return tab[V][len(arr)-1]
+    for c in xrange(len(coins)):
+      excl = 0
+      if c >= 1:
+        excl = tab[v][c-1]
+      incl = 0
+      if v >= coins[c]:   # when v = coin value, tab[0][c]
+        incl = tab[v-coins[c]][c]
+      tab[v][c] = excl + incl
+      tab2[v][c] += excl + incl   # accumulate on top, as tab2[0][c]=0 here.
+  return tab[V][len(coins)-1]
 print coinchangeSet([1, 2, 3], 4)
 
 ''' outer loop thru all value, and inner thru all coin,
 diff order counts, [1,1,1], [1,2], [2,1]
 '''
-def coinchangePerm(arr, V):
+def coinchangePerm(coins, V):
   tab = [0]*(V+1)
   tab[0] = 1   # when coin face value = value, match.
   for v in xrange(1,V+1):
-    for c in xrange(len(arr)):
-        if v >= arr[c]:
-            tab[v] += tab[v-arr[c]]  # XX f(i)=f(i-1)+1
+    for c in xrange(len(coins)):
+      if v >= coins[c]:
+        tab[v] += tab[v-coins[c]]  # XX f(i)=f(i-1)+1
   return tab[V]
 print coinchangePerm([1, 2], 3)
 
@@ -3640,15 +3698,15 @@ when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
 for coin 10, tab[10]=tab[10]+tab[0], which is #{[5,5],[10]}
 hence, do not init tab[c]=1, and not tab[v]=tab[v-c]+1
 """
-def coinchange(arr, V):
+def coinchange(coins, V):
   tab = [0]*(V+1)
   # can not init all coins. v=8, at 3, count(5,3), at 5, double count(3,5)
   # for v in xrange(1,V+1):
   #     tab[v] = 1
   tab[0] = 1
   # outer loop enum each coin mean incl the coin, and excl when passed.
-  for i in xrange(len(arr)):
-    fv = arr[i]
+  for i in xrange(len(coins)):
+    fv = coins[i]
     for v in xrange(fv,V+1):
       # sum up k-ways to reach this value.
       tab[v] += tab[v-fv]
@@ -3688,7 +3746,7 @@ res=[];comb([1,2,3,4],0,2,[],res);print res;
 # [a, ..] [b, ...], [c, ...]
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
 def powerset(arr, pos, path, result):
-  result.append(path)   # all intermediate result in result.
+  result.append(path)   # result has all intermediate result in result.
   for i in xrange(pos, len(arr)):
     ''' compare i to i-1 !!! not i to pos '''
     if i > pos and arr[i] == arr[i-1]:
@@ -3826,7 +3884,7 @@ def nthPerm(arr, n):
     idx = n/cnt
     n -= idx*cnt
     out.append(arr[idx])
-    arr = arr[:idx] + arr[idx+1:]
+    arr = arr[:idx] + arr[idx+1:]   # del arr[idx] after pick
   return "".join(out)
 assert(nthPerm("1234", 15), "3241")
 
@@ -3990,7 +4048,7 @@ def addParenth(n, l, r, path, res):
     res.append("".join(p))
     return res
   path.append("(")
-  addParenth(n,l+1,r, path, res)
+  addParenth(n, l+1,r, path, res)
   path.pop()
   if l > r:
     path.append(")")
@@ -4051,7 +4109,7 @@ def rmInvalidParenth(s, res):
       recur(res, s, pos+1, rmL-1, rmR, openParen+1,path.append("("))
       path.pop()
     else if s[pos] == ")":
-      recur(res, s, pos+1, rmL, rmR-1, openParen,   path)    # skip
+      recur(res, s, pos+1, rmL, rmR-1, openParen,   path) # skip
       recur(res, s, pos+1, rmL, rmR,   openParen-1, path.append(")"))
       path.pop()
     else:
@@ -4632,7 +4690,8 @@ def isInterleave(a, b, c):
   return tab[len(a)][len(b)]
 
 """ 2 string, ia,ib,and size; 3 dim tab[length][ia][ib];
-whether a[ia:ia+k] is scramble of b[ib:ib+k] """
+tab[l,i,j] = 1 iff (tab[k,i,j] and tab[l-k,i+k,j+k]
+"""
 def isScramble(a, b):
   tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
   for length in xrange(len(a)):
