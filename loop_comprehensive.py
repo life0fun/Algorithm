@@ -167,33 +167,33 @@ print maxNum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)
 ''' qsort([5,8,5,4,5,1,5], 0, 6)
 '''
 def qsort(l, beg, end):
-    def swap(i,j):
-        l[i], l[j] = l[j], l[i]
-    # always check loop boundary first!
-    if(beg >= end):   # single ele, done.
-        return
+  def swap(i,j):
+      l[i], l[j] = l[j], l[i]
+  # always check loop boundary first!
+  if(beg >= end):   # single ele, done.
+      return
 
-    swap((beg+end)/2, beg)   # now pivot is at the beg
-    pivot = l[beg]
-    i = beg+1
-    j = end
-    # while loop, execute when i=j, as long as left <= right
-    while i<=j:   # = is two ele, put thru logic
-        while l[i] <= pivot and i < end:  # i points to first ele > pivot, left half <= pivot
-            i += 1
-        while l[j] > pivot and j > beg:   # j points to first ele < pivot, right half > pivot
-            j -= 1
-        if(i < j):     # if i=j, swap not effect, but want move i,j actually.
-            swap(i,j)
-            i += 1
-            j -= 1
-        else:
-            break
-    # i,j must be within [beg, i, j, end]
-    swap(beg, j)  # use nature j as i been +1 from head
-    qsort(l, beg, i-1)   # left half <= pivot
-    qsort(l, j+1, end)     # right half > pivot
-    print 'final:', l
+  swap((beg+end)/2, beg)   # now pivot is at the beg
+  pivot = l[beg]
+  i = beg+1
+  j = end
+  # while loop, execute when i=j, as long as left <= right
+  while i<=j:   # = is two ele, put thru logic
+    while l[i] <= pivot and i < end:  # i points to first ele > pivot, left half <= pivot
+        i += 1
+    while l[j] > pivot and j > beg:   # j points to first ele < pivot, right half > pivot
+        j -= 1
+    if(i < j):     # if i=j, swap not effect, but want move i,j actually.
+        swap(i,j)
+        i += 1
+        j -= 1
+    else:
+        break
+  # i,j must be within [beg, i, j, end]
+  swap(beg, j)  # use nature j as i been +1 from head
+  qsort(l, beg, i-1)   # left half <= pivot
+  qsort(l, j+1, end)     # right half > pivot
+  print 'final:', l
 
 def qsort(arr, lo, hi):
   def swap(arr, i, j):
@@ -235,6 +235,43 @@ def qsort(arr,l,r):
 arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
+""" put 0 at head, 2 at tail, 1 in the middle """
+def sortColor(arr):
+  def swap(arr, i, j):
+    arr[i],arr[j] = arr[j],arr[i]
+  i,wr,wb=0,0,len(arr)-1
+  while i < len(arr):   # for loop only good for 2 types.
+    if arr[i] == 0 and wr < i:   # swap only when wr < i
+      swap(arr, i, wr)
+      wr += 1
+    elif arr[i] == 2 and i < wb:
+      swap(arr, i, wb)
+      wb -= 1
+    else:
+      i += 1
+  return arr
+print color([2,0,1])
+print color([1,2,1,0,1,2,0,1,2,0,1])
+
+""" mid start point of 1, which sep 0/2. swap mid """
+def sortColor(arr):
+  def swap(arr, i, j):
+    arr[i],arr[j] = arr[j],arr[i]
+  lo,mid,hi = 0,0,len(arr)-1
+  while mid <= hi:
+    if arr[mid] == 0:
+      swap(arr, lo, mid)
+      lo += 1
+      mid += 1
+    elif arr[mid] == 2:
+      swap(arr, mid, hi)
+      hi -= 1
+    else:
+      mid += 1
+  return arr
+print sortColor([0,0,2,1])
+
+
 """ only search, not find insertion point """
 def binarySearch(arr, k):
   lo,hi = 0, len(arr)-1
@@ -256,7 +293,7 @@ def bisect(arr, val):
     return False, len(arr)
   while lo != hi:
     md = (lo+hi)/2
-    if arr[md] < val:  # lift l only when mid is abs smaller
+    if arr[md] < val:  # lift l to m+1 only when mid is abs smaller
       lo = md+1
     else:
       hi = md   # drag down hi to mid when equals.
@@ -269,20 +306,20 @@ print bisect([1,1,3,5,7])
 """ not trying to find insertion point """
 def bisectRotated(arr,t):
   l,r=0,len(arr)-1
-  while l != r:     # check l <= r
+  while l <= r:     # if loop in when l==r, r=mid-1
     mid = l+(r-l)/2
     if t == arr[mid]:
       return True, mid
     if arr[l] < arr[mid]:
       if arr[l] <= t and t < arr[mid]:
-        r = mid
+        r = mid - 1
       else:
-        l = mid+1
+        l = mid + 1
     elif arr[l] > arr[mid]:
       if arr[mid] < t and t <= arr[r]:
-        l = mid+1
+        l = mid + 1
       else:
-        r = mid
+        r = mid - 1
     else:
       l += 1
   return False, None
@@ -296,21 +333,21 @@ def rotatedMin(arr):
     mid = (l+r)/2
     if arr[mid] > arr[mid+1]:
         return arr[mid+1]
-    # first, check and skip dups by mov mid, if arr[l]=arr[r] povot is on left
+    # first, mov mid to skip dups. if arr[l]=arr[r] pivot is on left
     while arr[l] == arr[mid] and mid < r:
       # check at each mov of mid
       if arr[mid] > arr[mid+1]:
         return arr[mid+1]
       mid += 1
-    if mid == r:
-      r = (l+r)/2  # r = old mid
+    if mid == r:  # two ends eqs, cut in dup, min on left,  /--|--/ => ---/ \ /---
+      r = (l+r)/2  # r = mid
       continue
     ''' l - mid in the first same segment '''
     if arr[l] < arr[mid] and mid < r:
       l = mid+1
     else:
-      r = mid
-  return arr[0]
+      r = mid     # r=mid-1 only when loop in when l <= r
+  return arr[l]
 print rotatedMin([4,5,0,1,2,3])
 print rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4])
 print rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4,4,4])
@@ -361,42 +398,6 @@ print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 1)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
 
-""" put 0 at head, 2 at tail, 1 in the middle """
-def sortColor(arr):
-  def swap(arr, i, j):
-    arr[i],arr[j] = arr[j],arr[i]
-  i,wr,wb=0,0,len(arr)-1
-  while i < len(arr):
-    if arr[i] == 0 and wr < i:   # swap only when wr < i
-      swap(arr, i, wr)
-      wr += 1
-    elif arr[i] == 2 and i < wb:
-      swap(arr, i, wb)
-      wb -= 1
-    else:
-      i += 1
-      continue
-  return arr
-print color([2,0,1])
-print color([1,2,1,0,1,2,0,1,2,0,1])
-
-""" mid start point of 1, which sep 0/2. swap mid """
-def sortColor(arr):
-  def swap(arr, i, j):
-    arr[i],arr[j] = arr[j],arr[i]
-  lo,mid,hi = 0,0,len(arr)-1
-  while mid <= hi:
-    if arr[mid] == 0:
-      swap(arr, lo, mid)
-      lo += 1
-      mid += 1
-    elif arr[mid] == 2:
-      swap(arr, mid, hi)
-      hi -= 1
-    else:
-      mid += 1
-  return arr
-print sortColor([0,0,2,1])
 
 """ find the max in a ^ ary """
 def findMax(arr):
@@ -743,12 +744,12 @@ def postOrder(root):
   pre,cur = None,root
   while cur or len(stk) > 0:
     if cur:
+      out.insert(0, cur)
       if cur.left:
         stk.append(cur.left)
-      out.insert(0, cur)
+      cur = cur.rite
     else:
       cur = stk.pop()
-      cur = cur.rite
   return out
 
 def postorderTraversal(self, root):
@@ -760,6 +761,21 @@ def postorderTraversal(self, root):
       stack.append(tmp.left)
       stack.append(tmp.right)
   return ans[::-1]
+
+""" focus on current node, execute operations, stash subtree """
+def flatten(r):
+  while stk or r:
+    if r:
+      l = r.left
+      if r.rite:
+        stk.append(r.rite)
+      r.rite = l
+      if not l:
+        # when leaf, rite set to stk top
+        r.rite = stk.top()
+      r = l  # advance, if not r, will pop stk
+    else:
+      r = stk.pop()
 
 
 ''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
@@ -1671,8 +1687,8 @@ def wordSearch(board, words):
       dfs(board, nxti, nxtj, nextnode) # recur with next trie node
     board[i][j] = c
     board[i][j] = "un-visited"
-  # start pos can be any i,j
   root = buildTrie(words)
+  # for each cell, do dfs
   for i,j in board:
     dfs(board, i, j, root)
   return out
@@ -2850,58 +2866,29 @@ loop each char, note down expected count and fount cnt.
 from collections import defaultdict
 def minwin(arr,t):
   expected = defaultdict(int)
-  for c in t:
-    expected[c] += 1
-  cnt,l,mnw = len(t),0,99
-  for i in xrange(len(arr)):
-    c = arr[i]
-    if not c in t:
-      continue
-    expected[c] -= 1
-    if expected[c] == 0:
-      cnt -= 1
-      while cnt == 0:   # squeeze left window while all chars are found.
-        while l < len(arr) and not arr[l] in t:
-          l += 1
-        if i-l+1 < mnw:
-          mnw = i-l+1
-          print arr[l:i+1]
-        expected[arr[l]] += 1
-        if expected[arr[l]] > 0:
-          cnt += 1
-        l += 1
-  return mnw
-print minwin("aab", "ab")
-print minwin("ADOBECODEBANC", "ABC")
-
-''' allow dups in target '''
-def minwin(arr,t):
-  expected = defaultdict(int)
   found = defaultdict(int)
   for c in t:
     expected[c] += 1
   l,cnt,mnw = 0,0,99
-  for i in xrange(len(arr)):
-    c = arr[i]
+  for r in xrange(len(arr)):
+    c = arr[r]
     if not c in t:
       continue
     found[c] += 1
     # no value when not expected. dup does not count
     if found[c] <= expected[c]:
       cnt += 1
-      while cnt == len(t):
-        while arr[l] not in t or found[arr[l]] > expected[arr[l]]:
-          if found[arr[l]] > 0:  # squeeze left when it is dup.
-            found[arr[l]] -= 1
-          l += 1
-        if i-l+1 < mnw:   # only update min when cnt.
-          mnw = i-l+1
-          print arr[l:i+1]
-        # always advance left edge after full
+    if cnt == len(t):
+      while arr[l] not in t or found[arr[l]] > expected[arr[l]]:
+        if found[arr[l]] > 0:  # squeeze left when it is dup.
+          found[arr[l]] -= 1
         l += 1
-        cnt -= 1
+      if r-l+1 < mnw:   # only update min when cnt.
+        mnw = r-l+1
+        print arr[l:r+1]
   return mnw
 print minwin("azcaaxbb", "aab")
+print minwin("ADOBECODEBANC", "ABC")
 
 """ min window with 3 letter words """
 def minwin(arr, words):
@@ -2913,18 +2900,13 @@ def minwin(arr, words):
     found[w] += 1
     if found[w] <= expected[w]:
       cnt += 1
-      while cnt == len(words):
-        if lw = arr[l:l+4] not in words:
-          l += 1
-          continue
-        if found[lw] > expected[lw]:
-          found[lw] -= 1
-          l += 4
-          continue
-        if found[lw] == expected[lw]:
-          l += 4
-          cnt -= 1
-        mnw = min(mnw, r-l)        
+    if cnt == len(words):
+      while lw = arr[l:l+4] not in words:
+        l += 1
+      while found[lw] > expected[lw]:
+        found[lw] -= 1
+        l += 4
+      mnw = min(mnw, r-l)        
   return mnw
 
 
@@ -3453,8 +3435,27 @@ def largestRectangle(l):
   print first_right_min
   for i in xrange(len(l)):
     maxrect = max(maxrect, l[i]*(first_right_min[i]-first_left_min[i]-1))
-
   return maxrect
+
+def maxRectangle(matrix):
+  def maxHistogram(self, height):
+    height.append(0)
+    stack, size = [], 0
+    for i in range(len(height)):
+      while stack and height[stack[-1]] > height[i]:
+        h = height[stack.pop()]
+        w = i if not stack else i-stack[-1]-1
+        size = max(size, h*w)
+      stack.append(i)
+    return size
+
+  h, w = len(matrix), len(matrix[0])
+  m = [[0]*w for _ in range(h)]
+  for j in range(h):
+    for i in range(w):
+      if matrix[j][i] == '1':
+        m[j][i] = m[j-1][i] + 1
+  return max(maxHistogram(row) for row in m)
 
 
 """
@@ -3746,7 +3747,7 @@ res=[];comb([1,2,3,4],0,2,[],res);print res;
 # [a, ..] [b, ...], [c, ...]
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
 def powerset(arr, pos, path, result):
-  result.append(path)   # result has all intermediate result in result.
+  result.append(path)  # incl all intermediate result
   for i in xrange(pos, len(arr)):
     ''' compare i to i-1 !!! not i to pos '''
     if i > pos and arr[i] == arr[i-1]:
@@ -4493,13 +4494,14 @@ when each slot needs to be distinct, only append j when it is bigger
 """
 def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
   tab = [[None]*(sm+1) for i in xrange(n)]
-  for i in xrange(n):      # bottom up n slots
+  for i in xrange(n):       # bottom up n slots
     for s in xrange(sm+1):  # enum to sm for each slot, tab[i,sm]
       if tab[i][s] == None:
         tab[i][s] = []
       for f in xrange(1, 10):  # each slot face, 1..9
         if i == 0 and f == s and s < 10:   # tab[0][0..9] = [0..9]
-          tab[i][f].append([f])
+          tab[i][f].append([f])   # first slot, straight.
+          continue
         if s > f and tab[i-1][s-f] and len(tab[i-1][s-f]) > 0:
           for e in tab[i-1][s-f]:
             # if need to be distinct, append j only when it is bigger.
@@ -4941,10 +4943,10 @@ def wordladder(start, end, dict):
         seen.add(nextwd)
     return nextwds
   ''' bfs search '''
-  ladder = []
-  seen = set()     # global visited map for all bfs iterations
   if start == end:
     return
+  ladder = []
+  seen = set()     # global visited map for all bfs iterations
   q = deque()
   q.append([start,[]])
   while len(q) > 0:
@@ -4987,7 +4989,7 @@ def boggle(G, dictionary):
       return out
   M,N = len(G),len(G[0])
   out, seen = [], set()
-  for i in xrange(M):
+  for i in xrange(M):     # start from each cell
     for j in xrange(N):
       seen.add(G[i][j])
       path = []
@@ -4999,18 +5001,18 @@ def boggle(G, dictionary):
 
 """ w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j]"""
 def wordWrap(words, m):
-    sz = len(words)
-    #extras[i][j] extra spaces if words from i to j are put in a single line
-    extras = [[0]*sz for i in xrange(sz)]
-    lc = [[0]*sz for i in xrange(sz)] # cost of line with word i:j
-    for linewords in xrange(sz/m):
-        for st in xrange(sz-linewords):
-            ed = st + linewords
-            extras[st][ed] = abs(m-sum(words, st, ed))
-    for i in xrange(sz):
-        for j in xrange(i):
-            lc[i] = min(lc[i] + extras[j][i])
-    return lc[sz-1]
+  sz = len(words)
+  #extras[i][j] extra spaces if words i to j are in a single line
+  extras = [[0]*sz for i in xrange(sz)]
+  lc = [[0]*sz for i in xrange(sz)] # cost of line with word i:j
+  for linewords in xrange(sz/m):
+    for st in xrange(sz-linewords):
+      ed = st + linewords
+      extras[st][ed] = abs(m-sum(words, st, ed))
+  for i in xrange(sz):
+    for j in xrange(i):
+      lc[i] = min(lc[i] + extras[j][i])
+  return lc[sz-1]
 
 
 """
