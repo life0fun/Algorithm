@@ -180,20 +180,53 @@ def qsort(l, beg, end):
   # while loop, execute when i=j, as long as left <= right
   while i<=j:   # = is two ele, put thru logic
     while l[i] <= pivot and i < end:  # i points to first ele > pivot, left half <= pivot
-        i += 1
+      i += 1
     while l[j] > pivot and j > beg:   # j points to first ele < pivot, right half > pivot
-        j -= 1
+      j -= 1
     if(i < j):     # if i=j, swap not effect, but want move i,j actually.
-        swap(i,j)
-        i += 1
-        j -= 1
+      swap(i,j)
+      i += 1
+      j -= 1
     else:
-        break
+      break
   # i,j must be within [beg, i, j, end]
   swap(beg, j)  # use nature j as i been +1 from head
   qsort(l, beg, i-1)   # left half <= pivot
   qsort(l, j+1, end)     # right half > pivot
   print 'final:', l
+
+def hIndex(citations):
+  def partition(arr, l, r):
+    piv = min(arr, l, r, (l+r)/2)
+    swap(arr, piv, r)
+    wi = l
+    for i in xrange(l, r):
+      if arr[i] < arr[piv]:
+        arr[wi++] = arr[i]
+    swap(arr, wi, r)
+    return wi
+
+  sz,l,r,piv,ans = len(citations),0,sz-1,0,0
+  while l > r:
+    hidx = partition(arr, l, r)
+    if citiations[hidx] >= hidx:
+      ans = hdix
+      l = hidx+1
+    else:
+      r = hidx-1
+  return ans
+
+""" use 0..n bucket to count """
+def hIndex(citations):
+  n = len(citations)
+  bucket = [0]*(n+1)
+  for i in xrange(n):
+    bucket[min(citations[i],n)] += 1
+  for i in xrange(n,0,-1):
+    sm += bucket[i]
+    if sm >= i:
+      ret = i
+  return ret
 
 def qsort(arr, lo, hi):
   def swap(arr, i, j):
@@ -676,28 +709,6 @@ def clone(root, storeMap):
     nroot = cloneMap.get(root)
   return nroot
 
-""" serde tree with arbi # of children """
-def dfsSerde(root, out):
-  print root
-  out.append(root)
-  for c in root.children:
-    dfsSerde(c, out)
-  print "$"
-  out.append("$")
-
-""" deserialize, use stk to track parent """
-# 1 [2 [4 $] $] [3 [5 $] $] $
-from collections import deque
-def deserTree(l):
-  stk = deque()
-  while nxt = l.readLine():
-    if nxt is not "$":
-      if len(stk) > 0:
-        p = stk.top()
-        p.children.append(nxt)
-      stk.append(nxt)
-    else:
-      stk.pop()
 
 """ track pre, cur when traverse, and threading left rite most """
 def morris(root):
@@ -765,18 +776,17 @@ def postorderTraversal(self, root):
 """ focus on current node, execute operations, stash subtree """
 def flatten(r):
   while stk or r:
-    if r:
-      l = r.left
+    if r:   # need visit root, mov to r.left, stash r.rite for later
+      if not r.left and r.rite:
+        r.rite = stk.top()
+        r = None
+        continue
       if r.rite:
         stk.append(r.rite)
-      r.rite = l
-      if not l:
-        # when leaf, rite set to stk top
-        r.rite = stk.top()
-      r = l  # advance, if not r, will pop stk
+      r.rite = r.left
+      r = r.rite  # advance, if not r, will pop stk
     else:
       r = stk.pop()
-
 
 ''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
 def numBST(n):
@@ -792,80 +802,79 @@ def numBST(n):
 like loop ary, start from both end, in order traverse, and reverse in order
 '''
 def pairNode(root, target):
-    lstk,rstd = deque(),deque()  # use lgn stk to store tree path parent
-    lstop,rstop = False,False
-    lcur,rcur = root,root
-    while True:
-        while not lstop:
-            if lcur:
-                lstk.append(lcur)
-                lcur = lcur.left
-            else:
-                if not len(lstk):
-                    lstop = 1
-                else:
-                    lcur = lstk.pop()
-                    lval = lcur
-                    lcur = lcur.rite
-                    lstop = 1
-        while not rstop:
-            if rcur:
-                rstk.append(rcur)
-                rcur = rcur.rite
-            else:
-                if not len(rstk):
-                    rstop = 1
-                else:
-                    rcur = lstk.pop()
-                    rval = rcur
-                    rcur = rcur.left
-        if lval + rval == target:
-            return lcur,rcur
-        if lval + rval > target:
-            rstop = False
-        else:
-            lstop = False
-    return lcur,rcur
+  lstk,rstd = deque(),deque()  # use lgn stk to store tree path parent
+  lstop,rstop = False,False
+  lcur,rcur = root,root
+  while True:
+      while not lstop:
+          if lcur:
+              lstk.append(lcur)
+              lcur = lcur.left
+          else:
+              if not len(lstk):
+                  lstop = 1
+              else:
+                  lcur = lstk.pop()
+                  lval = lcur
+                  lcur = lcur.rite
+                  lstop = 1
+      while not rstop:
+          if rcur:
+              rstk.append(rcur)
+              rcur = rcur.rite
+          else:
+              if not len(rstk):
+                  rstop = 1
+              else:
+                  rcur = lstk.pop()
+                  rval = rcur
+                  rcur = rcur.left
+      if lval + rval == target:
+          return lcur,rcur
+      if lval + rval > target:
+          rstop = False
+      else:
+          lstop = False
+  return lcur,rcur
 
 
 """ serde of bin tree with l/r child, no lchild and rchild, append $ $"""
 def serdeBtree(root):
-    if not root: print '$'
-    print root
-    serdeBtree(root.left)
-    serdeBtree(root.rite)
+  if not root: print '$'
+  print root
+  serdeBtree(root.left)
+  serdeBtree(root.rite)
 
 def serdeBtree(root):
-    print root
-    if root.lchild:
-        serdeBtree(root.lchild)
-    if root.rchild:
-        serdeBtree(root.rchild)
-    print "$"
+  print root
+  if root.lchild:
+      serdeBtree(root.lchild)
+  if root.rchild:
+      serdeBtree(root.rchild)
+  print "$"
 
-def serdeBtree(line, parent, leftchild):
-    if line is '$'
-        return
-    node = Node(line)
-    if leftchild: parent.left = node else parent.rite = node
-    serdeBtree(nextline, node, True)
-    serdeBtree(nextline, node, False)
+""" serde tree with arbi # of children """
+def dfsSerde(root, out):
+  print root
+  out.append(root)
+  for c in root.children:
+    dfsSerde(c, out)
+  print "$"
+  out.append("$")
 
-""" serde binary search tree, pre-order node 
-    only recur when current node is child of parent, if next line not my child
-    recur will keep ret until to its bst parent. read next when creating new node.
-"""
-def serdePreBst(val, parent, leftchild, minv, maxv):
-    # only recur when this node is the child of parent
-    if minv < val < maxv:
-        node = Node(val)
-        if leftchild: parent.left = node else parent.rite = node
-        # read next line, if next line not my child, recur wi
-        nextv = nextline()
-        if nextv: 
-            serdePreBst(nextv, node, True, -sys.maxint-1, val)
-            serdePreBst(nextv, node, False, val, sys.maxint)
-
+""" deserialize, use stk to track parent """
+# 1 [2 [4 $] $] [3 [5 $] $] $
+from collections import deque
+def deserTree(l):
+  stk = deque()
+  while nxt = l.readLine():
+    if nxt is not "$":
+      if len(stk) > 0:
+        p = stk.top()
+        p.children.append(nxt)
+      stk.append(nxt)
+    else:
+      stk.pop()
 
 """ no same char shall next to each other """
 from collections import defaultdict
@@ -3320,6 +3329,24 @@ def bucketsort_count(arr):
   return arr
 print bucket([1, 2, 4, 3, 2])
 
+""" bucket tab[arr[i]] for i,j diff by t, and idx i,j with k """
+def containsNearbyAlmostDuplicate(self, nums, k, t):
+  if t < 0: return False
+  n = len(nums)
+  d = {}
+  w = t + 1
+  for i in xrange(n):
+      m = nums[i] / w
+      if m in d:
+          return True
+      if m - 1 in d and abs(nums[i] - d[m - 1]) < w:
+          return True
+      if m + 1 in d and abs(nums[i] - d[m + 1]) < w:
+          return True
+      d[m] = nums[i]
+      if i >= k: del d[nums[i - k] / w]
+  return False
+
 """ find dup in ary using slow/fast pointers 
 arr[a] is the same as a.next, after cycle meet, start from 0.
 """
@@ -4083,7 +4110,7 @@ print bfsParath(3)
 
 
 """ iterate at each pos, dfs excl/incl each pos, no dp short """
-def rmInvalidParenth(s, res):
+def rmParenth(s, res):
   path = []
   rmL,rmR = 0,0
   for i in xrange(s):
@@ -4117,8 +4144,8 @@ def rmInvalidParenth(s, res):
       recur(res, s, pos+1, rmL, rmR, openParen, path.append(s[pos]))
     return
 
-s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
-s="()())()";path=[];res=[];print rmInvalidParenth(s,0,path,0,0,res)
+s="()())()";path=[];res=[];print rmParenth(s,0,path,0,0,res)
+s="()())()";path=[];res=[];print rmParenth(s,0,path,0,0,res)
 
 
 def rmParenth(arr, pos, rmpos, res):
@@ -4203,6 +4230,20 @@ def addOperator(arr, l, r, t):
   return out
 print addOperator([1,2,3],0,2,6)
 print addOperator([1,0,5],0,2,5)
+
+""" DP, recur each i at each length """
+def addOperator(arr, l, r):
+  for gap in xrange(r-l):
+    for i in xrange(l, r-l-gap):
+      j = i+gap
+      for k in xrange(i,j):
+        for lv, lexpr in tab[i][k]:
+          for rv,rexp in tab[k+1][j]:
+            out.append([lv+rv, "{}+{}".format(lexp,rexp)])
+            out.append([lv*rv, "{}*{}".format(lexp,rexp)])
+            out.append([lv-rv, "{}-{}".format(lexp,rexp)])
+    tab[i][j] = out
+  return tab[l][r]
 
 """ dfs recur on each segment moving idx, note down prepre, pre,
 and calulate this cur in next iteration"""
@@ -4855,10 +4896,11 @@ def minLeft(arr, k):
     tab[lo][hi] = ret
     return ret
 
-''' sub regioin [l..r], consider m as the LAST to burst, so last 3 l,m,r
+''' sub regioin [l..r], consider m as the LAST to burst, so last 3 l,m,r.
+matrix product tab[l,r] = tab[l,k]+tab[k+1,r]+p[l-1]*p[m]*p[r]
 tab[l,r] = max(tab[l,k]+tab[k+1,r]+arr[l]*arr[k]*arr[r])
 '''
-def ballonburst(arr):
+def burstBalloon(arr):
   earr = [1] + arr + [1]   # set boundary
   sz = len(earr)
   tab = [[0]*(sz) for i in xrange(sz)]
@@ -4870,7 +4912,7 @@ def ballonburst(arr):
       for m in xrange(l+1,r):
         tab[l][r] = max(tab[l][r], tab[l][m]+tab[m][r]+earr[l]*earr[m]*earr[r])
   return tab[0][sz-1]
-print ballonburst([3, 1, 5, 8])
+print burstBalloon([3, 1, 5, 8])
 
 """ m[i,j]=matrix(i,j) = min(m[i,k]+m[k+1,j]+arr[i-1]*arr[k]*arr[j]) """
 def matrix(arr):
