@@ -505,7 +505,7 @@ def riteSmaller(arr):
     if l == r:
       return [l]
     m = (l+r)/2
-    left = mergesort(arr, l, m)     # use idx, not arr[idx]
+    left = mergesort(arr, l, m)    # ret ary of idx of origin arr
     rite = mergesort(arr, m+1, r)
     return merge(left,rite)
 
@@ -596,30 +596,30 @@ def selectKth(A, beg, end, k):
 
 # median of median of divide to n groups with each group has 5 items,
 def medianmedian(A, beg, end, k):
-    def partition(A, l, r, pivot):
-        widx = l
-        for i in xrange(l, r+1):
-            if A.i < pivot:
-                A.widx, A.i = A.i, A.widx
-                widx += 1
-        # i will park at last item that is < pivot
-        return widx-1   # left shift as we always right shift after swap.
+  def partition(A, l, r, pivot):
+    widx = l
+    for i in xrange(l, r+1):
+        if A.i < pivot:
+            A.widx, A.i = A.i, A.widx
+            widx += 1
+    # i will park at last item that is < pivot
+    return widx-1   # left shift as we always right shift after swap.
 
-    sz = end - beg + 1  # beg, end is idx
-    if not 1<= k <= sz: return None     # out of range, None.
-    # ret the median for this group of 5 items
-    if end-beg <= 5:
-        return sorted(A[beg:end])[k-1]  # sort and return k-1th item
-    # divide into groups of 5, ngroups, recur median of each group, pivot = median of median
-    ngroups = sz/5
-    medians = [medianmedian(A, beg+5*i, beg+5*(i+1)-1, 3) for i in xranges(ngroups)]
-    pivot = medianmedian(medians, 0, len(medians)-1, len(medians)/2+1)
-    pivotidx = partition(A, beg, end, pivot)  # scan from begining to find pivot idx.
-    rank = pivotidx - beg + 1
-    if k <= rank:
-        return medianmedian(A, beg, pivotidx, k)
-    else:
-        return medianmedian(A, pivotidx+1, end, k-rank)
+  sz = end - beg + 1  # beg, end is idx
+  if not 1<= k <= sz: return None     # out of range, None.
+  # ret the median for this group of 5 items
+  if end-beg <= 5:
+      return sorted(A[beg:end])[k-1]  # sort and return k-1th item
+  # divide into groups of 5, ngroups, recur median of each group, pivot = median of median
+  ngroups = sz/5
+  medians = [medianmedian(A, beg+5*i, beg+5*(i+1)-1, 3) for i in xranges(ngroups)]
+  pivot = medianmedian(medians, 0, len(medians)-1, len(medians)/2+1)
+  pivotidx = partition(A, beg, end, pivot)  # scan from begining to find pivot idx.
+  rank = pivotidx - beg + 1
+  if k <= rank:
+      return medianmedian(A, beg, pivotidx, k)
+  else:
+      return medianmedian(A, pivotidx+1, end, k-rank)
 
 """ insert into circular link list 
     1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
@@ -779,10 +779,10 @@ def flatten(r):
     if r:   # need visit root, mov to r.left, stash r.rite for later
       if not r.left and r.rite:
         r.rite = stk.top()
-        r = None
-        continue
-      if r.rite:
-        stk.append(r.rite)
+        r = stk.pop()
+      else:
+        if r.rite:
+          stk.append(r.rite)
       r.rite = r.left
       r = r.rite  # advance, if not r, will pop stk
     else:
@@ -1430,6 +1430,46 @@ class BITree:
     def build(self):
         for i in xrange(len(self.arr)):
             self.update(i, self.arr[i])
+
+"""
+https://leetcode.com/discuss/79907/summary-divide-conquer-based-binary-indexed-based-solutions
+count range sum. i,j so low < prefixsum(j-i) < upper.
+"""
+def rangeSum(nums, lower, upper):
+  return 0 if len(nums) == 0
+  prefix = [0]*(len(nums)+1)
+  for i in xrange(len(nums)):
+    prefix[i+1] = prefix[i] + nums[i]
+
+  return prefixSum(prefix, 0, len(prefix)-1, lower, upper);
+  
+  def prefixSum(prefix, l, r, lower, upper):
+    return 0 if l >= r
+
+    m = l + (r - l) / 2;
+    left = prefixSum(prefix, l, m, lower, upper)
+    rite = prefixSum(prefix, m+1, r, lower, upper)
+    count = left + rite
+
+    merged = [0]*(r - l + 1)
+    i = l, j = k = q = m + 1, p = 0
+    while i <= m:
+      while j <= r and prefix[j] - prefix[i] < lower:
+        j++;
+      while k <= r and prefix[k] - prefix[i] <= upper:
+        k++;
+      count += k - j;
+
+      while q <= r and prefix[q] < prefix[i]:
+        merged[p++] = prefix[q++]
+      merged[p++] = prefix[i++]
+
+    while q <= r:
+      merged[p++] = prefix[q++]
+
+    System.arraycopy(merged, 0, prefix, l, len(merged)-1);
+
+    return count;
 
 """ segment tree. first segment 1 cover 0-n, second segment covers 0-mid, seg 3, mid+1..n. Segment num is btree, child[i] = 2*i,2*i+1.
 search always starts from seg 0, and found which segment [lo,hi] lies.
@@ -2667,6 +2707,16 @@ def noConsecutive(text):
       segidx += 1
   return out
 
+""" [0], [0,1], [1,2,2,3], ... for each"""
+def countBits(n):
+  out = [0]
+  power = 0
+  while len(out) < n:
+    for i in xrange(2**power): # [0],[0,1],[0,1,2,3],[0..7]
+      out.append(out[i]+1)
+    power += 1
+  return out
+
 """
 count num of 1s that appear on all numbers less than n. 13=6{1,10,11,12,13}
 consider n=2015: check the option of xxx1, xx1z, x1zz, 1zzz, sum them up
@@ -3464,17 +3514,22 @@ def largestRectangle(l):
     maxrect = max(maxrect, l[i]*(first_right_min[i]-first_left_min[i]-1))
   return maxrect
 
+"""
+Every row in the matrix is viewed as the ground. height is the count
+of consecutive 1s from that row to above rows. 
+"""
 def maxRectangle(matrix):
-  def maxHistogram(self, height):
-    height.append(0)
-    stack, size = [], 0
-    for i in range(len(height)):
-      while stack and height[stack[-1]] > height[i]:
-        h = height[stack.pop()]
-        w = i if not stack else i-stack[-1]-1
-        size = max(size, h*w)
-      stack.append(i)
-    return size
+  ''' stk store idx of rite higher. if rite smaller, stk[i] rect ends'''
+  def maxHistogram(height):
+    stk, mx = [], 0   # stk store idx, height[stk[-1]]
+    stk.append(0)
+    for i in range(1, len(height)):
+      while stk and height[stk[-1]] > height[i]:
+        h = height[stk.pop()]
+        w = i - stk[-1] + 1
+        mx = max(mx, h*w)
+      stk.append(i)
+    return mx
 
   h, w = len(matrix), len(matrix[0])
   m = [[0]*w for _ in range(h)]
@@ -3482,7 +3537,9 @@ def maxRectangle(matrix):
     for i in range(w):
       if matrix[j][i] == '1':
         m[j][i] = m[j-1][i] + 1
-  return max(maxHistogram(row) for row in m)
+  for row in m:
+    mx = max(mx, maxHistogram(row))
+  return mx
 
 
 """
@@ -3719,7 +3776,7 @@ print coinchangePerm([1, 2], 3)
 
 """ tot ways for a change. Diff with min ways for a change
 bottom up each val, a new row [c1,c2,...], loop coin col first, 
-so at 2, no knowledge of 3, kind of sorted, so 5=[2,3], no [3,2]
+so at 2, no knowledge of 3, so 5=[2,3], sorted. not [3,2] when passed 2 to 3.
 if for comb, loop val first, at each value, look for all coin.
 
 when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
@@ -4374,10 +4431,10 @@ def distinct(s,t):
     for c in xrange(len(t)):
       if s[r] == t[c]:
         if c == 0:
-          pre = row[c]
+          pre = row[c] # cache to pre before mutate, for next row use
           row[c] += 1  # cumulate pre row c equals. "bbb", "bb"
         else:
-          tmp = row[c]
+          tmp = row[c]  # cache to pre before mutate, for next row use.
           # can not do row[c-1] as when in prerow[col-1] already change in currow[col-1]
           row[c] += pre
           pre = tmp  # cache pre for next row, j+1
@@ -4527,7 +4584,7 @@ print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
 
 
-""" tab[i,s] i digits sum to s, <= tab[i-1,s-[1..9]]+[1..9]
+""" tab[i,s] i digits sum to s, iterate 0..9, = tab[i-1,s-[1..9]]+[1..9]
 comb sum, not some subset sum, subset sum is one ary, here 
 each position can varying face 0-9. so can NOT cp prev row to cur row.
 bottom up, start from 1 slot, face=[0..9]; dup allowed.
@@ -4676,7 +4733,7 @@ print diffone(3)
 
 
 """ adding + in between. [1,2,0,6,9] and target 81.
-at each stop, enum all values t[0:i][v].
+tab[i,sm] exist [0..i] val sum to sm
 more complex than subset sum, one loop from i left to coerce k:i as cur num.
 bottom up row, for each j to i that forms num, then for each num 
 """
@@ -4732,7 +4789,9 @@ def isInterleave(a, b, c):
         tab[i][j] = tab[i][j-1]
   return tab[len(a)][len(b)]
 
-""" 2 string, ia,ib,and size; 3 dim tab[length][ia][ib];
+""" 2 string, gap, + ia,ib; 3 dim tab[length][ia][ib];
+normally, one dim ary with enum i+gap with each size at each i.
+in this one, we do i,j+gap on 2 dim ary.
 tab[l,i,j] = 1 iff (tab[k,i,j] and tab[l-k,i+k,j+k]
 """
 def isScramble(a, b):
