@@ -838,6 +838,34 @@ def pairNode(root, target):
   return lcur,rcur
 
 
+def match(s,p):
+  if p[0] == "*":
+    while p[0] == "*":
+      p += 1
+    while not match(s,p[1:]):
+      s += 1
+    if not s:
+      return False
+    else:
+      return True
+  else:
+    if s[0] == p[0]:
+      return match(s[1:], p[1:])
+    else:
+      return False
+
+""" check p+1 is star """
+def regMatch(s, p):
+  if p[1] == "*":
+    while s and (s[0] == p[0] or p[0] == "."):
+      if regMatch(s,p+2):
+        return True
+      s += 1
+    return regMatch(s,p+2)
+  else:
+    return (s[0] == p[0] or p[0] == ".") and regMatch(s+1,p+1)
+
+
 """ serde of bin tree with l/r child, no lchild and rchild, append $ $"""
 def serdeBtree(root):
   if not root: print '$'
@@ -905,159 +933,161 @@ print noAdj("aabbc")
     Ex: count smaller ele on the right, find bigger on the left, max(a[i]*a[j]*a[k])
 """
 class AVLTree(object):
-    def __init__(self,key):
-        self.key = key
-        self.size = 1
-        self.height = 1
-        self.left = None
-        self.rite = None
-    def __repr__(self):
-        return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
-    # left heavy, pos balance, right heavy, neg balance
-    # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
-    def balance(self):
-        if not self.left and not self.rite:
-            return 0
-        if self.left and self.rite:
-            return self.left.height - self.rite.height
-        if self.left:
-            return self.left.height
-        else:
-            return self.rite.height
-    def updateHeightSize(self):
-      self.height = 0
-      self.size = 0
-      if self.left:
-          self.height = self.left.height
-          self.size = self.left.size
-      if self.rite:
-          self.height = max(self.height, self.rite.height)
-          self.size += self.rite.size
-      self.height += 1
-      self.size += 1
-    def rotate(self, key):
-        bal = self.balance()
-        if bal > 1 and self.left and key < self.left.key:
-            return self.riteRotate()
-        elif bal < -1 and self.rite and key > self.rite.key:
-            return self.leftRotate()
-        elif bal > 1 and self.left and key > self.left.key: # < , left rotate left subtree.
-            self.left = self.left.leftRotate()
-            return self.riteRotate()  # then rite rotate after /
-        elif bal < -1 and self.rite and key < self.rite.key: # >, rite rotate rite subtree.
-            self.rite = self.rite.riteRotate()
-            return self.leftRotate()  # left rotate after \
-        return self  # no rotation
-    ''' bend / left heavy subtree to ^ subtree '''
-    def riteRotate(self):
-        newroot = self.left
-        newrite = newroot.rite
-        newroot.rite = self
-        self.left = newrite
+  def __init__(self,key):
+    self.key = key
+    self.size = 1
+    self.height = 1
+    self.left = None
+    self.rite = None
+  def __repr__(self):
+      return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
+  # left heavy, pos balance, right heavy, neg balance
+  # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
+  def balance(self):
+    if not self.left and not self.rite:
+      return 0
+    if self.left and self.rite:
+      return self.left.height - self.rite.height
+    if self.left:
+      return self.left.height
+    else:
+      return self.rite.height
+  def updateHeightSize(self):
+    self.height = 0
+    self.size = 0
+    if self.left:
+      self.height = self.left.height
+      self.size = self.left.size
+    if self.rite:
+      self.height = max(self.height, self.rite.height)
+      self.size += self.rite.size
+    self.height += 1
+    self.size += 1
+  def rotate(self, key):
+    bal = self.balance()
+    if bal > 1 and self.left and key < self.left.key:
+        return self.riteRotate()
+    elif bal < -1 and self.rite and key > self.rite.key:
+        return self.leftRotate()
+    elif bal > 1 and self.left and key > self.left.key: # < , left rotate left subtree.
+        self.left = self.left.leftRotate()
+        return self.riteRotate()  # then rite rotate after /
+    elif bal < -1 and self.rite and key < self.rite.key: # >, rite rotate rite subtree.
+        self.rite = self.rite.riteRotate()
+        return self.leftRotate()  # left rotate after \
+    return self  # no rotation
+  ''' bend / left heavy subtree to ^ subtree '''
+  def riteRotate(self):
+    newroot = self.left
+    newrite = newroot.rite
+    newroot.rite = self
+    self.left = newrite
 
-        self.updateHeightSize()
-        newroot.updateHeightSize()
-        return newroot
-    ''' bend \ subtree to ^ subtree '''
-    def leftRotate(self):
-        newroot = self.rite
-        newleft = newroot.left
-        newroot.left = self
-        self.rite = newleft
-        
-        self.updateHeightSize()
-        newroot.updateHeightSize()
-        return newroot
-    def searchkey(self, key):
-        if self.key == key:
-            return True, self
-        elif key < self.key:
-            if self.left:
-                return self.left.search(key)
-            else:
-                return False, self
-        else:
-            if self.rite:
-                return self.rite.search(key)
-            else:
-                return False, self
-    ''' max smaller of the tree '''
-    def maxSmaller(self, key):
-      if key < self.key:
-        if not self.left:
-          return None   # no smaller in this sub tree.
-        else:
-          return self.left.maxSmaller(key)
-      if key > self.key:
-        if not self.rite:
-          return self    # cur is largest smaller
-        else:
-          rtmx = self.rite.maxSmaller(key)
-          node = rtmx ? rtmx : self
-          return node
+    self.updateHeightSize()
+    newroot.updateHeightSize()
+    return newroot
+  ''' bend \ subtree to ^ subtree '''
+  def leftRotate(self):
+    newroot = self.rite
+    newleft = newroot.left
+    newroot.left = self
+    self.rite = newleft
+    
+    self.updateHeightSize()
+    newroot.updateHeightSize()
+    return newroot
+  def searchkey(self, key):
+    if self.key == key:
+      return True, self
+    elif key < self.key:
+      if self.left:
+        return self.left.search(key)
+      else:
+        return False, self
+    else:
+      if self.rite:
+        return self.rite.search(key)
+      else:
+        return False, self
+  ''' max smaller of the tree '''
+  def maxSmaller(self, key):
+    if key < self.key:
+      if not self.left:
+        return None   # no smaller in this sub tree.
+      else:
+        return self.left.maxSmaller(key)
+    if key > self.key:
+      if not self.rite:
+        return self    # cur is largest smaller
+      else:
+        rtmx = self.rite.maxSmaller(key)
+        node = rtmx ? rtmx : self
+        return node
+    return self
+  ''' rank is num of node smaller than key '''
+  def getRank(self, key):
+    if key == self.key:
+      if self.left:
+        return self.left.size + 1
+      else:
+        return 1
+    elif self.key > key: 
+      if self.left:
+        return self.left.getRank(key)
+      else:
+        return 0
+    else:
+      r = 1
+      if self.left:
+          r += self.left.size
+      if self.rite:
+          r += self.rite.getRank(key)
+      return r
+  # return subtree root, and # of node smaller or equal
+  def insert(self,key):
+    if self.key == key:
       return self
-    ''' rank is num of node smaller than key '''
-    def getRank(self, key):
-      if key == self.key:
-        if self.left:
-          return self.left.size + 1
-        else:
-          return 1
-      elif self.key > key: 
-        if self.left:
-          return self.left.getRank(key)
-        else:
-          return 0
+    elif key < self.key:
+      if not self.left:
+        self.left = AVLTree(key)
       else:
-        r = 1
-        if self.left:
-            r += self.left.size
-        if self.rite:
-            r += self.rite.getRank(key)
-        return r
-    # return subtree root, and # of node smaller or equal
-    def insert(self,key):
-      if self.key == key:
-        return self
-      elif key < self.key:
-        if not self.left:
-          self.left = AVLTree(key)
-        else:
-          self.left = self.left.insert(key)
+        self.left = self.left.insert(key)
+    else:
+      if not self.rite:
+        self.rite = AVLTree(key)
       else:
-        if not self.rite:
-          self.rite = AVLTree(key)
+        self.rite = self.rite.insert(key)
+    # after insersion, rotate if needed.
+    self.updateHeightSize()  # rotation may changed left. re-calculate
+    newself = self.rotate(key)
+    print "insert ", key, " new root after rotated ", newself
+    return newself  # ret rotated new root
+  # delete a node.
+  def delete(self,key):
+    if key < self.key:
+      self.left = self.left.delete(key)
+    elif key > self.key:
+      self.rite = self.rite.delete(key)
+    else:
+      if not self.left or not self.rite:
+        node = self.left
+        if not node:
+            node = self.rite
+        if not node:
+            return None
         else:
-          self.rite = self.rite.insert(key)
-      # after insersion, rotate if needed.
-      self.updateHeightSize()  # rotation may changed left. re-calculate
-      newself = self.rotate(key)
-      print "insert ", key, " new root after rotated ", newself
-      return newself  # ret rotated new root
-    # delete a node.
-    def delete(self,key):
-        if key < self.key:
-            self.left = self.left.delete(key)
-        elif key > self.key:
-            self.rite = self.rite.delete(key)
-        else:
-            if not self.left or not self.rite:
-                node = self.left
-                if not node:
-                    node = self.rite
-                if not node:
-                    return None
-                else:
-                    self = node
-            else:
-                node = self
-                while node.left:
-                    node = node.left
-                self.key = node.key
-                self.rite = self.rite.delete(node.key)
-        self.updateHeightSize()
-        subtree = self.rotate(key)
-        return subtree
+            self = node
+      else:
+        node = self
+        while node.left:
+            node = node.left
+        self.key = node.key
+        self.rite = self.rite.delete(node.key)
+    self.updateHeightSize()
+    subtree = self.rotate(key)
+    return subtree
+
+
 # rite Smaller, and left smaller, the same.
 def riteSmaller(arr):
     sz = len(arr)
@@ -3431,6 +3461,8 @@ def maxrepeat(arr):
       else:           # target already swapped, it is repeat. incr.
         arr[v] -= 1
         arr[i] = sys.maxint  # i is repeat node. mark it.
+    if arr[i] == i:
+      arr[i] = -1
   return arr
 
 def repmiss(arr):
@@ -4372,9 +4404,9 @@ def editDistance(a, b):
   for i in xrange(len(a)+1):
     for j in xrange(len(b)+1):
       # boundary condition, i=0/j=0 set in the loop, i
-      if i==0:
+      if i == 0:
         tab[0][j] = j
-      elif j==0:
+      elif j == 0:
         tab[i][0] = i
       elif a[i-1] == b[j-1]:
         tab[i][j] = tab[i-1][j-1]
@@ -4561,11 +4593,11 @@ def subsetSum(arr, t, dupAllowed=False):
     for s in xrange(1, t+1): # iterate to target sum at each arr[i]
       if i == 0:   # boundary, init
         tab[i][s] = []
-      else:        # cp prev row, some subset 0..pre has value s
+      else:        # not incl arr[i], some subset 0..pre has value s
         tab[i][s] = tab[i-1][s][:]
       if s == arr[i]:
         tab[i][s].append([s])
-      if s > arr[i]:
+      if s > arr[i]:   # incl arr[i]
         if len(tab[i][s-arr[i]]) > 0:  # there
           if dupAllowed: # incl arr[i] multiple times
             for e in tab[i][s-arr[i]]:
@@ -4585,8 +4617,7 @@ print subsetSum([2,3,6],8, True)
 
 
 """ tab[i,s] i digits sum to s, iterate 0..9, = tab[i-1,s-[1..9]]+[1..9]
-comb sum, not some subset sum, subset sum is one ary, here 
-each position can varying face 0-9. so can NOT cp prev row to cur row.
+not as subset sum, no incl/excl of arr[i]. so NOT cp prev row.
 bottom up, start from 1 slot, face=[0..9]; dup allowed.
 when each slot needs to be distinct, only append j when it is bigger
 """
@@ -4597,7 +4628,7 @@ def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
       if tab[i][s] == None:
         tab[i][s] = []
       for f in xrange(1, 10):  # each slot face, 1..9
-        if i == 0 and f == s and s < 10:   # tab[0][0..9] = [0..9]
+        if i == 0:   # tab[0][0..9] = [0..9]
           tab[i][f].append([f])   # first slot, straight.
           continue
         if s > f and tab[i-1][s-f] and len(tab[i-1][s-f]) > 0:
@@ -4789,7 +4820,7 @@ def isInterleave(a, b, c):
         tab[i][j] = tab[i][j-1]
   return tab[len(a)][len(b)]
 
-""" 2 string, gap, + ia,ib; 3 dim tab[length][ia][ib];
+""" 2 string, gap,ia,ib; 3 dim, iter k in sz, tab[0..k][ia][ib];
 normally, one dim ary with enum i+gap with each size at each i.
 in this one, we do i,j+gap on 2 dim ary.
 tab[l,i,j] = 1 iff (tab[k,i,j] and tab[l-k,i+k,j+k]
