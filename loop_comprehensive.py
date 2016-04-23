@@ -326,10 +326,10 @@ def bisect(arr, val):
     return False, len(arr)
   while lo != hi:
     md = (lo+hi)/2
-    if arr[md] < val:  # lift l to m+1 only when mid is abs smaller
+    if val > arr[md] # target grt than mid, ins pos m+1
       lo = md+1
     else:
-      hi = md   # drag down hi to mid when equals.
+      hi = md   # target <=, mov r, as we want to find first pos eqs target
   if arr[lo] == val:
     return True, lo
   else:
@@ -1059,7 +1059,7 @@ class AVLTree(object):
         self.rite = self.rite.insert(key)
     # after insersion, rotate if needed.
     self.updateHeightSize()  # rotation may changed left. re-calculate
-    newself = self.rotate(key)
+    newself = self.rotate(key)  ''' current node changed after rotate '''
     print "insert ", key, " new root after rotated ", newself
     return newself  # ret rotated new root
   # delete a node.
@@ -1102,6 +1102,170 @@ def riteSmaller(arr):
 
 assert(riteSmaller([12, 1, 2, 3, 0, 11, 4]) == [6, 1, 1, 1, 0, 1, 0] )
 assert(riteSmaller([5, 4, 3, 2, 1]) == [5, 4, 3, 2, 1])
+
+
+""" bst with lo as the bst search key, augment max to the max of ed of all nodes under root.
+    interval tree annotate with max.
+"""
+class IntervalTree(object):
+  def __init__(self, lo=None, hi=None):
+    self.lo = lo
+    self.hi = hi
+    self.max = max(lo, hi)
+    self.left = self.rite = None
+  def overlap(self, intv):
+    [lo,hi] = intv
+    if lo > self.hi or hi < self.lo:
+      return False
+    return True
+  def toString(self):
+    val = "[ " + str(self.lo) + ":" + str(self.hi) + ":" + str(self.max)
+    if self.left:
+        val += " / :" + self.left.toString()
+    if self.rite:
+        val += " \ :" + self.rite.toString()
+    val += " ] "
+    return val
+  def insert(self, intv):  # lo as BST key
+    [lo,hi] = intv
+    if not self.lo:  # cur tree, self node is empty, add.
+      self.lo = lo
+      self.hi = hi
+      self.max = max(self.lo, self.hi)
+      self.left = self.rite = None
+      return self
+    if self.max < hi:
+      self.max = hi
+    if lo < self.lo:
+      if not self.left:
+        self.left = IntervalTree(lo, hi)
+      else:
+        self.left = self.left.insert(intv)
+      return self.left
+    else:
+      if not self.rite:
+        self.rite = IntervalTree(lo, hi)
+      else:
+        self.rite = self.rite.insert(intv)
+      return self.rite
+  def search(self, intv):
+    [lo,hi] = intv
+    if self.overlap(intv):
+      return self
+    if self.left and lo <= self.left.max:
+      return self.left.search(intv)
+    elif self.rite:
+      return self.rite.search(intv)
+    else:
+      return None   
+  def riteMin(self):  # ret the min from self's rite, either rite, or leftmost of rite.
+    if not self.rite:
+      return self
+    node = self.rite
+    while node.left:
+      node = node.left
+    return node
+  # branch out left/rite to find all nodes that overlap with the intv.
+  def dfs(self, intv, result):
+    [lo,hi] = intv
+    if self.overlap(intv):
+      result.add(self)   # update result upon base condition.
+    if self.left and lo < self.left.max:
+      self.left.dfs(intv, result)
+    if self.rite and lo > self.lo or hi > self.riteMin().lo:
+      self.rite.dfs(intv, result)
+    return result
+  def delete(self, intv):
+    [lo,hi] = intv
+    if lo == self.lo and hi == self.hi:
+      if not self.left:
+        return self.rite
+      elif not self.rite:
+        return self.left
+      else:
+        # find in order successor, leftmost of rite branch.
+        node = self.rite
+        while node.left:
+            node = node.left
+        self.lo = node.lo
+        self.hi = node.hi
+        # recursive delete in order successor
+        self.rite = self.rite.delete([node.lo, node.hi])
+        self.max = max(self.lo, self.hi, self.left.max)
+        if self.rite:
+            self.max = max(self.max, self.rite.max)
+        return self
+    if lo <= self.lo:
+        self.left = self.left.delete(intv)
+    else:
+        self.rite = self.rite.delete(intv)
+    # update max after deletion
+    self.max = max(self.lo, self.hi)
+    if self.left:
+        self.max = max(self.left.max, self.max)
+    if self.rite:
+        self.max = max(self.rite.max, self.max)
+    return self
+  def inorder(self):
+    result = set()
+    pre, cur = None, self
+    if not cur:
+      return cur
+    while cur:
+      if not cur.left:
+        result.add(cur)
+        pre,cur = cur, cur.rite
+      else:
+        node = cur.left
+        while node.rite and node.rite != cur:
+          node = node.rite
+        if not node.rite:
+          node.rite = cur
+          cur = cur.left    # descend to left, recur
+        else:
+          result.add(cur)
+          pre,cur = cur, cur.rite
+          node.rite = None
+    return result
+
+def test():
+    intvtree = IntervalTree()
+    intvtree.insert([17,19])
+    intvtree.insert([5,8])
+    intvtree.insert([21,24])
+    intvtree.insert([4,8])
+    intvtree.insert([15,18])
+    intvtree.insert([7,10])
+    intvtree.insert([16,22])
+    print intvtree.search([21,23]).toString()
+    result = set()
+    intvtree.dfs([16,22], result)
+    for e in result:
+        print e.toString()
+
+    intvtree = intvtree.delete([17,19])
+    print intvtree.lo, intvtree.hi, intvtree.max
+    result = set()
+    intvtree.dfs([9,24], result)
+    for e in result:
+        print e.toString()
+
+''' find max val from overlapping intervals '''
+def maxIntervals(arr):
+    edarr = sorted(arr, key=lambda x:x[1])
+    root = IntervalTree(edarr[0])
+    mx = edarr[0][2]
+    for i in xrange(1, len(arr)):
+        out = []
+        root.search(edarr[i], out)
+        s = 0
+        for oi in xrange(len(out)):
+            s += out[oi][2]
+        s += edarr[i][2]
+        mx = max(mx,s)
+        root.insert(edarr[i])
+    return mx
+print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
 
 """ merge or toggle interval """
 class Interval(object):
@@ -1234,168 +1398,6 @@ def testInterval():
     intv.insertToggle([5, 15])
     intv.dump()
 
-""" bst with lo as the bst search key, augment max to the max of ed of all nodes under root.
-    interval tree annotate with max.
-"""
-class IntervalTree(object):
-  def __init__(self, lo=None, hi=None):
-      self.lo = lo
-      self.hi = hi
-      self.max = max(lo, hi)
-      self.left = self.rite = None
-  def overlap(self, intv):
-      [lo,hi] = intv
-      if lo > self.hi or hi < self.lo:
-          return False
-      return True
-  def toString(self):
-      val = "[ " + str(self.lo) + ":" + str(self.hi) + ":" + str(self.max)
-      if self.left:
-          val += " / :" + self.left.toString()
-      if self.rite:
-          val += " \ :" + self.rite.toString()
-      val += " ] "
-      return val
-  def insert(self, intv):  # lo as BST key
-      [lo,hi] = intv
-      if not self.lo:  # cur tree, self node is empty, add.
-        self.lo = lo
-        self.hi = hi
-        self.max = max(self.lo, self.hi)
-        self.left = self.rite = None
-        return self
-      if self.max < hi:
-        self.max = hi
-      if lo < self.lo:
-        if not self.left:
-          self.left = IntervalTree(lo, hi)
-        else:
-          self.left = self.left.insert(intv)
-        return self.left
-      else:
-        if not self.rite:
-          self.rite = IntervalTree(lo, hi)
-        else:
-          self.rite = self.rite.insert(intv)
-        return self.rite
-  def search(self, intv):
-      [lo,hi] = intv
-      if self.overlap(intv):
-          return self
-      if self.left and lo <= self.left.max:
-          return self.left.search(intv)
-      elif self.rite:
-          return self.rite.search(intv)
-      else:
-          return None   
-  def riteMin(self):  # ret the min from self's rite, either rite, or leftmost of rite.
-      if not self.rite:
-          return self
-      node = self.rite
-      while node.left:
-          node = node.left
-      return node
-  # branch out left/rite to find all nodes that overlap with the intv.
-  def dfs(self, intv, result):
-      [lo,hi] = intv
-      if self.overlap(intv):
-          result.add(self)   # update result upon base condition.
-      if self.left and lo < self.left.max:
-          self.left.dfs(intv, result)
-      if self.rite and lo > self.lo or hi > self.riteMin().lo:
-          self.rite.dfs(intv, result)
-      return result
-  def delete(self, intv):
-      [lo,hi] = intv
-      if lo == self.lo and hi == self.hi:
-          if not self.left:
-              return self.rite
-          elif not self.rite:
-              return self.left
-          else:
-              # find in order successor, leftmost of rite branch.
-              node = self.rite
-              while node.left:
-                  node = node.left
-              self.lo = node.lo
-              self.hi = node.hi
-              # recursive delete in order successor
-              self.rite = self.rite.delete([node.lo, node.hi])
-              self.max = max(self.lo, self.hi, self.left.max)
-              if self.rite:
-                  self.max = max(self.max, self.rite.max)
-              return self
-      if lo <= self.lo:
-          self.left = self.left.delete(intv)
-      else:
-          self.rite = self.rite.delete(intv)
-      # update max after deletion
-      self.max = max(self.lo, self.hi)
-      if self.left:
-          self.max = max(self.left.max, self.max)
-      if self.rite:
-          self.max = max(self.rite.max, self.max)
-      return self
-  def inorder(self):
-      result = set()
-      pre, cur = None, self
-      if not cur:
-          return cur
-      while cur:
-        if not cur.left:
-          result.add(cur)
-          pre,cur = cur, cur.rite
-        else:
-          node = cur.left
-          while node.rite and node.rite != cur:
-            node = node.rite
-          if not node.rite:
-            node.rite = cur
-            cur = cur.left    # descend to left, recur
-          else:
-            result.add(cur)
-            pre,cur = cur, cur.rite
-            node.rite = None
-      return result
-
-def test():
-    intvtree = IntervalTree()
-    intvtree.insert([17,19])
-    intvtree.insert([5,8])
-    intvtree.insert([21,24])
-    intvtree.insert([4,8])
-    intvtree.insert([15,18])
-    intvtree.insert([7,10])
-    intvtree.insert([16,22])
-    print intvtree.search([21,23]).toString()
-    result = set()
-    intvtree.dfs([16,22], result)
-    for e in result:
-        print e.toString()
-
-    intvtree = intvtree.delete([17,19])
-    print intvtree.lo, intvtree.hi, intvtree.max
-    result = set()
-    intvtree.dfs([9,24], result)
-    for e in result:
-        print e.toString()
-
-''' find max val from overlapping intervals '''
-def maxIntervals(arr):
-    edarr = sorted(arr, key=lambda x:x[1])
-    root = IntervalTree(edarr[0])
-    mx = edarr[0][2]
-    for i in xrange(1, len(arr)):
-        out = []
-        root.search(edarr[i], out)
-        s = 0
-        for oi in xrange(len(out)):
-            s += out[oi][2]
-        s += edarr[i][2]
-        mx = max(mx,s)
-        root.insert(edarr[i])
-    return mx
-print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
 
 """ Binary Indexed Tree(BIT, or Fenwick), Each node in BI[] stores sum of a range.
 the key is idx in BI, its parent is by removing the last set bit. 
@@ -1981,36 +1983,36 @@ def testFindInsertionPosition():
     for n [0..1], write n as a/b, sqrt(a)/sqrt(b)
 '''
 def sqrt(n, prec=2):
-    # use newton, xn+1 = xn - (xn*xn - s)/2*xn
-    rt = n/2
-    while rt*rt - n > 0.1/pow(10,prec):
-        rt = rt - (pow(rt, 2) - n)/2*rt
-    return rt
+  # use newton, xn+1 = xn - (xn*xn - s)/2*xn
+  rt = n/2
+  while rt*rt - n > 0.1/pow(10,prec):
+      rt = rt - (pow(rt, 2) - n)/2*rt
+  return rt
 
 def sqrt(n, prec=2):
-    def intSqrt(n, prec=2):
-        xn = n*pow(10, prec)*pow(10,prec)   # expand to 100^2
-        beg = 2
-        end = xn-1
-        while beg <= end:
-            mid = (beg+end)/2
-            if mid*mid < xn:
-                beg = mid+1
-            else:
-                end = mid-1
-        rt = beg if math.fabs(beg*beg-xn) < math.fabs(end*end-xn) else end
-        print 'intSqrt :', xn, ' = ', rt
-        return rt
+  def intSqrt(n, prec=2):
+    xn = n*pow(10, prec)*pow(10,prec)   # expand to 100^2
+    beg = 2
+    end = xn-1
+    while beg <= end:
+      mid = (beg+end)/2
+      if mid*mid < xn:
+        beg = mid+1
+      else:
+        end = mid-1
+    rt = beg if math.fabs(beg*beg-xn) < math.fabs(end*end-xn) else end
+    print 'intSqrt :', xn, ' = ', rt
+    return rt
 
-    if n >= 1:
-        return intSqrt(n, prec)
-    else:
-        numerator, denominator  = int(n*100), 100
-        numsqrt = intSqrt(numerator, prec)
-        denomsqrt = intSqrt(denominator, prec)
-        rt = 1.0*numsqrt / denomsqrt
-        print 'sqrt : ', n, ' = ', rt
-        return rt
+  if n >= 1:
+    return intSqrt(n, prec)
+  else:
+    numerator, denominator  = int(n*100), 100
+    numsqrt = intSqrt(numerator, prec)
+    denomsqrt = intSqrt(denominator, prec)
+    rt = 1.0*numsqrt / denomsqrt
+    print 'sqrt : ', n, ' = ', rt
+    return rt
 
 ''' find the # of increasing subseq of size k '''
 def numOfIncrSeq(l, start, cursol, k):
@@ -4438,6 +4440,33 @@ print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
 
+""" bottom up each char in target
+excl s[j], tab[i,j-1], incl s[j], +tab[i-1,j-1], 
+  \ a  b   a   b  c
+ a  1  1   2   2  2
+ b  0 0+1  1  2+1 3
+ c  0  0   0   0  3
+"""
+def distinct(s,t):
+  tab = [[0]*len(t) for _ in xrange(len(s))]
+  for i in xrange(len(t)):
+    for j in xrange(len(s)):
+      if t[i] == s[j]:
+        if j == 0:
+          tab[i][0] = 1
+        else:
+          if i == 0:
+            tab[i][j] = tab[i][j-1] + 1
+          else:
+            tab[i][j] = tab[i-1][j-1] + tab[i][j-1]
+      else:
+        if j > 0:
+          tab[i][j] = tab[i][j-1]
+  return tab[len(t)-1][len(s)-1]
+print distinct("aeb", "be")
+print distinct("abbbc", "bc")
+print distinct("rabbbit", "rabbit")
+
 """ as tab[i][j] only from tab[i-1][j-1], two rows solution """
 def distinct(s,t):
   pre, row = [0]*len(t), [0]*len(t)
@@ -4486,20 +4515,6 @@ def calPack(arr):
     excl = curexcl
   return max(incl,excl)
 
-""" bottom up enum each pos, row pos is the cnt of ways for str[0:pos] """
-def decode(dstr):
-  tab = [0]*(len(dstr)+1)
-  tab[0] = 1
-  tab[1] = 1
-  for i in xrange(2,len(dstr)+1):
-    if dstr[i] == "0" and dist[i-1] > "2":
-      tab[i] = 0
-    else:
-      tab[i] = tab[i-1]
-    if dstr[i-1-1] == "1" or (dstr[i-1-1] == "2" and dstr[i-1] <= "6"):
-      tab[i] += tab[i-2]
-  return tab[len(dstr)]
-print decode("122")
 
 """ DP with O(1), cur = pre, cur = prepre + pre """
 def decode(dstr):
