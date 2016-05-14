@@ -514,29 +514,71 @@ def riteSmaller(arr):
   return rank
 print riteSmaller([5, 4, 7, 6, 5, 1])
 
-""" find all pairs sum[l:r] within range [mn,mx]. merge sort """
-def countrangesum(arr,mn,mx):
-  def mergesort(arr, lo, hi, mn, mx):
+""" find all pairs sum[l:r] within range [mn,mx]. merge sort
+arr, divide and conquer, better than gap n^2.
+master therom: T(0, n-1) = T(0, m) + T(m+1, n-1) + C
+if the merge part is Constant, it's less than n^2.
+To make merge constant, sort the arr.
+"""
+def countRangeSum(arr,mn,mx):
+  ''' merge two sorted arr '''
+  def mergeSortedAry(arr1, arr2):
+    r, i, j = [], 0, 0
+    while i < len(arr1) and j < len(arr2):
+      if arr1[i] < arr2[j]:
+        r.append(arr1[i])
+        i += 1
+      else:
+        r.append(arr2[j])
+        j += 1
+      r += arr1[i:] + arr2[j:]
+    return r
+
+  def mergesort(arr, prefix, start, end, lower, upper):
+    if start >= end:
+        return 0
+    mid = start + (end - start + 1 >> 1)
+    lout = mergesort(arr, prefix, start, mid-1, lower, upper)
+    rout = mergesort(arr, prefix, mid, end, lower, upper)
+
+    l, r = mid, mid
+    for i in xrange(start, mid):
+      while l <= end and prefix[l] - prefix[i] < lower:
+        l += 1
+      while r <= end and prefix[r] - prefix[i] <= upper:
+        r += 1
+      count += r - l
+
+    prefix[start:end+1] = mergeSortedAry(
+      prefix[start:mid], prefix[mid:end + 1])
+
+    return count
+
+  ''' use prefixsum ary, replacing the origin ary '''
+  def mergesort(prefixsum, lo, hi, mn, mx):
     if lo == hi:
-      return [arr[lo]] if mn <= arr[lo] <= mx
+      return [prefixsum[lo]] if mn <= prefixsum[lo] <= mx
     mid = (lo+hi)/2
-    lout = mergesort(arr, lo, mid)
-    rout = mergesort(arr, mid+1, hi)
+    out = []
+    lout = mergesort(prefixsum, lo, mid)
+    rout = mergesort(prefixsum, mid+1, hi)
     mnidx,mxidx = mid+1,hi
-    for l in arr[lo:mid+1]:
-      while arr[mnidx] - arr[l] < mn:
-        mnidx += 1
-      while arr[mxidx] - arr[l] > mx:
+    
+    for l in prefixsum[lo:mid+1]:
+      while prefixsum[mnidx] - prefixsum[l] < mn:
+        mnidx += 1  # mv rite until it bigger
+      while prefixsum[mxidx] - prefixsum[l] > mx:
         mxidx -= 1
       out.append([l, mnidx, mxidx])
     out.extend(lout, rout)
-    sorted(arr, lo, hi)
+    # sort the prefixsum to make merge constant.
+    sorted(prefixsum, lo, hi)
     return out
   # use prefix sum ary
   prefixsum = [0]*len(arr)
   for i in xrange(1, len(arr)):
     prefixsum[i] = prefixsum[i-1] + arr[i]
-  return mergesort(prefixsum, 0, len(arr), mn, mx)
+  return mergesort(prefixsum, 0, len(prefixsum), mn, mx)
 
 """
 find kth smallest ele in a union of two sorted list
@@ -787,6 +829,19 @@ def flatten(r):
       r = r.rite  # advance, if not r, will pop stk
     else:
       r = stk.pop()
+
+def flattenlist(arr):
+  stk = []
+  stk.append([0, arr])
+  while stk:
+    idx, l = stk.pop()
+    if l[idx] is not list:
+      out.append(l[idx])
+      stk.append([idx+1,l])
+    else:
+      stk.append([idx+1,l])
+      stk.append([0, l[idx]])
+
 
 ''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
 def numBST(n):
@@ -1806,27 +1861,28 @@ children not in min vertex set, make cur node into min set. return
 recursion back to bottom up.
 '''
 def min_vertex(root):
-    if root.leaf        # for leaf node, greedy use parent to cover the edge.
-        return false
-    for c in root.children:
-        s = min_vertex(c)
-        if not s:
-            root.selected = true
-    return root.selected
+  if root.leaf        # for leaf node, greedy use parent to cover the edge.
+    return false
+  for c in root.children:
+    s = min_vertex(c)
+    if not s:
+      root.selected = true
+  return root.selected
 
 # the same as Largest Indep Set.
 def vertexCover(root):
-    if root == None or root.left == None and root.rite == None:
-        return 0
-    return root.vc if root.vc
+  if root == None or root.left == None and root.rite == None:
+    return 0
+  return root.vc if root.vc
 
-    incl = 1 + vertexCover(root.left) + vertexCover(root.rite)
-    excl = 1 + vertexCover(root.left.left) + vertexCover(root.left.rite)
-    excl += 1 + vertexCover(root.rite.left) + vertexCover(root.rite.rite)
-    root.vc = min(incl, excl)
-    return root.vc
+  incl = 1 + vertexCover(root.left) + vertexCover(root.rite)
+  excl = 1 + vertexCover(root.left.left) + vertexCover(root.left.rite)
+  excl += 1 + vertexCover(root.rite.left) + vertexCover(root.rite.rite)
+  root.vc = min(incl, excl)
+  return root.vc
+
 def liss(root):
-    root.liss = max(liss(root.left)+liss(root.rite), 1+liss(root.[left,rite].[left,rite]))
+  root.liss = max(liss(root.left)+liss(root.rite), 1+liss(root.[left,rite].[left,rite]))
 
 
 """ populate next right pointer to point sibling in each node
@@ -2034,7 +2090,6 @@ def numOfIncrSeq(l, start, cursol, k):
 ''' pascal triangle, 
 http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
 '''
-
 
 ''' recursively on sublist '''
 def list2BST(head, tail):
@@ -2748,6 +2803,19 @@ def countBits(n):
       out.append(out[i]+1)
     power += 1
   return out
+
+""" tab[n] = 1 + tab[n - closest_2_pow] """
+def countBits(n):
+  tab = [0]*n
+  twosquare = 1
+  for i in xrange(3,n):
+    if i & i-1 == 0:
+      twosquare = i
+      tab[i] = 1
+    else:
+      tab[i] = tab[i-twosquare]
+  return tab
+
 
 """
 count num of 1s that appear on all numbers less than n. 13=6{1,10,11,12,13}
@@ -3848,33 +3916,6 @@ def combination(arr, path, sz, pos, result):
   combination(arr, path, sz, pos+1, result)
   return
 
-""" recur with partial path, for loop each, as incl/excl """
-def comb(arr, pos, r, path, res):
-  if r == 0:  # stop recursion when r = 1
-    cp = path[:]
-    res.append(cp)
-    return res
-  for i in xrange(pos, len(arr)-r+1):  # can be [pos..n]
-    path.append(arr[i])
-    comb(arr, i+1, r-1, path, res)  # iter from idx+1, as not 
-    path.pop()   # deep copy path or pop
-  return res
-res=[];comb([1,2,3,4],0,2,[],res);print res;
-
-""" incl pos into path, recur. skip ith of this path, next """
-# [a, ..] [b, ...], [c, ...]
-# [a [ab [abc]] [ac]] , [b [bc]] , [c]
-def powerset(arr, pos, path, result):
-  result.append(path)  # incl all intermediate result
-  for i in xrange(pos, len(arr)):
-    ''' compare i to i-1 !!! not i to pos '''
-    if i > pos and arr[i] == arr[i-1]:
-        continue
-    l = path[:]
-    l.append(arr[i])
-    powerset(arr, i+1, l, result)
-path=[];result=[];powerset([1,2,2], 0, path, result);print result;
-
 def comb(arr,r):
   res = []
   if r == 1:  # leaf, need ret a list, wrap leaf as first element.
@@ -3890,6 +3931,7 @@ def comb(arr,r):
       res.append(e)
   return res
 print comb("abc", 2)
+
 
 # Generate all possible sorted arrays from alternate eles of two sorted arrays
 def alterCombRecur(a,b,ai,bi,froma,path,out):
@@ -3917,6 +3959,35 @@ def alterComb(a,b):
       alterCombRecur(a,b,ai,bi,True,path,out)
   return out
 print alterComb([10, 15, 25], [1,5,20,30])
+
+
+""" recur with partial path, for loop each, as incl/excl """
+def comb(arr, pos, r, path, res):
+  if r == 0:  # stop recursion when r = 1
+    cp = path[:]
+    res.append(cp)
+    return res
+  for i in xrange(pos, len(arr)-r+1):  # can be [pos..n]
+    path.append(arr[i])
+    comb(arr, i+1, r-1, path, res)  # iter from idx+1, as not 
+    path.pop()   # deep copy path or pop
+  return res
+res=[];comb([1,2,3,4],0,2,[],res);print res;
+
+
+""" incl pos into path, recur. skip ith of this path, next """
+# [a, ..] [b, ...], [c, ...]
+# [a [ab [abc]] [ac]] , [b [bc]] , [c]
+def powerset(arr, pos, path, result):
+  result.append(path)  # incl all intermediate result
+  for i in xrange(pos, len(arr)):
+    ''' compare i to i-1 !!! not i to pos '''
+    if i > pos and arr[i] == arr[i-1]:
+        continue
+    l = path[:]
+    l.append(arr[i])
+    powerset(arr, i+1, l, result)
+path=[];result=[];powerset([1,2,2], 0, path, result);print result;
 
 
 """when recur to pos, incl pos with passed in path, or skip pos.
@@ -4203,36 +4274,37 @@ print bfsParath(3)
 """ iterate at each pos, dfs excl/incl each pos, no dp short """
 def rmParenth(s, res):
   path = []
-  rmL,rmR = 0,0
-  for i in xrange(s):
+  L,R = 0,0
+  for i in xrange(s):   # calculate balance(l-r)
     if s[i] == "(":
-      rmL += 1
+      L += 1
     else:
-      if rmL != 0:
-        rmL -= 1
+      if L != 0:
+        L -= 1
       else:
-        rmR += 1
-    recur(res, s, 0, rmL, rmR, 0, path)
-    return res
-  # at each pos, use it or skip it.
-  def recur(res, s, pos, rmL, rmR, openParen, path):
-    if pos == len(s) and rmL == 0 and rmR == 0 and openParen == 0:
+        R += 1
+  
+  recur(res, s, 0, L, R, 0, path)
+  return res
+  # iterate each pos, L,R is balance of l-r
+  def recur(res, s, pos, L, R, openL, path):
+    if pos == len(s) and L == 0 and R == 0 and openL == 0:
       p = path[:]
       res.append(p)
       return
-    if pos == len(s) or rmL < 0 or rmR < 0 or openParen < 0:
+    if pos == len(s) or L < 0 or R < 0 or openL < 0:
       return
 
     if s[pos] == "(":
-      recur(res, s, pos+1, rmL,   rmR, openParen,  path)  # skip
-      recur(res, s, pos+1, rmL-1, rmR, openParen+1,path.append("("))
+      recur(res, s, pos+1, L,   R, openL,  path)  # skip
+      recur(res, s, pos+1, L-1, R, openL+1,path.append("("))
       path.pop()
     else if s[pos] == ")":
-      recur(res, s, pos+1, rmL, rmR-1, openParen,   path) # skip
-      recur(res, s, pos+1, rmL, rmR,   openParen-1, path.append(")"))
+      recur(res, s, pos+1, L, R-1, openL,   path) # skip
+      recur(res, s, pos+1, L, R,   openL-1, path.append(")"))
       path.pop()
     else:
-      recur(res, s, pos+1, rmL, rmR, openParen, path.append(s[pos]))
+      recur(res, s, pos+1, L, R, openL, path.append(s[pos]))
     return
 
 s="()())()";path=[];res=[];print rmParenth(s,0,path,0,0,res)
@@ -4976,6 +5048,15 @@ def nextPalindrom(v):
       arr[ml] = str(int(arr[ml])+1)
       arr[mr] = str(int(arr[mr])+1)
   return int(''.join(arr))
+
+""" palindrom pair, concat the two words forms a palindrom
+a) s1 or s2 is blank. b) s1 = reverse(s2), 
+c) s1[0:cut] is palindrom and s1[cut:]=reverse(s2)
+d) s1[0:cut]=reverse(s2) and s1[cut+1:] is palindrom
+build a HashMap to store the String-idx pairs.
+"""
+def palindromPair(arr):
+  pass
 
 """ min number left after remove triplet.
 [2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
