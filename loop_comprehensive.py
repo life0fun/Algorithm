@@ -305,7 +305,7 @@ def sortColor(arr):
 print sortColor([0,0,2,1])
 
 
-""" only search, not find insertion point """
+""" only search, not find insertion point, so enter loop even when only 1 ele """
 def binarySearch(arr, k):
   lo,hi = 0, len(arr)-1
   while lo <= hi:
@@ -324,6 +324,7 @@ def bisect(arr, val):
   lo,hi = 0, len(arr)-1
   if val > arr[-1]:
     return False, len(arr)
+  # final reduced to at least 2 ele, so l=m+1 wont boundary.
   while lo != hi:
     md = (lo+hi)/2
     if val > arr[md] # target grt than mid, ins pos m+1
@@ -337,12 +338,13 @@ def bisect(arr, val):
 print bisect([1,1,3,5,7])
 
 """ not trying to find insertion point """
-def bisectRotated(arr,t):
+def binarySearchRotated(arr,t):
   l,r=0,len(arr)-1
-  while l <= r:     # if loop in when l==r, r=mid-1
+  while l <= r:      # if =, will enter loop even when only one ele.
     mid = l+(r-l)/2
     if t == arr[mid]:
       return True, mid
+    # l != mid, so mid+1 wont boundary.
     if arr[l] < arr[mid]:
       if arr[l] <= t and t < arr[mid]:
         r = mid - 1
@@ -355,6 +357,7 @@ def bisectRotated(arr,t):
         r = mid - 1
     else:
       l += 1
+  # when out loop not return, not found.
   return False, None
 print bisectRotated([3, 4, 5, 1, 2], 2)
 print bisectRotated([3], 2)
@@ -362,10 +365,10 @@ print bisectRotated([3], 2)
 """ find min in rotated. with dup, advance mid, and check on each mov """
 def rotatedMin(arr):
   l,r=0,len(arr)-1
-  while l != r:
+  while l != r:     # into loop only when >= 2 ele, ret l when out
     mid = (l+r)/2
     if arr[mid] > arr[mid+1]:
-        return arr[mid+1]
+      return arr[mid+1]
     # first, mov mid to skip dups. if arr[l]=arr[r] pivot is on left
     while arr[l] == arr[mid] and mid < r:
       # check at each mov of mid
@@ -562,8 +565,8 @@ def countRangeSum(arr,mn,mx):
     out = []
     lout = mergesort(prefixsum, lo, mid)
     rout = mergesort(prefixsum, mid+1, hi)
+    # check range l..mid and l..end
     mnidx,mxidx = mid+1,hi
-    
     for l in prefixsum[lo:mid+1]:
       while prefixsum[mnidx] - prefixsum[l] < mn:
         mnidx += 1  # mv rite until it bigger
@@ -571,7 +574,7 @@ def countRangeSum(arr,mn,mx):
         mxidx -= 1
       out.append([l, mnidx, mxidx])
     out.extend(lout, rout)
-    # sort the prefixsum to make merge constant.
+    # sort the prefixsum range lo..hi to make merge constant.
     sorted(prefixsum, lo, hi)
     return out
   # use prefix sum ary
@@ -701,7 +704,7 @@ BEGIN
 END;
 
 
-""" walk """
+""" walk, curry a fn that is recursive of walk to leaf node. map it """
 (defn walk
   [f form]
   (let [pf (partial walk f)]
@@ -709,7 +712,9 @@ END;
       (f (into (empty form) (map pf form)))
       (f form))))
 
-""" inner is fn need to apply to nested form. outer is fn apply to non-nest form"""
+""" curry 2 recursive fns, inner is for nested form, outer is to leaf form.
+inner is fn need to apply to nested form. outer is fn apply to non-nest form
+"""
 (defn walk
   "Traverses form, an arbitrary data structure.  inner and outer are
   functions.  Applies inner to each element of form, building up a
@@ -849,7 +854,7 @@ def numBST(n):
   tab[0] = tab[1] = 1
   for i in xrange(2,n):
     for r in xrange(1,i+1):
-      tab[i] += tab[r-1]*tab[i-r]
+      tab[i] += tab[r-1]*tab[i-r]   # each lchild combine with each rchild. lxr
   return tab[n]
 
 
@@ -3274,18 +3279,19 @@ print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
 keep track rite max, max profit is when bot today and sell at max day.
 """
 def stock_profit(arr):
-    sz = len(l)
-    maxprofit = 0
-    lmin = arr[0]
-    for i in xrange(1, sz-1):
-        maxprofit = max(maxprofit, arr[i]-lmin)
-        lmin = min(lmin, arr[i])
-    return maxprofit
-    rmax = arr[sz-1]
-    for i in xrange(sz-2,-1,-1):
-        maxprofit = max(maxprofit, rmax-arr[i])
-        rmax = min(rmax, arr[i])
-    return maxprofit
+  sz = len(l)
+  maxprofit = 0
+  lmin = arr[0]
+  for i in xrange(1, sz-1):
+    maxprofit = max(maxprofit, arr[i]-lmin)
+    lmin = min(lmin, arr[i])
+  return maxprofit
+    
+  rmax = arr[sz-1]
+  for i in xrange(sz-2,-1,-1):
+    maxprofit = max(maxprofit, rmax-arr[i])
+    rmax = min(rmax, arr[i])
+  return maxprofit
 
 """ allow 2 transactions, so maxp = max{one transaction on 0..i, one trans on i+1..n}
 left trans end at i, max(l[i-1], S[i]-valley)
@@ -3324,8 +3330,8 @@ def profit(arr):
   return profit[sz-1]
 print 
 
-''' can buy sell many times. sum up every incr segment.(i,j) 
-if pre > cur, profit+=(pre-buy), cur set to new buy only when next > cur after sell.
+''' can buy sell many times. sum up every incr segment.(i,j)
+use bot flag. if not bot and i+1 > i, then bot at i. if bot, and i+1<i, then sell.
 '''
 def profit_many_trans(arr):
   buy,sz,bot = 0,0,len(arr),False
@@ -3355,7 +3361,8 @@ def profit_many_trans(arr):
   return sold
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
-""" FSM, bot/sold/rest, sold at day i is bot[i-1]+p[i],bot at i is max of cur bot or rest[i-1]-p[i], rest[i] is sold[i-1]
+""" FSM, bot/sold/rest, bot[i] is profit after buy at i, profit-arr[i].
+sold at i is bot[i-1]+p[i],bot at i is max of cur bot or rest[i-1]-p[i], rest[i] is sold[i-1]
 bot[i] = max(bot[i-1], rest[i-1]-price[i]);
 sold[i] = max(bot[i-1]+price[i], sold[i-1]; 
 rest[i] = sold[i-1], with cooldown, rest[i] = pre sold.
@@ -3396,7 +3403,6 @@ print topk_profit([1, 4, 5, 6, 7, 8, 4, 10], 2)
 tab[i,j,k] = max(tab[i+x, j, k-1]+(arr[i+x]-arr[i]))
 the same as dag with exactly k edges
 """
-
 def profit_topk(arr):
   """ find successive transaction pairs, enum all possible trans,
   and pick the top k trans """
@@ -4296,11 +4302,11 @@ def rmParenth(s, res):
       return
 
     if s[pos] == "(":
-      recur(res, s, pos+1, L,   R, openL,  path)  # skip
+      recur(res, s, pos+1, L,   R, openL,  path)  # skip cur L
       recur(res, s, pos+1, L-1, R, openL+1,path.append("("))
       path.pop()
     else if s[pos] == ")":
-      recur(res, s, pos+1, L, R-1, openL,   path) # skip
+      recur(res, s, pos+1, L, R-1, openL,   path) # skip cur R
       recur(res, s, pos+1, L, R,   openL-1, path.append(")"))
       path.pop()
     else:
@@ -4512,7 +4518,7 @@ print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
 
-""" bottom up each char in target
+""" bottom up each char in target, only has 1 char in t, 2, 3...
 excl s[j], tab[i,j-1], incl s[j], +tab[i-1,j-1], 
   \ a  b   a   b  c
  a  1  1   2   2  2
@@ -4907,9 +4913,9 @@ def isInterleave(a, b, c):
         tab[i][j] = tab[i][j-1]
   return tab[len(a)][len(b)]
 
-""" 2 string, gap,ia,ib; 3 dim, iter k in sz, tab[0..k][ia][ib];
-normally, one dim ary with enum i+gap with each size at each i.
-in this one, we do i,j+gap on 2 dim ary.
+""" 2 string, lenth,ia,ib; 3 dim, iter k in lenth, tab[0..k][ia][ib];
+normally, one dim ary with each tab[lenth,i], j=i+len,
+here, vary all 3; tab[len,i,j], break lenth in sublen, and i,j with sublen.
 tab[l,i,j] = 1 iff (tab[k,i,j] and tab[l-k,i+k,j+k]
 """
 def isScramble(a, b):
