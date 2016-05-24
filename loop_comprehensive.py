@@ -274,7 +274,7 @@ def sortColor(arr):
     arr[i],arr[j] = arr[j],arr[i]
   i,wr,wb=0,0,len(arr)-1
   while i < len(arr):   # for loop only good for 2 types.
-    if arr[i] == 0 and wr < i:   # swap only when wr < i
+    if arr[i] == 0 and wr < i:   # swap to wr only when i > wr
       swap(arr, i, wr)
       wr += 1
     elif arr[i] == 2 and i < wb:
@@ -402,16 +402,17 @@ def floorceil(arr, t):
     return None,arr[0]
   if t > arr[-1]:
     return arr[-1],None
-  while l != r:
+  while l != r:         # at least 2 eles in the loop
     mid = l + (r-l)/2
     if arr[mid] < t:
       l = mid+1
     else:
       r = mid
+  # when out of loop, double check
   if arr[l] == t:
     f = l
   else:
-    f = l-1
+    f = l
 
   l,r = 0,len(arr)-1
   while l != r:
@@ -431,7 +432,7 @@ def floorceil(arr, t):
     c = arr[c]
   return f,c
 print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
-print floorceil([1, 2, 8, 10, 10, 12, 19], 1)
+print floorceil([1, 2, 8, 10, 10, 12, 19], 2)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
 
 
@@ -748,12 +749,12 @@ inner is fn need to apply to nested form. outer is fn apply to non-nest form
 def clone(root, storeMap):
   if not storeMap.get(root):
     nroot = Node(root)
-    for c in children(root):
-      nc = clone(c, storeMap)
-      nroot.children.append(nc)
     storeMap.set(root, nroot)
   else:
-    nroot = cloneMap.get(root)
+    nroot = storeMap.get(root)
+  for c in children(root):
+    nc = clone(c, storeMap)
+    nroot.children.append(nc)
   return nroot
 
 
@@ -2914,16 +2915,17 @@ def concatKeys(txt, keys):
       wd = txt[r:r+k]
       if wd in keydict:
         curmap[wd] += 1
-        cnt += 1
-        # skip exceeding dups, the same as skip leading spaces
-        while curmap[wd] > keydict[wd]:
-          lwd = txt[l:l+k]
-          curmap[lwd] -= 1
-          l += k
-          cnt -= 1
-        if cnt == len(keys):
-          out.append(l)
-        r += k  # continue mov rite edge when r+k is in dict.
+        if curmap[wd] == keydict[wd]:
+          cnt += 1
+          if cnt == len(keys):
+            while curmap[arr[l:l+3]] > keydict[arr[l:l+3]]:
+              l += 3
+            out.append(l)
+        elif curmap[wd] > keydict[wd]:
+          l = keydict[wd]
+          continue
+        else:
+          continue
       else:
         break
     # after break, which r+k not dict word, reset, mov left edge
@@ -2934,6 +2936,7 @@ def concatKeys(txt, keys):
 print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "foo"])
 print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "bar"])
 
+""" use expected[] and found[] """
 from collections import defaultdict
 def concatKeys(s, arr):
   l,r,k = 0,0,len(arr[0])
@@ -2946,8 +2949,8 @@ def concatKeys(s, arr):
   # keep mov rite edge, inner adjust left edge when skip dups
   while r < len(s):
     wd = s[r:r+k]
-    if not wd in expect:   # reset and restart
-      r += k
+    if not wd in expect:  # concat must be conti, no intervene.
+      r += 1
       l = r
       seen = 0
       count.clear()
@@ -4006,7 +4009,7 @@ def permDup(arr, pos, path, res):
     return res.append(path[:])
   # swap each to head as next perm iteration.
   for i in xrange(pos, len(arr)):
-    # if i is dup of *pos*, skip it. not compare to i-1
+    # if i follow pos and is dup of *pos*, skip it. not compare to i-1
     if i > pos and arr[pos] == arr[i]:
       continue
     swap(arr, pos, i)
@@ -4034,7 +4037,7 @@ def perm(arr):
 
 
 """ from L <- R, find first a[i] < a[i+1] = pivot.
-then find first larger, then swap, the reverse right part.
+then swap with first rite larger, and reverse right part.
 """
 def nextPermutation(txt):
   for i in xrange(len(txt)-2, -1, -1):
@@ -4802,20 +4805,20 @@ def digitSum(n,s):
   tab = [[0]*max(s+1,10) for i in xrange(n)]
   for i in xrange(10):
     tab[0][i] = 1
-  for i in xrange(1,n):
-    for v in xrange(s+1):
-      for d in xrange(v):
+  for i in xrange(1,n):     # foreach slot
+    for v in xrange(s+1):   # foreach value
+      for d in xrange(v):   # foreach face(0..9)
         tab[i][v] += tab[i-1][v-d]
   return tab[n-1][s]
 assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
 
 
-''' count tot num of N digit with sum of even digits 1 more than sum of odds
+"""
+count tot num of N digit with sum of even digits 1 more than sum of odds
 n=2, [10,21,32,43...] n=3,[100,111,122,...980]
-'''
-  
-''' sum of odd and even digit diff by one '''
+use 2 tables, odd[i,v] and even[i,v]
+"""
 def digitSumDiffOne(n):
   odd = [[0]*18 for i in xrange(n)]
   even = [[0]*18 for i in xrange(n)]
