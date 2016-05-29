@@ -3334,7 +3334,7 @@ def profit(arr):
 print 
 
 ''' can buy sell many times. sum up every incr segment.(i,j)
-use bot flag. if not bot and i+1 > i, then bot at i. if bot, and i+1<i, then sell.
+use bot flag. if not bot and i+1 > i, then buy at i. if bot, and i+1<i, then sell.
 '''
 def profit_many_trans(arr):
   buy,sz,bot = 0,0,len(arr),False
@@ -3364,11 +3364,10 @@ def profit_many_trans(arr):
   return sold
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
-""" FSM, bot/sold/rest, bot[i] is profit after buy at i, profit-arr[i].
-sold at i is bot[i-1]+p[i],bot at i is max of cur bot or rest[i-1]-p[i], rest[i] is sold[i-1]
-bot[i] = max(bot[i-1], rest[i-1]-price[i]);
-sold[i] = max(bot[i-1]+price[i], sold[i-1]; 
-rest[i] = sold[i-1], with cooldown, rest[i] = pre sold.
+""" FSM, process each evt(arr[i]), track cur profit after bot/sold/reset.
+bot[i] = max(bot[i-1], rest[i-1]-arr[i]); not buy at i, or buy with rest money.
+sold[i] = max(sold[i-1], bot[i-1]+arr[i]), not sell, or sell
+rest[i] = sold[i-1], because cooldown. it is presold
 """
 import sys
 def stock_profit_cooldown(arr):
@@ -3630,28 +3629,33 @@ Every row in the matrix is viewed as the ground. height is the count
 of consecutive 1s from that row to above rows. 
 """
 def maxRectangle(matrix):
-  ''' stk store idx of rite higher. if rite smaller, stk[i] rect ends'''
-  def maxHistogram(height):
-    stk, mx = [], 0   # stk store idx, height[stk[-1]]
-    stk.append(0)
-    for i in range(1, len(height)):
-      while stk and height[stk[-1]] > height[i]:
-        h = height[stk.pop()]
-        w = i - stk[-1] + 1
-        mx = max(mx, h*w)
+  # iterate each row, build matrix store height for each col. 
+  rows, cols = len(matrix), len(matrix[0])
+  htMatrix[0][c] = 1 if matrix[0][c] == 1 else 0 for c in xrange(cols)
+  for r in xrange(1, rows):
+    for c in xrange(cols):
+      if matrix[r][c] == 1:
+        htMatrix[r][c] = htMatrix[r-1][c] + 1
+  for rowHt in htMatrix:
+    mx = max(mx, maxHistogram(rowHt))
+  return mx
+
+  ''' iter each col in rowHt, when ht[col] < stk.top, stk.top rect ends. cals max '''
+  def maxHistogram(rowHt):
+    stk, mx = [], 0
+    for col in xrange(len(rowHt)):
+      while rowHt[stk.top()] > rowHt[col]:
+        mx = max(mx, rowHt[stk.top()]*(i-stk[-1]+1))
+        stk.pop()
       stk.append(i)
     return mx
 
-  h, w = len(matrix), len(matrix[0])
-  m = [[0]*w for _ in range(h)]
-  for j in range(h):
-    for i in range(w):
-      if matrix[j][i] == '1':
-        m[j][i] = m[j-1][i] + 1
-  for row in m:
-    mx = max(mx, maxHistogram(row))
-  return mx
 
+""" largest Rect with swap of any pairs of cols 
+first, build height col for each row. Then sort it.
+"""
+def largestRectWithSwapCol(mat):
+  pass
 
 """
 convert array into sorted array with min cost. reduce a bin by k with cost k, until 0 to delete it.
@@ -4280,7 +4284,7 @@ def bfsParath(n):
 print bfsParath(3)
 
 
-""" iterate at each pos, dfs excl/incl each pos, no dp short """
+""" first, track balance(l-r), then recur each pos, dfs excl/incl each pos, no dp short """
 def rmParenth(s, res):
   path = []
   L,R = 0,0
@@ -4295,7 +4299,7 @@ def rmParenth(s, res):
   
   recur(res, s, 0, L, R, 0, path)
   return res
-  # iterate each pos, L,R is balance of l-r
+  # recur each pos, L,R is balance of l-r, either L=0 or R=0
   def recur(res, s, pos, L, R, openL, path):
     if pos == len(s) and L == 0 and R == 0 and openL == 0:
       p = path[:]
@@ -4306,11 +4310,11 @@ def rmParenth(s, res):
 
     if s[pos] == "(":
       recur(res, s, pos+1, L,   R, openL,  path)  # skip cur L
-      recur(res, s, pos+1, L-1, R, openL+1,path.append("("))
+      recur(res, s, pos+1, L-1, R, openL+1,path.append("(")) # use cur, L-1
       path.pop()
     else if s[pos] == ")":
-      recur(res, s, pos+1, L, R-1, openL,   path) # skip cur R
-      recur(res, s, pos+1, L, R,   openL-1, path.append(")"))
+      recur(res, s, pos+1, L, R-1, openL,   path) # skip cur R, R-1
+      recur(res, s, pos+1, L, R,   openL-1, path.append(")"))  # use cur R,
       path.pop()
     else:
       recur(res, s, pos+1, L, R, openL, path.append(s[pos]))
@@ -4916,7 +4920,7 @@ def isInterleave(a, b, c):
         tab[i][j] = tab[i][j-1]
   return tab[len(a)][len(b)]
 
-""" 2 string, lenth,ia,ib; 3 dim, iter k in lenth, tab[0..k][ia][ib];
+""" 2 string, lenth,ia,ib; 3 dim, in each len, test sublen k/len-k. tab[0..k][ia][ib];
 normally, one dim ary with each tab[lenth,i], j=i+len,
 here, vary all 3; tab[len,i,j], break lenth in sublen, and i,j with sublen.
 tab[l,i,j] = 1 iff (tab[k,i,j] and tab[l-k,i+k,j+k]
