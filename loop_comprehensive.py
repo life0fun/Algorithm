@@ -797,7 +797,9 @@ def postorderMorris(self, root):
       root = root.left  # descend to left
   return out[::-1]
 
-""" pre-order with rite first, then reverse, got post-order """
+""" pre-order with rite first, then reverse, got post-order 
+At each cur, shall move to rite, but first stash cur's left before move.
+"""
 def postOrder(root):
   stk = []
   pre,cur = None,root
@@ -830,7 +832,7 @@ def flatten(r):
         r = stk.pop()
       else:
         if r.rite:
-          stk.append(r.rite)
+          stk.append(r.rite)  # stash rite before move
       r.rite = r.left
       r = r.rite  # advance, if not r, will pop stk
     else:
@@ -951,7 +953,7 @@ def dfsSerde(root, out):
   print "$"
   out.append("$")
 
-""" deserialize, use stk to track parent """
+""" deserialize, use stk top is parent of cur """
 # 1 [2 [4 $] $] [3 [5 $] $] $
 from collections import deque
 def deserTree(l):
@@ -3383,6 +3385,7 @@ print stock_profit_cooldown([1, 2, 3, 0, 2])
 
 """ At most up-to K transactions. max profit may involve less than k trans.
 e.g, [1,2,3,4], max profit of up to 2 trans the same as 1 trans.
+Just add one loop to calc trans from 1..k.
 sell[i][p] is max profit with i transactions sell at p.
 For each price, bottom up 1 -> k transations. use k+1 as k deps on k-1. k=0.
 sell[i] = max(sell[i], bot[i]+p), // carry over prev num in trans i'th profit.
@@ -3627,6 +3630,7 @@ def largestRectangle(l):
 """
 Every row in the matrix is viewed as the ground. height is the count
 of consecutive 1s from that row to above rows. 
+htMatrix[row] = [2,4,3,0,...] the ht of each col if row is the ground
 """
 def maxRectangle(matrix):
   # iterate each row, build matrix store height for each col. 
@@ -3640,12 +3644,13 @@ def maxRectangle(matrix):
     mx = max(mx, maxHistogram(rowHt))
   return mx
 
-  ''' iter each col in rowHt, when ht[col] < stk.top, stk.top rect ends. cals max '''
+  ''' ht of each col, maintain an incr stk. when cliff, ht[col] < stk.top, 
+  stk.top rect ends. cals max, and keep pop stk '''
   def maxHistogram(rowHt):
     stk, mx = [], 0
     for col in xrange(len(rowHt)):
       while rowHt[stk.top()] > rowHt[col]:
-        mx = max(mx, rowHt[stk.top()]*(i-stk[-1]+1))
+        mx = max(mx, rowHt[stk.top()]*(i-stk[-1]+1))  # left cliff * rite cliff
         stk.pop()
       stk.append(i)
     return mx
@@ -4372,9 +4377,36 @@ def bfsInvalidParen(s):
   return res
 print bfsInvalidParen("()())()")
 
-""" add operator, or parenth to exp forms. divide and conquer at 
-each brkpoint, for each left foreach op rite """
-def addOperator(arr, l, r, t):
+""" DP, recur each i at each length 
+tab[i,j] = [[v1, exp1], [v2, exp2], ...] can be formed with arr[i:j]
+"""
+def addOperator(arr, l, r):
+  for gap in xrange(r-l):
+    for i in xrange(l, r-l-gap):
+      j = i+gap
+      for k in xrange(i,j):
+        for lv, lexpr in tab[i][k]:
+          for rv,rexp in tab[k+1][j]:
+            out.append([lv+rv, "{}+{}".format(lexp,rexp)])
+            out.append([lv*rv, "{}*{}".format(lexp,rexp)])
+            out.append([lv-rv, "{}-{}".format(lexp,rexp)])
+    tab[i][j] = out
+  return tab[l][r]
+
+""" tab[i,j] = [[v1, exp1], [v2, exp2], ...] """
+def addOpsTarget(arr, l, r, target):
+  out = []
+  tab = addOpsTarget(arr, l, r)
+  for v, exp in tab[l][r]:
+    if v == target:
+      out.append(exp)
+  return out
+
+
+""" add operators to exp forms. As no parenth, so go dfs offset.
+If allow parenth, need for each gap, fill tab[i,j] with lv/rv,lexpr/rexpr.
+"""
+def addOperator(arr, l, r, target):
   '''recursion must use memoize'''
   def recur(arr, l, r):
     if not tab[l][r]:
@@ -4400,26 +4432,13 @@ def addOperator(arr, l, r, t):
 
   tab = [[None]*(l+1) for i in xrange(r+1)]
   out = []
-  for v,exp in dfs(arr, l, r):
-    if v == t:
+  for v, exp in dfs(arr, l, r):
+    if v == target:
       out.append(exp)
   return out
 print addOperator([1,2,3],0,2,6)
 print addOperator([1,0,5],0,2,5)
 
-""" DP, recur each i at each length """
-def addOperator(arr, l, r):
-  for gap in xrange(r-l):
-    for i in xrange(l, r-l-gap):
-      j = i+gap
-      for k in xrange(i,j):
-        for lv, lexpr in tab[i][k]:
-          for rv,rexp in tab[k+1][j]:
-            out.append([lv+rv, "{}+{}".format(lexp,rexp)])
-            out.append([lv*rv, "{}*{}".format(lexp,rexp)])
-            out.append([lv-rv, "{}-{}".format(lexp,rexp)])
-    tab[i][j] = out
-  return tab[l][r]
 
 """ dfs recur on each segment moving idx, note down prepre, pre,
 and calulate this cur in next iteration"""
@@ -5063,7 +5082,8 @@ def nextPalindrom(v):
   return int(''.join(arr))
 
 """ palindrom pair, concat the two words forms a palindrom
-a) s1 or s2 is blank. b) s1 = reverse(s2), 
+a) s1 or s2 is blank. 
+b) s1 = reverse(s2), 
 c) s1[0:cut] is palindrom and s1[cut:]=reverse(s2)
 d) s1[0:cut]=reverse(s2) and s1[cut+1:] is palindrom
 build a HashMap to store the String-idx pairs.
