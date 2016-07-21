@@ -594,26 +594,26 @@ two index at A, B array, and inc smaller array's index each step for k steps.
   recur A[i+1..m], B[0..j]
 """
 def findKth(A, m, B, n, k):
-    if m > n:
-        return findKth(B,n,A,m,k)
-    if m == 0: return B[k-1]
-    if k == 1: return min(A[0],B[0])
-    ia = min(k/2, m)
-    ib = k-ia
+  if m > n:
+      return findKth(B,n,A,m,k)
+  if m == 0: return B[k-1]
+  if k == 1: return min(A[0],B[0])
+  ia = min(k/2, m)
+  ib = k-ia
 
-    if A[ia-1] < B[ib-1]:
-        return findKth(A[ia:], m-ia, B, n, k-ia)
-    elif A[ia-1] > B[ib-1]:
-        return findKth(A, m, B[ib:], n-ib, k-ib)
-    else:
-        return A[ia-1]
+  if A[ia-1] < B[ib-1]:
+    return findKth(A[ia:], m-ia, B, n, k-ia)
+  elif A[ia-1] > B[ib-1]:
+    return findKth(A, m, B[ib:], n-ib, k-ib)
+  else:
+    return A[ia-1]
 def testFindKth():
-    A = [1, 5, 10, 15, 20, 25, 40]
-    B = [2, 4, 8, 17, 19, 30]
-    Z = sorted(A + B)
-    assert(Z[9] == findKth(A, len(A), B, len(B), 10))
-    assert(Z[0] == findKth(A, len(A), B, len(B), 1))
-    assert(Z[12] == findKth(A, len(A), B, len(B), 13))
+  A = [1, 5, 10, 15, 20, 25, 40]
+  B = [2, 4, 8, 17, 19, 30]
+  Z = sorted(A + B)
+  assert(Z[9] == findKth(A, len(A), B, len(B), 10))
+  assert(Z[0] == findKth(A, len(A), B, len(B), 1))
+  assert(Z[12] == findKth(A, len(A), B, len(B), 13))
 
 """ 
   selection algorithm, find the kth largest element with worst case O(n)
@@ -658,7 +658,10 @@ def medianmedian(A, beg, end, k):
       return sorted(A[beg:end])[k-1]  # sort and return k-1th item
   # divide into groups of 5, ngroups, recur median of each group, pivot = median of median
   ngroups = sz/5
-  medians = [medianmedian(A, beg+5*i, beg+5*(i+1)-1, 3) for i in xranges(ngroups)]
+  medians = []
+  for i in xranges(ngroups):
+    gm = medianmedian(A, beg+5*i, beg+5*(i+1)-1, 3)
+    medians.append(gm)
   pivot = medianmedian(medians, 0, len(medians)-1, len(medians)/2+1)
   pivotidx = partition(A, beg, end, pivot)  # scan from begining to find pivot idx.
   rank = pivotidx - beg + 1
@@ -1197,6 +1200,7 @@ class IntervalTree(object):
       self.max = max(self.lo, self.hi)
       self.left = self.rite = None
       return self
+    #update new max along the path
     if self.max < hi:
       self.max = hi
     if lo < self.lo:
@@ -3858,7 +3862,8 @@ def backpack(arr, W):
 print backpack([2, 3, 5, 7], 11)
 
 
-""" when outer loop value, at each value, each coin tested, so coin order matters, permutation. When outer loop coins, its like incl/excl coin for a value, no order, like combination.
+""" when outer loop bottom up value, at each value, each coin tried, so coin order matters, permutation. 
+When outer bottom up coins, tab[s, c-1] excl coin c for sum s. its like incl/excl coin.
 """
 # tab[3,2] = [12],[21] t(3,2) = [111]+[[2,(1,2)]=[2][1]]+[[1,2]]
 def coinchangeSet(coins, V):
@@ -3867,7 +3872,7 @@ def coinchangeSet(coins, V):
   for c in xrange(len(coins)):
     tab[0][c] = 1  # when v = coin_value, init pre subproblem tab[0][c] to 1
     tab2[coins[c]][c] = 1  # or init real tab[coins[c]][c] to 1, the accumulate later.
-  # outer loops enum each value, check all coins under each value.
+  # outer loops bootom up each value, bottom up each coin at each vaue.
   for v in xrange(1,V+1):
     for c in xrange(len(coins)):
       excl = 0
@@ -3894,10 +3899,11 @@ def coinchangePerm(coins, V):
   return tab[V]
 print coinchangePerm([1, 2], 3)
 
-""" tot ways for a change. Diff with min ways for a change
-bottom up each val, a new row [c1,c2,...], loop coin col first, 
-so at 2, no knowledge of 3, so 5=[2,3], sorted. not [3,2] when passed 2 to 3.
-if for comb, loop val first, at each value, look for all coin.
+""" tot ways for a change. permutation. [2,3] [3,2].
+bottom up each val, a new row [c1,c2,...], bottom up coin col first, 
+so at coin 2, no knowledge of 3, so 5=[2,3], coin is sorted and bottom up. no [3,2] ever.
+
+if for perm, [2,3] [3,2], bottom up val first, at each value, bottom up coin.
 
 when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
 for coin 10, tab[10]=tab[10]+tab[0], which is #{[5,5],[10]}
@@ -3909,7 +3915,7 @@ def coinchange(coins, V):
   # for v in xrange(1,V+1):
   #     tab[v] = 1
   tab[0] = 1
-  # outer loop enum each coin mean incl the coin, and excl when passed.
+  # outer loop bottom up coin, tab[s,i-1] mean excl coin i at s.
   for i in xrange(len(coins)):
     fv = coins[i]
     for v in xrange(fv,V+1):
@@ -4248,7 +4254,7 @@ def restoreIp(s, pos, path, res):
 s="25525511135";path=[];res=[];restoreIp(s,0,path,res);print res;
 
 """ valid parenthese, dfs recursion, when reaching pos, carry path"""
-def addParenth(n, l, r, path, res):
+def genParenth(n, l, r, path, res):
   if l == n:
     p = path[:]
     for i in xrange(r,n):
@@ -4256,17 +4262,17 @@ def addParenth(n, l, r, path, res):
     res.append("".join(p))
     return res
   path.append("(")
-  addParenth(n, l+1,r, path, res)
+  genParenth(n, l+1,r, path, res)
   path.pop()
   if l > r:
     path.append(")")
-    addParenth(n,l,r+1, path, res)
+    genParenth(n,l,r+1, path, res)
     path.pop()
   return res
-path=[];res=[];addParenth(3,0,0,path,res);print res;
+path=[];res=[];genParenth(3,0,0,path,res);print res;
 
 from collections import deque
-def bfsParath(n):
+def genParath(n):
   out = []
   q = deque()
   q.append(["(", 1, 0])
@@ -4286,10 +4292,10 @@ def bfsParath(n):
         p = str(path) + ")"
         q.append([p,l,r+1])
   return out
-print bfsParath(3)
+print genParath(3)
 
 
-""" first, track balance(l-r), then recur each pos, dfs excl/incl each pos, no dp short """
+""" first, find unbalance(l-r), recur each pos, dfs excl/incl each pos, no dp short """
 def rmParenth(s, res):
   path = []
   L,R = 0,0
@@ -4377,7 +4383,7 @@ def bfsInvalidParen(s):
   return res
 print bfsInvalidParen("()())()")
 
-""" DP, recur each i at each length 
+""" DP, recur each i at each length, each tab[i,j] is a list, not a scala. traverse.
 tab[i,j] = [[v1, exp1], [v2, exp2], ...] can be formed with arr[i:j]
 """
 def addOperator(arr, l, r):
@@ -4544,7 +4550,8 @@ print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
 
-""" bottom up each char in target, only has 1 char in t, 2, 3...
+"""
+column is src, and inc bottom up each char in target. only 1 char in target, 2, ..
 excl s[j], tab[i,j-1], incl s[j], +tab[i-1,j-1], 
   \ a  b   a   b  c
  a  1  1   2   2  2
@@ -4688,9 +4695,9 @@ path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
 def coinchange(arr, V):
   tab = [0]*(V+1)
   tab[0] = 1
-  # outer loop enum each coin mean incl the coin, and excl when passed.
+  # outer loop bottom up coin, effective as incl the coin, and excl when passed.
   for i in xrange(len(arr)):
-    for v in xrange(arr[i],V+1):
+    for v in xrange(arr[i],V+1):   # bottom up each value
       tab[v] += tab[v-arr[i]]   # not tab[v]=tab[v-1]+1
   return tab[V]
 print coinchange([2,3,5], 10)
@@ -4790,14 +4797,15 @@ bottom up, 1 dice, 2 dices,...,n dices. Last dice take face value 1..m.
 tab[d,v] += tab[d-1,v-[1..m]]. Outer loop is enum dices, so it's like incl/excl.
 """
 def dice(m,n,x):
-    tab = [[0]*n for i in xrange(x+1)]
-    for f in xrange(m):
-      tab[1][f] = 1
-    for i in xrange(n):         # for each dice
-      for v in xrange(x):       # for each value
-        for f in xrange(m,v):   # for each face
-          tab[i][v] += tab[i-1][v-f]
-    return tab[n,x]
+  tab = [[0]*n for i in xrange(x+1)]
+  ＃ init bottom, one coin only
+  for f in xrange(m):
+    tab[1][f] = 1
+  for i in xrange(1, n):      # bottom up coins, 1 coin, 2 coin
+    for v in xrange(x):       # bottom up each value after inc coin
+      for f in xrange(m,v):   # iterate each face value
+        tab[i][v] += tab[i-1][v-f]
+  return tab[n,x]
 
 
 """ tab[i,v] = tot non descreasing at ith digit, end with value v
@@ -4828,8 +4836,8 @@ def digitSum(n,s):
   tab = [[0]*max(s+1,10) for i in xrange(n)]
   for i in xrange(10):
     tab[0][i] = 1
-  for i in xrange(1,n):     # foreach slot
-    for v in xrange(s+1):   # foreach value
+  for i in xrange(1,n):     # bottom up each slot
+    for v in xrange(s+1):   # bottom up each sum
       for d in xrange(v):   # foreach face(0..9)
         tab[i][v] += tab[i-1][v-d]
   return tab[n-1][s]
