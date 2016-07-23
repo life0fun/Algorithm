@@ -826,10 +826,13 @@ def postorderTraversal(self, root):
       stack.append(tmp.right)
   return ans[::-1]
 
-""" focus on current node, execute operations, stash subtree """
+""" stack to stash r or r.rite, when stash r, stk.pop, cur=cur.rite. avoid redo r.left
+process cur node, replace cur node from stack if null 
+"""
 def flatten(r):
   while stk or r:
     if r:   # need visit root, mov to r.left, stash r.rite for later
+      # visit cur, replace cur from stk top if leaf, descend to rite
       if not r.left and r.rite:
         r.rite = stk.top()
         r = stk.pop()
@@ -864,43 +867,43 @@ def numBST(n):
   return tab[n]
 
 
-''' find pair node in bst tree sum to a given value, lgn 
-like loop ary, start from both end, in order traverse, and reverse in order
-'''
+""" find pair node in bst tree sum to a given value, lgn 
+down to both ends(lstop/lcur), with stk to rem parent, then mov rite or left """
 def pairNode(root, target):
   lstk,rstd = deque(),deque()  # use lgn stk to store tree path parent
   lstop,rstop = False,False
   lcur,rcur = root,root
   while True:
-      while not lstop:
-          if lcur:
-              lstk.append(lcur)
-              lcur = lcur.left
-          else:
-              if not len(lstk):
-                  lstop = 1
-              else:
-                  lcur = lstk.pop()
-                  lval = lcur
-                  lcur = lcur.rite
-                  lstop = 1
-      while not rstop:
-          if rcur:
-              rstk.append(rcur)
-              rcur = rcur.rite
-          else:
-              if not len(rstk):
-                  rstop = 1
-              else:
-                  rcur = lstk.pop()
-                  rval = rcur
-                  rcur = rcur.left
-      if lval + rval == target:
-          return lcur,rcur
-      if lval + rval > target:
-          rstop = False
+    while not lstop:
+      if lcur:
+        lstk.append(lcur)
+        lcur = lcur.left
       else:
-          lstop = False
+        if not len(lstk):
+          lstop = 1
+        else:
+          lcur = lstk.pop()
+          lval = lcur
+          lcur = lcur.rite
+          lstop = 1
+      while not rstop:
+        if rcur:
+          rstk.append(rcur)
+          rcur = rcur.rite
+        else:
+          if not len(rstk):
+            rstop = 1
+          else:
+            rcur = lstk.pop()
+            rval = rcur
+            rcur = rcur.left
+            rstop = 1
+      if lval + rval == target:
+        return lcur,rcur
+      if lval + rval > target:
+        rstop = False
+      else:
+        lstop = False
   return lcur,rcur
 
 
@@ -961,6 +964,7 @@ def dfsSerde(root, out):
 from collections import deque
 def deserTree(l):
   stk = deque()
+  root = None
   while nxt = l.readLine():
     if nxt is not "$":
       if len(stk) > 0:
@@ -968,7 +972,8 @@ def deserTree(l):
         p.children.append(nxt)
       stk.append(nxt)
     else:
-      stk.pop()
+      root = stk.pop()
+  return root
 
 """ no same char shall next to each other """
 from collections import defaultdict
