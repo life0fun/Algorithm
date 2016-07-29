@@ -4004,14 +4004,18 @@ def comb(arr, pos, r, path, res):
 res=[];comb([1,2,3,4],0,2,[],res);print res;
 
 
-""" incl pos into path, recur. skip ith of this path, next """
+""" incl offset into path, recur. skip ith of this path, next 
+recur fn params must be subproblem with offset and partial result.
 # [a, ..] [b, ...], [c, ...]
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
-def powerset(arr, pos, path, result):
-  result.append(path)  # incl all intermediate result
-  for i in xrange(pos, len(arr)):
-    ''' compare i to i-1 !!! not i to pos '''
-    if i > pos and arr[i] == arr[i-1]:
+"""
+def powerset(arr, offset, path, result):
+  # subproblem with partial result, incl all interim results.
+  result.append(path)
+  # within cur subproblem, for loop to incl/excl for next level.
+  for i in xrange(offset, len(arr)):
+    # compare i to i-1 !!! not i to offset, as list is sorted.
+    if i > offset and arr[i] == arr[i-1]:
         continue
     l = path[:]
     l.append(arr[i])
@@ -4021,22 +4025,24 @@ path=[];result=[];powerset([1,2,2], 0, path, result);print result;
 
 """when recur to pos, incl pos with passed in path, or skip pos.
 for dup, sort, skip current i is it is a dup of offset.
+recur fn params must be subproblem with offset and partial result.
 """
-def permDup(arr, pos, path, res):
+def permDup(arr, offset, path, res):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
-  if pos == len(arr):
+  if offset == len(arr):
     return res.append(path[:])
-  # swap each to head as next perm iteration.
-  for i in xrange(pos, len(arr)):
-    # if i follow pos and is dup of *pos*, skip it. not compare to i-1
-    if i > pos and arr[pos] == arr[i]:
+  # within subproblem, iterate to incl/excl as head to next level.
+  for i in xrange(offset, len(arr)):
+    # if i follow offset and is dup of *offset*, skip it. not compare to i-1
+    if i > offset and arr[offset] == arr[i]:
       continue
-    swap(arr, pos, i)
-    path.append(arr[pos])
-    permDup(arr, pos+1, path, res)
+    swap(arr, offset, i)
+    path.append(arr[offset])
+    # when recur, both arr, path and offset changed as subproblem
+    permDup(arr, offset+1, path, res)
     path.pop()
-    swap(arr, pos, i)
+    swap(arr, offset, i)
 path=[];res=[];permDup(list("123"), 0, [], res);print res
 path=[];res=[];permDup(list("112"), 0, [], res);print res
 
@@ -4107,7 +4113,7 @@ def nthPerm(arr, n):
   return "".join(out)
 assert(nthPerm("1234", 15), "3241")
 
-""" iter each pos from 0 <- n. for width w, w! perms.
+""" iter each pos i from 0 <- n. for width w, w! perms.
 At each i, there are (n-i)! perms. If there are k eles smaller than cur,
 means cur rank += those k packs that is smaller than cur. so rank += k*(n-i)!
 with dup, tot is (n-i)!/A!*B!, and we need sum up all k copies of dup ele to rank
