@@ -54,26 +54,6 @@ def bin2int(binstr):
         sum += sum*2+binstr[len(binstr)-1-i]
     return sum
 
-'''
-src.find(c) find the offset of c in the number system, which is the decimal val of c.
-convert to src to decimal, then decimal to dest
-v(abc) = (a*base+b)*base+c
-num = Digits[val%base] + num, val /= base
-'''
-def convert(num, src, trg):
-    n = 0
-    srcbase = len(src)
-    trgbase = len(trg)
-    for c in num:
-        n=n*srcbase+src.find(c)  # len(src) is the base of src
-        print 'c:', c, 'num:', num, 'n:', n
-    res = ""
-    while n:
-        res = trg[n%trgbase] + res  #len(trg) is the base of target
-        n /= trgbase
-    print 'convert', num, ' res:', res
-    return res
-
 """ out[i+j+1]=a[j]*b[i] """
 def multiplyStr(a,b):
   la,lb = list(a),list(b)
@@ -195,39 +175,6 @@ def qsort(l, beg, end):
   qsort(l, j+1, end)     # right half > pivot
   print 'final:', l
 
-def hIndex(citations):
-  def partition(arr, l, r):
-    piv = min(arr, l, r, (l+r)/2)
-    swap(arr, piv, r)
-    wi = l
-    for i in xrange(l, r):
-      if arr[i] < arr[piv]:
-        arr[wi++] = arr[i]
-    swap(arr, wi, r)
-    return wi
-
-  sz,l,r,piv,ans = len(citations),0,sz-1,0,0
-  while l > r:
-    hidx = partition(arr, l, r)
-    if citiations[hidx] >= hidx:
-      ans = hdix
-      l = hidx+1
-    else:
-      r = hidx-1
-  return ans
-
-""" use 0..n bucket to count """
-def hIndex(citations):
-  n = len(citations)
-  bucket = [0]*(n+1)
-  for i in xrange(n):
-    bucket[min(citations[i],n)] += 1
-  for i in xrange(n,0,-1):
-    sm += bucket[i]
-    if sm >= i:
-      ret = i
-  return ret
-
 def qsort(arr, lo, hi):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
@@ -268,7 +215,7 @@ def qsort(arr,l,r):
 arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
-""" put 0 at head, 2 at tail, 1 in the middle """
+""" put 0 at head, 2 at tail, 1 in the middle, wr+1/wb-1 """
 def sortColor(arr):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
@@ -304,8 +251,40 @@ def sortColor(arr):
   return arr
 print sortColor([0,0,2,1])
 
+def hIndex(citations):
+  def partition(arr, l, r):
+    piv = min(arr, l, r, (l+r)/2)
+    swap(arr, piv, r)
+    wi = l
+    for i in xrange(l, r):
+      if arr[i] < arr[piv]:
+        arr[wi++] = arr[i]
+    swap(arr, wi, r)
+    return wi
 
-""" only search, not find insertion point, so enter loop even when only 1 ele """
+  sz,l,r,piv,ans = len(citations),0,sz-1,0,0
+  while l > r:
+    hidx = partition(arr, l, r)
+    if citiations[hidx] >= hidx:
+      ans = hdix
+      l = hidx+1
+    else:
+      r = hidx-1
+  return ans
+
+""" use 0..n bucket to count """
+def hIndex(citations):
+  n = len(citations)
+  bucket = [0]*(n+1)
+  for i in xrange(n):
+    bucket[min(citations[i],n)] += 1
+  for i in xrange(n,0,-1):
+    sm += bucket[i]
+    if sm >= i:
+      ret = i
+  return ret
+
+""" only search, enter loop even when only 1 ele, lo <= hi """
 def binarySearch(arr, k):
   lo,hi = 0, len(arr)-1
   while lo <= hi:
@@ -324,13 +303,14 @@ def bisect(arr, val):
   lo,hi = 0, len(arr)-1
   if val > arr[-1]:
     return False, len(arr)
-  # final reduced to at least 2 ele, so l=m+1 wont boundary.
+  # lo != hi, reduced to at least 2 ele, so l=m+1 wont boundary.
   while lo != hi:
     md = (lo+hi)/2
     if val > arr[md] # target grt than mid, ins pos m+1
       lo = md+1
     else:
       hi = md   # target <=, mov r, as we want to find first pos eqs target
+  # check lo when out lo = hi
   if arr[lo] == val:
     return True, lo
   else:
@@ -4046,6 +4026,7 @@ def permDup(arr, offset, path, res):
 path=[];res=[];permDup(list("123"), 0, [], res);print res
 path=[];res=[];permDup(list("112"), 0, [], res);print res
 
+
 # need to pass different arr upon each recursion, vs. different offset.
 def perm(arr):
   result = []
@@ -4054,7 +4035,7 @@ def perm(arr):
     return result
   for i in xrange(len(arr)):
     hd = arr[i]
-    l = arr[:]
+    l = arr[:]i
     del l[i]   # change arr for next iteration
     for e in perm(l):
       e.insert(0,hd)
