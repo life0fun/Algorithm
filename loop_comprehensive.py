@@ -297,7 +297,7 @@ def binarySearch(arr, k):
       hi = mid - 1
   return -1
 
-""" try to find insertion pos. a[idx-1] < t <= a[idx]. even with dups.
+""" ret insertion pos, the first pos t <= a[idx]. a[idx-1] < t <= a[idx]. even with dups.
 when find high end, idx-1 is the first ele smaller than searching val."""
 def bisect(arr, val):
   lo,hi = 0, len(arr)-1
@@ -317,7 +317,7 @@ def bisect(arr, val):
     return False, lo
 print bisect([1,1,3,5,7])
 
-""" not trying to find insertion point """
+""" not to find insertion point, check which seg is mono """
 def binarySearchRotated(arr,t):
   l,r=0,len(arr)-1
   while l <= r:      # if =, will enter loop even when only one ele.
@@ -325,12 +325,12 @@ def binarySearchRotated(arr,t):
     if t == arr[mid]:
       return True, mid
     # l != mid, so mid+1 wont boundary.
-    if arr[l] < arr[mid]:
+    if arr[l] < arr[mid]:  #[l...mid] is mono increase
       if arr[l] <= t and t < arr[mid]:
         r = mid - 1
       else:
         l = mid + 1
-    elif arr[l] > arr[mid]:
+    elif arr[l] > arr[mid]:  # [mid...r] is mono increase
       if arr[mid] < t and t <= arr[r]:
         l = mid + 1
       else:
@@ -374,6 +374,23 @@ print rotatedMin([5,6,6,7,0,1,3])
 print rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
 
 
+""" find the max in a ^ ary """
+def findMax(arr):
+  l,r=0,len(arr)-1
+  while l < r:
+    mid = l+(r-l)/2
+    if arr[mid-1] < arr[mid] > arr[mid+1]:
+      return arr[mid]
+    if arr[mid] < arr[mid+1]:  # mid .. mid+1 incr, max is on rite
+      l = mid+1
+    else:         # mid .. mid+1 decrease, max on left
+      r = mid
+  return arr[r]
+print findMax([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
+print findMax([10, 20, 30, 40, 50])
+print findMax([120, 100, 80, 20, 0])
+
+
 ''' bisect always check l,r boundary first a[l-1]<t<=a[l] '''
 def floorceil(arr, t):
   f,c = -1,-1
@@ -414,23 +431,6 @@ def floorceil(arr, t):
 print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 2)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
-
-
-""" find the max in a ^ ary """
-def findMax(arr):
-  l,r=0,len(arr)-1
-  while l < r:
-    mid = l+(r-l)/2
-    if arr[mid-1] < arr[mid] > arr[mid+1]:
-      return arr[mid]
-    if arr[mid] < arr[mid+1]:
-      l = mid+1
-    else:
-      r = mid
-  return arr[r]
-print findMax([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
-print findMax([10, 20, 30, 40, 50])
-print findMax([120, 100, 80, 20, 0])
 
 
 """ inverse count with merge sort """
@@ -688,7 +688,8 @@ BEGIN
 END;
 
 
-""" walk, curry a fn that is recursive of walk to leaf node. map it """
+""" walk with f, where f is for leaf node. for list form, map(walk f ...)
+map a curry fn that is recursive calls walk f to non-leaf node """
 (defn walk
   [f form]
   (let [pf (partial walk f)]
@@ -696,7 +697,8 @@ END;
       (f (into (empty form) (map pf form)))
       (f form))))
 
-""" curry 2 recursive fns, inner is for nested form, outer is to leaf form.
+""" outer fn is apply to leaf node. inner fn is for nested list forms.
+map inner fn into list
 inner is fn need to apply to nested form. outer is fn apply to non-nest form
 """
 (defn walk
@@ -715,6 +717,7 @@ inner is fn need to apply to nested form. outer is fn apply to non-nest form
    (coll? form) (outer (into (empty form) (map inner form)))
    :else (outer form)))
 
+""" f is fn apply to leaf form. for non-leaf/list, recursive apply f into """
 (defn postwalk
   "Performs a depth-first, post-order traversal of form.  Calls f on
   each sub-form, uses f's return value in place of the original.
@@ -1321,118 +1324,118 @@ print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
 
 """ merge or toggle interval """
 class Interval(object):
-    def __init__(self):
-        self.arr = []
-        self.size = 0
-    # bisect ret i as insertion point. arr[i-1] < val <= arr[i]
-    # when find high end, idx-1 is the first ele smaller than searching val.
-    def bisect(self, arr, val):
-      lo,hi = 0, len(self.arr)-1
-      if val > arr[-1]:
-          return False, len(arr)
-      while lo != hi:
-          md = (lo+hi)/2
-          if arr[md] < val:  # lift lo only when absolutely big
-              lo = md+1
-          else:
-              hi = md   # drag down hi to mid when equal to find begining.
-      if arr[lo] == val:
-          return True, lo
+  def __init__(self):
+      self.arr = []
+      self.size = 0
+  # bisect ret i as insertion point. arr[i-1] < val <= arr[i]
+  # when find high end, idx-1 is the first ele smaller than searching val.
+  def bisect(self, arr, val):
+    lo,hi = 0, len(self.arr)-1
+    if val > arr[-1]:
+      return False, len(arr)
+    while lo != hi:
+      md = (lo+hi)/2
+      if arr[md] < val:  # lift lo only when absolutely big
+          lo = md+1
       else:
-          return False, lo
-    def overlap(self, st1, ed1, st2, ed2):
-      if st2 > ed1 or ed2 < st1:
-          return False
-      return True
-    # which slot in the arr this new interval shall be inserted
-    def findStartSlot(self, st, ed):
-      """ pre-ed < start < next-ed, bisect insert pos is next """
-      endvals = map(lambda x: x[1], self.arr)
-      found, idx = self.bisect(endvals, st)  # insert position
-      return idx
-    # the last slot in the arr that this new interval may overlap
-    def findEndSlot(self, st, ed):
-      """ pre-start < ed < next-start, bisect ret insert pos, pre-start +1, so left shift"""
-      startvals = map(lambda x: x[0], self.arr)
-      found, idx = self.bisect(startvals, ed)        
-      return idx-1  # bisect ret i arr[i] >= ed. ret i-1
-    def merge(self, st1, ed1, st2, ed2):
-      return [min(st1,st2), max(ed1,ed2)]
-    def insertMerge(self, sted):
-      [st,ed] = sted
-      if len(self.arr) == 0:
-          self.arr.append([st,ed])
-          return 0
-      stslot = self.findStartSlot(st,ed)
-      edslot = self.findEndSlot(st,ed)
-      print "insert ", sted, stslot, edslot
-      if stslot >= len(self.arr):
-        self.arr.insert(stslot, [st, ed])
-      elif stslot > edslot:  # find ed slot is ed slot-1
-        self.arr.insert(stslot, [st, ed])
-      else:
-        minst = min(self.arr[stslot][0], st)
-        maxed = max(self.arr[edslot][1], ed)
-        for i in xrange(stslot+1, edslot+1):
-            del self.arr[stslot+1]
-        self.arr[stslot][0] = minst
-        self.arr[stslot][1] = maxed
-      return stslot
-    def insertToggle(self, sted):
-      [st,ed] = sted
-      if len(self.arr) == 0:
-        self.arr.append([st,ed])
-        return 0
-      stslot = self.findStartSlot(st,ed)
-      edslot = self.findEndSlot(st,ed)
-      if stslot >= len(self.arr):
-        self.arr.append([st,ed])
-      elif stslot > edslot:
-        self.arr.insert(stslot, [st,ed])
-      else:
-        output = []
-        for i in xrange(0, stslot):
+          hi = md   # drag down hi to mid when equal to find begining.
+    if arr[lo] == val:
+      return True, lo
+    else:
+      return False, lo
+  def overlap(self, st1, ed1, st2, ed2):
+    if st2 > ed1 or ed2 < st1:
+      return False
+    return True
+  # which slot in the arr this new interval shall be inserted
+  def findStartSlot(self, st, ed):
+    """ pre-ed < start < next-ed, bisect insert pos is next """
+    endvals = map(lambda x: x[1], self.arr)
+    found, idx = self.bisect(endvals, st)  # insert position
+    return idx
+  # the last slot in the arr that this new interval may overlap
+  def findEndSlot(self, st, ed):
+    """ pre-start < ed < next-start, bisect ret insert pos, pre-start +1, so left shift"""
+    startvals = map(lambda x: x[0], self.arr)
+    found, idx = self.bisect(startvals, ed)        
+    return idx-1  # bisect ret i arr[i] >= ed. ret i-1
+  def merge(self, st1, ed1, st2, ed2):
+    return [min(st1,st2), max(ed1,ed2)]
+  def insertMerge(self, sted):
+    [st,ed] = sted
+    if len(self.arr) == 0:
+      self.arr.append([st,ed])
+      return 0
+    stslot = self.findStartSlot(st,ed)
+    edslot = self.findEndSlot(st,ed)
+    print "insert ", sted, stslot, edslot
+    if stslot >= len(self.arr):
+      self.arr.insert(stslot, [st, ed])
+    elif stslot > edslot:  # find ed slot is ed slot-1
+      self.arr.insert(stslot, [st, ed])
+    else:
+      minst = min(self.arr[stslot][0], st)
+      maxed = max(self.arr[edslot][1], ed)
+      for i in xrange(stslot+1, edslot+1):
+          del self.arr[stslot+1]
+      self.arr[stslot][0] = minst
+      self.arr[stslot][1] = maxed
+    return stslot
+  def insertToggle(self, sted):
+    [st,ed] = sted
+    if len(self.arr) == 0:
+      self.arr.append([st,ed])
+      return 0
+    stslot = self.findStartSlot(st,ed)
+    edslot = self.findEndSlot(st,ed)
+    if stslot >= len(self.arr):
+      self.arr.append([st,ed])
+    elif stslot > edslot:
+      self.arr.insert(stslot, [st,ed])
+    else:
+      output = []
+      for i in xrange(0, stslot):
+        output.append(self.arr[i])
+      output.append([min(st, self.arr[stslot][0]), max(st, self.arr[stslot][0])])
+      # toggle to create [ed->st]
+      for i in xrange(stslot+1, edslot+1):
+        output.append([self.arr[i-1][1], self.arr[i][0]])
+      output.append([min(ed, self.arr[edslot][1]), max(ed, self.arr[edslot][1])])
+      for i in xrange(edslot+1, len(self.arr)):
+        output.append(self.arr[i])
+      self.arr = output
+  def insertToggleIter(self, sted):
+    [st,ed] = sted
+    output = []
+    if len(self.arr) == 0:
+      self.arr.append(sted)
+      return 0
+    if ed < self.arr[0][0]:
+      self.arr.insert(0, sted)
+      return 0
+    if st > self.arr[len(self.arr)-1][1]:
+      self.arr.append(sted)
+      return len(self.arr)-1
+    for i in xrange(len(self.arr)):
+      if not self.overlap(self.arr[i][0], self.arr[i][1], st, ed):
           output.append(self.arr[i])
-        output.append([min(st, self.arr[stslot][0]), max(st, self.arr[stslot][0])])
-        # toggle to create [ed->st]
-        for i in xrange(stslot+1, edslot+1):
-          output.append([self.arr[i-1][1], self.arr[i][0]])
-        output.append([min(ed, self.arr[edslot][1]), max(ed, self.arr[edslot][1])])
-        for i in xrange(edslot+1, len(self.arr)):
-          output.append(self.arr[i])
-        self.arr = output
-    def insertToggleIter(self, sted):
-        [st,ed] = sted
-        output = []
-        if len(self.arr) == 0:
-            self.arr.append(sted)
-            return 0
-        if ed < self.arr[0][0]:
-            self.arr.insert(0, sted)
-            return 0
-        if st > self.arr[len(self.arr)-1][1]:
-            self.arr.append(sted)
-            return len(self.arr)-1
-        for i in xrange(len(self.arr)):
-            if not self.overlap(self.arr[i][0], self.arr[i][1], st, ed):
-                output.append(self.arr[i])
-                continue
-            if self.arr[i][0] < st:
-                output.append([self.arr[i][0], st])
-            if self.arr[i][0] > st:
-                prest = st
-                if i > 0:
-                    prest = max(prest, self.arr[i-1][1])
-                output.append([prest, self.arr[i][0]])
-            if self.arr[i][0] < ed and self.arr[i][1] > ed:
-                output.append([ed, self.arr[i][1]])
-            if i < len(self.arr) - 1 and self.arr[i][1] < ed and self.arr[i+1][0] > ed:
-                output.append([self.arr[i][1], ed])
-        self.arr = output
-        return i
-    def dump(self):
-        for i in xrange(len(self.arr)):
-            print self.arr[i][0], " -> ", self.arr[i][1]
+          continue
+      if self.arr[i][0] < st:
+          output.append([self.arr[i][0], st])
+      if self.arr[i][0] > st:
+          prest = st
+          if i > 0:
+              prest = max(prest, self.arr[i-1][1])
+          output.append([prest, self.arr[i][0]])
+      if self.arr[i][0] < ed and self.arr[i][1] > ed:
+          output.append([ed, self.arr[i][1]])
+      if i < len(self.arr) - 1 and self.arr[i][1] < ed and self.arr[i+1][0] > ed:
+          output.append([self.arr[i][1], ed])
+    self.arr = output
+    return i
+  def dump(self):
+    for i in xrange(len(self.arr)):
+        print self.arr[i][0], " -> ", self.arr[i][1]
 
 def testInterval():
     intv = Interval()
@@ -1573,22 +1576,23 @@ class RMQ(object):
     self.arr = arr  # original arr
     self.size = len(self.arr)
     self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
+    # build the seg tree with root segidx
     self.root = self.build(0, self.size-1, 0)[0]
-  # 0th segment covers tot ary, 1th, left half, 2th, rite half
-  def build(self, lo, hi, segidx):
+  # 0th segment covers entire, 1th, left half, 2th, rite half
+  def build(self, lo, hi, segRootIdx):  # root segRootIdx, lc/rc of segRootIdx
     if lo == hi:
-      n = RMQ.Node(lo, hi, self.arr[lo], lo, segidx)
-      self.heap[segidx] = n
+      n = RMQ.Node(lo, hi, self.arr[lo], lo, segRootIdx)
+      self.heap[segRootIdx] = n
       return [n, lo]
     mid = (lo+hi)/2
-    left,lidx = self.build(lo, mid, 2*segidx+1)
-    rite,ridx = self.build(mid+1, hi, 2*segidx+2)
+    left,lidx = self.build(lo, mid, 2*segRootIdx+1)    # lc of segRootIdx
+    rite,ridx = self.build(mid+1, hi, 2*segRootIdx+2)  # rc of segRootIdx
     minval = min(left.minval, rite.minval)
     minidx = lidx if minval == left.minval else ridx
-    n = RMQ.Node(lo, hi, minval, minidx, segidx)
+    n = RMQ.Node(lo, hi, minval, minidx, segRootIdx)
     n.left = left
     n.rite = rite
-    self.heap[segidx] = n
+    self.heap[segRootIdx] = n
     return [n,minidx]
   # segment tree in bst, search always from root.
   def rangeMin(self, root, lo, hi):
@@ -1627,63 +1631,63 @@ def test():
 
 """ 2d tree, key=[x,y] """
 class KdTree(object):
-    def __init__(self, xy, level=0):
-        self.xy = xy
-        self.level = level  # each node at a level.
-        self.left = self.rite = None
-    def __repr__(self):
-        return "[" + str(self.xy) + "] L" + str(self.level)
-    def leaf(self):
-        if self.left or self.rite:
-            return False
-        return True
-    def find(self,xy):
-        keyidx = self.level % 2
-        if self.xy[keyidx] == xy[keyidx]:
-            return True, self
-        elif xy[keyidx] < self.xy[keyidx]:
-            if self.left:
-                return self.left.find(xy)
-        else:
-            if self.rite:
-                return self.rite.find(xy)
-        return False, self
-    def insert(self, xy):
-        found, parent = self.find(xy)
-        keyidx = parent.level % 2
-        if xy[keyidx] > parent.xy[keyidx]:
-            parent.rite = KdTree(xy, parent.level+1)
-            return parent.rite
-        else:
-            parent.left = KdTree(xy, parent.level+1)
-            return parent.left
-    # root.search(q,null,sys.maxint)
-    def search(self, q, p, w):
-      if self.left:
-        if distance(q,self.xy) < w:
-          return self.xy
-        else:
-          return p
+  def __init__(self, xy, level=0):
+      self.xy = xy
+      self.level = level  # each node at a level.
+      self.left = self.rite = None
+  def __repr__(self):
+      return "[" + str(self.xy) + "] L" + str(self.level)
+  def leaf(self):
+      if self.left or self.rite:
+          return False
+      return True
+  def find(self,xy):
+      keyidx = self.level % 2
+      if self.xy[keyidx] == xy[keyidx]:
+          return True, self
+      elif xy[keyidx] < self.xy[keyidx]:
+          if self.left:
+              return self.left.find(xy)
       else:
-        keyidx = self.level % 2
-        if w == sys.maxint:   # w is infinity
-          if q[keyidx] < self.xy[keyidx]:
-            p = self.left.search(q,p,w)
-            w = distance(p,q)
-            if q[keyidx] + w > self.xy[keyidx]:
-              p = self.rite.search(q, p, w)
-          else:
-            p = self.rite.search(q,p,w)
-            w = distance(p,q)
-            if q[keyidx] + w > self.xy[keyidx]:
-              p = self.left.search(q, p, w)
-        else:  # w is not infinity
-          if q[keyidx] - w < self.xy[keyidx]:
+          if self.rite:
+              return self.rite.find(xy)
+      return False, self
+  def insert(self, xy):
+      found, parent = self.find(xy)
+      keyidx = parent.level % 2
+      if xy[keyidx] > parent.xy[keyidx]:
+          parent.rite = KdTree(xy, parent.level+1)
+          return parent.rite
+      else:
+          parent.left = KdTree(xy, parent.level+1)
+          return parent.left
+  # root.search(q,null,sys.maxint)
+  def search(self, q, p, w):
+    if self.left:
+      if distance(q,self.xy) < w:
+        return self.xy
+      else:
+        return p
+    else:
+      keyidx = self.level % 2
+      if w == sys.maxint:   # w is infinity
+        if q[keyidx] < self.xy[keyidx]:
+          p = self.left.search(q,p,w)
+          w = distance(p,q)
+          if q[keyidx] + w > self.xy[keyidx]:
+            p = self.rite.search(q, p, w)
+        else:
+          p = self.rite.search(q,p,w)
+          w = distance(p,q)
+          if q[keyidx] + w > self.xy[keyidx]:
             p = self.left.search(q, p, w)
-            w = distance(p,q);
-            if q[keyidx] + w > self.xy[keyidx]:
-              p = self.rite.search(q, p, w)
-        return p            
+      else:  # w is not infinity
+        if q[keyidx] - w < self.xy[keyidx]:
+          p = self.left.search(q, p, w)
+          w = distance(p,q);
+          if q[keyidx] + w > self.xy[keyidx]:
+            p = self.rite.search(q, p, w)
+      return p            
 def test():
     kd = KdTree([35, 90])
     kd.insert([70, 80])
@@ -1886,14 +1890,14 @@ def liss(root):
     we can do bfs, level by level. or do recursion.
 """
 def populateSibling(root):
-    if not root:
-        return root
-    if root.lchild:
-        root.lchild.sibling = root.rchild
-    if root.rchild:
-        root.rchild.sibling = root.sibling ? root.sibling.lchild : None
-    populateSibling(root.lchild)
-    populateSibling(root.rchild)
+  if not root:
+      return root
+  if root.lchild:
+      root.lchild.sibling = root.rchild
+  if root.rchild:
+      root.rchild.sibling = root.sibling ? root.sibling.lchild : None
+  populateSibling(root.lchild)
+  populateSibling(root.rchild)
 
 def popNext(root):
   nexthd, nextpre = None,None
@@ -1912,82 +1916,82 @@ def popNext(root):
 
 ''' insertion is a procedure of replacing null with new node !'''
 def insertBST(root, node):
-    if not root.left and node.val < root.val:
-        root.left = node
-    if not root.right and node.val > root.val:
-        root.right = node
-    if root.left and root.val > node.val:
-        insertBST(root.left, node)
-    if root.right and root.val < node.val:
-        insertBST(root.right, node)
+  if not root.left and node.val < root.val:
+      root.left = node
+  if not root.right and node.val > root.val:
+      root.right = node
+  if root.left and root.val > node.val:
+      insertBST(root.left, node)
+  if root.right and root.val < node.val:
+      insertBST(root.right, node)
 
 def common_parent(root, n1, n2):
-    if not root:
-        return None
-    if root is n1 or root is n2:
-        return root
-    left = common_parent(root.left, n1, n2)
-    rite = common_parent(root.rite, n1, n2)
-    if left and rite:
-        return root
-    return left if left else rite
+  if not root:
+      return None
+  if root is n1 or root is n2:
+      return root
+  left = common_parent(root.left, n1, n2)
+  rite = common_parent(root.rite, n1, n2)
+  if left and rite:
+      return root
+  return left if left else rite
 
 
 # convert bst to link list, isleft flag is true when root is left child of parent 
 # test with BST2Linklist(root, False), so the left min is returned.
 def BST2Linklist(root, is_left_child):
-    # leaf, return node itsef
-    if not root.left and not root.rite:
-        return root
-    if root.left:
-        lefthead = BST2Linklist(root.left, True)
-        if lefthead:
-            lefthead.next = root
-            root.pre = lefthead
-    if root.rite:
-        ritehead = BST2Linklist(root.rite, False)
-        if ritehead:
-            root.next = ritehead
-            ritehead.pre = root
-    if is_left_child:
-        # ret max rite
-        maxrite = root
-        while maxrite.rite:
-            maxrite = maxrite.rite
-        return maxrite
-    else:
-        # ret left min
-        minleft = root
-        while minleft.left:
-            minleft = minleft.left 
-        return minleft
+  # leaf, return node itsef
+  if not root.left and not root.rite:
+      return root
+  if root.left:
+      lefthead = BST2Linklist(root.left, True)
+      if lefthead:
+          lefthead.next = root
+          root.pre = lefthead
+  if root.rite:
+      ritehead = BST2Linklist(root.rite, False)
+      if ritehead:
+          root.next = ritehead
+          ritehead.pre = root
+  if is_left_child:
+      # ret max rite
+      maxrite = root
+      while maxrite.rite:
+          maxrite = maxrite.rite
+      return maxrite
+  else:
+      # ret left min
+      minleft = root
+      while minleft.left:
+          minleft = minleft.left 
+      return minleft
 
 
 ''' max of left subtree, or first parent whose right subtree has me'''
 def findPrecessor(node):
-    if node.left:
-        return findLeftMax(node.left)
-    while root.val > node.val:  # smaller preced must be in left tree
-        root = root.left
-    while findRightMin(root) != node:
-        root = root.right
-    return root
+  if node.left:
+      return findLeftMax(node.left)
+  while root.val > node.val:  # smaller preced must be in left tree
+      root = root.left
+  while findRightMin(root) != node:
+      root = root.right
+  return root
 
 def delBST(node):
-    parent = findParent(root, node)
-    if not node.left and not node.right:
-        parent.left = null
-    # if node has left, max of left child
-    if node.left:
-        cur = findLeftMax(node)
-        delBST(cur)
-        parent.left = cur
-        return
-    if node.right:
-        cur = findRightMin(node)
-        delBST(cur)
-        parent.left = cur
-        return
+  parent = findParent(root, node)
+  if not node.left and not node.right:
+      parent.left = null
+  # if node has left, max of left child
+  if node.left:
+      cur = findLeftMax(node)
+      delBST(cur)
+      parent.left = cur
+      return
+  if node.right:
+      cur = findRightMin(node)
+      delBST(cur)
+      parent.left = cur
+      return
 def testIsBST():
     root = Node()
     isBST(root, -sys.maxint, sys.maxint)
@@ -2011,25 +2015,25 @@ it at the end of duplicates. return the insertion point.
     If T == 8' return 14
 '''
 def findInsertionPosition(l, val):
-    beg = 0
-    end = len(l) - 1
-    # the most important part is, when reduce to bottom, beg==end,
-    # how do we handle ? all other cases will be reduced to this extreme.
-    while beg <= end:
-        mid = (beg+end)/2  # mid is Math.floor
-        if l[mid] > val:
-            end = mid - 1   # if mid=beg, end=mid-1 < beg, loop breaks
-        elif l[mid] == val:   # in equal case, we want to append to end, so recur with mid+1
-            beg = mid + 1
-        else:   # in less case, of course advance lower.
-            beg = mid + 1
-    # now begin contains insertion point
-    print 'insertion point is : ', beg
-    return beg
+  beg = 0
+  end = len(l) - 1
+  # the most important part is, when reduce to bottom, beg==end,
+  # how do we handle ? all other cases will be reduced to this extreme.
+  while beg <= end:
+      mid = (beg+end)/2  # mid is Math.floor
+      if l[mid] > val:
+          end = mid - 1   # if mid=beg, end=mid-1 < beg, loop breaks
+      elif l[mid] == val:   # in equal case, we want to append to end, so recur with mid+1
+          beg = mid + 1
+      else:   # in less case, of course advance lower.
+          beg = mid + 1
+  # now begin contains insertion point
+  print 'insertion point is : ', beg
+  return beg
 def testFindInsertionPosition():
-    l = [2,5,7,8,8,8,8,8,8,8,8,8,8,8,9]
-    findInsertionPosition(l, 6)
-    findInsertionPosition(l, 8)
+  l = [2,5,7,8,8,8,8,8,8,8,8,8,8,8,9]
+  findInsertionPosition(l, 6)
+  findInsertionPosition(l, 8)
 
 ''' func to calc sqrt on machine without floating point calc.
     first, expand to prec width, then binary search
@@ -2133,7 +2137,6 @@ def is_prime(n):
     b = 2
     while b < n:
         if pow( b, x, n ) == 1:
-
             for q in factors:
                 if pow( b, x/q, n ) == 1:
                     break
@@ -2269,26 +2272,26 @@ print radixsort([170, 45, 75, 90, 802, 24, 2, 66])
 
 """ min stack, when push x, push a pair (x, min) """
 class MinStack:
-    def __init__(self, minv=sys.maxint):
-        self.stk = []
-    def push(self, x):
-        if x < self.minv:
-            self.minv = x
-        self.stk.append([x,self.minv])
-    def push(self,x):
-        if x < self.minv:
-            self.stk.append(self.minv)
-            self.minv = x
-        self.stk.append(x)
-    def pop(self):
-        if self.stk[-1] == self.minv:
-            cur = self.stk.pop()
-            self.minv = self.stk.pop()
-        else:
-            cur = self.stk.pop()
-        if len(self.stk) == 0:
-            self.minv = sys.maxint
-        return cur
+  def __init__(self, minv=sys.maxint):
+      self.stk = []
+  def push(self, x):
+      if x < self.minv:
+          self.minv = x
+      self.stk.append([x,self.minv])
+  def push(self,x):
+      if x < self.minv:
+          self.stk.append(self.minv)
+          self.minv = x
+      self.stk.append(x)
+  def pop(self):
+      if self.stk[-1] == self.minv:
+          cur = self.stk.pop()
+          self.minv = self.stk.pop()
+      else:
+          cur = self.stk.pop()
+      if len(self.stk) == 0:
+          self.minv = sys.maxint
+      return cur
 
 ''' http://stackoverflow.com/questions/5212037/find-the-kth-largest-sum-in-two-arrays
     The idea is, take a pair(i,j), we need to consider both [(i+1, j),(i,j+1)] as next val
@@ -2581,65 +2584,65 @@ class SkipList:
 """
 from collections import defaultdict
 class HashTimeTable:
-    class Entry:   # Map.Entry is a list of [v,ts] sorted by ts
-      def __init__(self, k, v, ts):
-          self.key = k
-          self.next = None
-          # value list is a sorted list with entry as tuple of [v,ts]
-          self.valueList = [[v,ts]]   # volatile
-      def bisect(self, arr, ts=None):
-          if not ts:
-              return True, len(arr)-1
-          if ts > arr[-1][1]:
-              return False, len(arr)
-          l,r = 0, len(arr)-1
-          while l != r:
-              m = l + (r-l)/2
-              if ts > arr[m][1]:
-                  l = m+1
-              else:
-                  r = m
-          if arr[l][1] == ts:
-              return True, l
-          else:
-              return False, l
-      def getValue(self,k, ts=None):
-          found, idx = self.bisect(self.valueList, ts)
-          if found:
-              return self.valueList[idx][0]
-          return False
-      def insert(self, k, v, ts):
-          found, idx = self.bisect(self.valueList, ts)
-          if found:
-              self.valueList[idx][0] = v
-          else:
-              self.valueList.insert(idx, [v,ts])
-                    
-    def __init__(self, size):
-        self.size = size
-        self.bucket = [None]*size
-    def search(self, k, ts=None):
-        h = hash(k) % self.size
-        entry = self.bucket[h]
-        while entry:
-            if entry.key == k:
-                return entry, entry.getValue(k,ts)
-            entry = entry.next
-        return None, None
-    def insert(self, k, v, ts):
-        h = hash(k) % self.size
-        if not self.bucket[h]:
-            self.bucket[h] = HashTimeTable.Entry(k,v,ts)
-            return self.bucket[h]
-        else:
-            entry,value = self.search(k,ts)
-            if entry:
-                return entry.insert(k,v,ts)
+  class Entry:   # Map.Entry is a list of [v,ts] sorted by ts
+    def __init__(self, k, v, ts):
+        self.key = k
+        self.next = None
+        # value list is a sorted list with entry as tuple of [v,ts]
+        self.valueList = [[v,ts]]   # volatile
+    def bisect(self, arr, ts=None):
+        if not ts:
+            return True, len(arr)-1
+        if ts > arr[-1][1]:
+            return False, len(arr)
+        l,r = 0, len(arr)-1
+        while l != r:
+            m = l + (r-l)/2
+            if ts > arr[m][1]:
+                l = m+1
             else:
-                entry = HashTimeTable.Entry(k,v,ts)
-                entry.next = self.bucket[h]
-                self.bucket[h] = entry
-                return entry
+                r = m
+        if arr[l][1] == ts:
+            return True, l
+        else:
+            return False, l
+    def getValue(self,k, ts=None):
+        found, idx = self.bisect(self.valueList, ts)
+        if found:
+            return self.valueList[idx][0]
+        return False
+    def insert(self, k, v, ts):
+        found, idx = self.bisect(self.valueList, ts)
+        if found:
+            self.valueList[idx][0] = v
+        else:
+            self.valueList.insert(idx, [v,ts])
+                  
+  def __init__(self, size):
+      self.size = size
+      self.bucket = [None]*size
+  def search(self, k, ts=None):
+      h = hash(k) % self.size
+      entry = self.bucket[h]
+      while entry:
+          if entry.key == k:
+              return entry, entry.getValue(k,ts)
+          entry = entry.next
+      return None, None
+  def insert(self, k, v, ts):
+      h = hash(k) % self.size
+      if not self.bucket[h]:
+          self.bucket[h] = HashTimeTable.Entry(k,v,ts)
+          return self.bucket[h]
+      else:
+          entry,value = self.search(k,ts)
+          if entry:
+              return entry.insert(k,v,ts)
+          else:
+              entry = HashTimeTable.Entry(k,v,ts)
+              entry.next = self.bucket[h]
+              self.bucket[h] = entry
+              return entry
     
 htab = HashTimeTable(1)
 htab.insert("a", "va1", 1)
@@ -3554,26 +3557,26 @@ def repmiss(arr):
 # in case subary not start from head, find max(j-1) where sum[j]=sum[i]. Use hash[sum].
 # http://www.geeksforgeeks.org/largest-subarray-with-equal-number-of-0s-and-1s/
 def ls_equal(L):
-    sz = len(L)
-    sumleft = [0 for i in sz]
+  sz = len(L)
+  sumleft = [0 for i in sz]
 
-    for i in xrange(sz):
-        sumleft[i] = sumleft[i-1] + L[i]
+  for i in xrange(sz):
+      sumleft[i] = sumleft[i-1] + L[i]
 
-    for i in xrange(sz):
-        cur_sumleft = sumleft[i]
-        if cur_sumleft == 0:
-            if i > ctx.maxsz:
-                ctx.maxsz = i
-                ctx.startidx = 0
-        else:
-            if ctx.hash[cur_sumleft] is None:
-                ctx.hash[cur_sumleft] = i
-            else:
-                if i - ctx.hash[cur_sumleft] > ctx.maxsz:
-                    ctx.maxsz = i - ctx.hash[cur_sumleft]
-                    ctx.startidx = ctx.hash[cur_sumleft]
-    return ctx.startidx, ctx.maxsz
+  for i in xrange(sz):
+      cur_sumleft = sumleft[i]
+      if cur_sumleft == 0:
+          if i > ctx.maxsz:
+              ctx.maxsz = i
+              ctx.startidx = 0
+      else:
+          if ctx.hash[cur_sumleft] is None:
+              ctx.hash[cur_sumleft] = i
+          else:
+              if i - ctx.hash[cur_sumleft] > ctx.maxsz:
+                  ctx.maxsz = i - ctx.hash[cur_sumleft]
+                  ctx.startidx = ctx.hash[cur_sumleft]
+  return ctx.startidx, ctx.maxsz
 
 
 # for each bar x, find the first smaller left, first smaller right,
@@ -3659,33 +3662,33 @@ l[i+1] > l[k], cost[i+1] = cost[k] + del l[k] .. l[i+1]
 l[i+1] < l[k], find the first l[j] < l[i+1], and cost[i+1] = min of make each l[j] to l[i+1], or del l[k]
 """
 def convert_to_sort(l):
-    dp = [sys.maxint for i in xrange(len(l))]
-    # solve the cost of each subary [0..i]
-    for i in xrange(len(l)):
-        cur = l[i]
-        for j in xrange(i-1, 0, -1):
-            costi = 0
-            if l[j] < cur:
-                for k in xrange(j,i): delcost += l[k]
-                costi = cost[i] + delcost
-            else:
-                # find first l[j] <= l[i]
-                costi += delcost
-                while l[j] > cur and j > 0:
-                    costi += l[j] - cur
-                    j -= 1
-                costi += dp[j+1]
+  dp = [sys.maxint for i in xrange(len(l))]
+  # solve the cost of each subary [0..i]
+  for i in xrange(len(l)):
+      cur = l[i]
+      for j in xrange(i-1, 0, -1):
+          costi = 0
+          if l[j] < cur:
+              for k in xrange(j,i): delcost += l[k]
+              costi = cost[i] + delcost
+          else:
+              # find first l[j] <= l[i]
+              costi += delcost
+              while l[j] > cur and j > 0:
+                  costi += l[j] - cur
+                  j -= 1
+              costi += dp[j+1]
 
-            # after each round of j, up-beat
-            dp[i] = costi if dp[i] > costi else costi
+          # after each round of j, up-beat
+          dp[i] = costi if dp[i] > costi else costi
 
-    # as dp[i] is the cost of with l[i] as the last item.
-    # global can be the one with last item bing deleted.
-    gmin = sys.maxint
-    for i in xrange(len(l)):
-        costi = dp[i] + delcost[n-1]-delcost[i]
-        gmin = min(costi, gmin)
-    return gmin
+  # as dp[i] is the cost of with l[i] as the last item.
+  # global can be the one with last item bing deleted.
+  gmin = sys.maxint
+  for i in xrange(len(l)):
+      costi = dp[i] + delcost[n-1]-delcost[i]
+      gmin = min(costi, gmin)
+  return gmin
 
 
 """ integer partition problem. break to subproblem, recur equation, start from boundary.
@@ -3695,35 +3698,35 @@ def convert_to_sort(l):
     subset sum, s[i, v] = s[i-1,v] + s[i-1, v-A.i]
 """
 def integer_partition(A, n, k):
-    m = [[0 for i in xrange(n)] for j in xrange(k)]  # min max value
-    d = [[0 for i in xrange(n)] for j in xrange(k)]  # where divider is
-    # calculate prefix sum
-    for i in xrange(A): psum[i] = psum[i-1] + A[i]
-    # boundary, one divide, and one element
-    for i in xrange(A): m[i][1] = psum[i]
-    for j in xrange(k): m[1][j] = A[1]
-    for i in xrange(2, n):
-        for j in xrange(2, k):
-            m[i][j] = sys.maxint
-            for x in xrange(1, i):
-                cost = max(m[x][j-1], psum[i]-psum[x])
-                if m[i][j] > cost:
-                    m[i][j] = cost
-                    d[i][j] = x     # divide at pos x
+  m = [[0 for i in xrange(n)] for j in xrange(k)]  # min max value
+  d = [[0 for i in xrange(n)] for j in xrange(k)]  # where divider is
+  # calculate prefix sum
+  for i in xrange(A): psum[i] = psum[i-1] + A[i]
+  # boundary, one divide, and one element
+  for i in xrange(A): m[i][1] = psum[i]
+  for j in xrange(k): m[1][j] = A[1]
+  for i in xrange(2, n):
+      for j in xrange(2, k):
+          m[i][j] = sys.maxint
+          for x in xrange(1, i):
+              cost = max(m[x][j-1], psum[i]-psum[x])
+              if m[i][j] > cost:
+                  m[i][j] = cost
+                  d[i][j] = x     # divide at pos x
 
 
 """ reg match . *. recursion, loop try 0,1,2...times for *. """
 def regMatch(T, P, offset):
-    if P is None: return T is None
-    if p+1 is not '*':
-        return p == s or p is '.' and regMatch(T,P, offset+1)
-    else:
-        # loop match 1, 2, 3...
-        while p == s or p is '.':
-            if regMatch(T, P+2, offset+2): return True
-            s += 1
-        # match 0 time
-        return regMatch(T, P, offset+2)
+  if P is None: return T is None
+  if p+1 is not '*':
+      return p == s or p is '.' and regMatch(T,P, offset+1)
+  else:
+      # loop match 1, 2, 3...
+      while p == s or p is '.':
+          if regMatch(T, P+2, offset+2): return True
+          s += 1
+      # match 0 time
+      return regMatch(T, P, offset+2)
 
 
 """ """ """ """ """
@@ -3758,24 +3761,24 @@ assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
 def minpath(G,src,dst,cost,tab):
-    mincost = cost[src][dst]
-    # for each intermediate node
-    for v in G.vertices():
-      if v != src and v != dst:
-        mincost = min(mincost,
-            minpath(G,src,v) +
-            minpath(G,v,dst))
-        tab[src][dst] = mincost
-    return tab[src][dst]
+  mincost = cost[src][dst]
+  # for each intermediate node
+  for v in G.vertices():
+    if v != src and v != dst:
+      mincost = min(mincost,
+          minpath(G,src,v) +
+          minpath(G,v,dst))
+      tab[src][dst] = mincost
+  return tab[src][dst]
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
 def minpath(G, src, dst):
-    tab = [sys.maxint]*szie
-    tab[0] = 0
-    for i in xrange(n):
-      for j in xrange(n):
-        if i != j:
-          tab[i] = min(tab[j]+cost[i][j], tab[i])
-    return tab[n-1]
+  tab = [sys.maxint]*szie
+  tab[0] = 0
+  for i in xrange(n):
+    for j in xrange(n):
+      if i != j:
+        tab[i] = min(tab[j]+cost[i][j], tab[i])
+  return tab[n-1]
 
 ''' mobile pad k edge, tab[src][dst][k] '''
 def minpath(G, src, dst, k):
