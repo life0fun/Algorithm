@@ -2,6 +2,15 @@
 import sys
 import math
 from collections import defaultdict
+l = []
+multi = [[x] for i in xrange(10)]
+l.append(e)   # not ret l
+l.pop() / l.popleft()
+''.join(reversed(txt))
+cnt = defaultdict(lambda: 0)
+l = sorted(cnt.items(), key=lambda x: x[1], reverse=True)
+l = filter(lambda x: n%x==0, [x for x in xrange(2,100)])
+
 
 ''' recursive, one line print int value bin string'''
 int2bin = lambda n: n>0 and int2bin(n>>1)+str(n&1) or ''
@@ -1623,6 +1632,39 @@ class RMQ(object):
           rmin,ridx = self.queryRangeMinIdx(2*idx+2, lo, hi)
       minidx = lidx if lmin < rmin else ridx
       return min(lmin,rmin), minidx
+
+def build(self, arr, lo, hi):
+  if lo > hi:
+    return None
+  node = RMQ.Node(lo, hi)
+  if lo == hi:
+    node.sum = arr[lo]
+  else:
+    mid = (lo+hi)/2
+    node.left = self.build(lo, mid)
+    node.rite = self.build(mid+1, hi)
+    node.sum = node.left.sum + node.rite.sum
+  return node
+def update(self, idx, value):
+  if self.lo == self.hi:
+    self.sum = value
+  else:
+    m = (node.lo + node.hi)/2
+    if idx <= m:
+      update(self.left, idx, value)
+    else:
+      update(self.rite, idx, value)
+    self.sum = self.left.sum + self.rite.sum
+def sumRange(self, lo, hi):
+  if self.lo == lo and self.hi == hi:
+    return self.sum
+  m = (node.lo + node.hi)/2
+  if hi <= m:
+    return sumRange(self.left, lo, hi)
+  elif lo >= m+1:
+    return sumRange(self.rite, lo, hi)
+  return sumRange(self.left, lo, m) + sumRange(self.rite, m+1, hi)
+
 def test():
     r = RMQ([4,7,3,5,12,9])
     print r.rangeMin(r.root,0,5)
@@ -3310,7 +3352,7 @@ def stock_profit(L):
     return tot
 print stock_profit([10, 22, 5, 75, 65, 80])
 
-""" profit[i]=maxProfit[i..n], from left <- rite, then from left -> rite """
+""" 2 trans. left <- rite, buy at i sell at rmax. left -> rite, buy at valley sell at i. """
 def profit(arr):
   sz = len(arr)
   profit=[0]*sz
@@ -3327,19 +3369,19 @@ def profit(arr):
   return profit[sz-1]
 print 
 
-''' can buy sell many times. sum up every incr segment.(i,j)
-use bot flag. if not bot and i+1 > i, then buy at i. if bot, and i+1<i, then sell.
-'''
+""" many times. use bot flag. if not bot and i+1 > i, then buy at i. 
+if bot, and i+1<i, then sell. sum up every incr segment.(i,j)
+"""
 def profit_many_trans(arr):
   buy,sz,bot = 0,0,len(arr),False
   profit = 0
   for i in xrange(sz-1):
-    # do not buy at today if tomorrow is cheaper.
-    if not bot and arr[i+1] > arr[i]:
+    # look ahead. buy today only when tomo high(we can sell)
+    if not bot and arr[i] < arr[i+1]:
       buy = i
       bot = True
       continue
-    if bot and arr[i] > arr[i+1]:
+    if bot and arr[i] > arr[i+1]:  # sell when look ahead down.
       profit += arr[i]-arr[buy]
       bot = False
   if bot and arr[sz-1] > arr[buy]:
@@ -3347,8 +3389,10 @@ def profit_many_trans(arr):
   return profit
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
-""" FSM many profit, no loop of k trans. at each price, incl/excl at buy/sell state.
-bot[i]=max(bot[i-1],sell[i-1]-p), sold[i]=max(sold[i-1], bot[i-1]+price[i]) """
+""" FSM bot[i]/sold[i]. arr[i], update bot/sold, stash prebot before updat bot.
+bot[i]=max(bot[i-1],sold[i-1]-arr[i]),  ; calc bot first.
+sold[i]=max(sold[i-1], bot[i-1]+arr[i]) 
+"""
 def profit_many_trans(arr):
   bot,sold = -sys.maxint, 0
   for i in xrange(len(arr)):
@@ -3358,10 +3402,11 @@ def profit_many_trans(arr):
   return sold
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
-""" FSM, process each evt(arr[i]), track cur profit after bot/sold/reset.
+""" FSM, 3 states, bot/sold/rest. Each state profit at arr[i], so bot[i]/sold[i]/rest[i].
 bot[i] = max(bot[i-1], rest[i-1]-arr[i]); not buy at i, or buy with rest money.
 sold[i] = max(sold[i-1], bot[i-1]+arr[i]), not sell, or sell
 rest[i] = sold[i-1], because cooldown. it is presold
+as bot[i] only relies on bot[i-1], can use one var.
 """
 import sys
 def stock_profit_cooldown(arr):
@@ -3375,11 +3420,11 @@ def stock_profit_cooldown(arr):
 print stock_profit_cooldown([1, 2, 3, 0, 2])
 
 
-""" At most up-to K transactions. max profit may involve less than k trans.
-e.g, [1,2,3,4], max profit of up to 2 trans the same as 1 trans.
-Just add one loop to calc trans from 1..k.
-sell[i][p] is max profit with i transactions sell at p.
+""" Atmost up-to K transactions. max profit may involve less than k trans.
+2 state, bot[i]/sell[i]. At each arr[i], try all trans 1..k.
+bot[i] only relies on bot[i-1], so bot[i][k] can be simplied to bot[k]
 For each price, bottom up 1 -> k transations. use k+1 as k deps on k-1. k=0.
+sell[i][k] is max profit with k trans at day i.
 sell[i] = max(sell[i], bot[i]+p), // carry over prev num in trans i'th profit.
 bot[i] = max(bot[i], sell[i-1]-p) // max of incl/excl bot at this price, 
 """
@@ -3387,7 +3432,7 @@ import sys
 def topk_profit(arr, k):
   sell,bot=[0]*(k+1), [-9999]*(k+1)
   for i in xrange(len(arr)):
-    for trans in xrange(1,k+1):
+    for trans in xrange(1,k+1):  # bottom up trans at each day.
       sell[trans] = max(sell[trans], bot[trans]+arr[i])
       bot[trans] = max(bot[trans], sell[trans-1]-arr[i])
     print arr[i], bot, "  ", sell
