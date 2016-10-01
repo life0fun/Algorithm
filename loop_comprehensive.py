@@ -3665,8 +3665,8 @@ def largestRectangle(l):
   return maxrect
 
 """
-Every row in the matrix is viewed as the ground. height is the count
-of consecutive 1s from that row to above rows. 
+Every row in the matrix can be viewed as the ground. height is the count
+of consecutive 1s from the ground. Iterate each ground.
 htMatrix[row] = [2,4,3,0,...] the ht of each col if row is the ground
 """
 def maxRectangle(matrix):
@@ -3691,6 +3691,34 @@ def maxRectangle(matrix):
         stk.pop()
       stk.append(i)
     return mx
+
+""" area[r,c] = (rite_edge[r,c]-left_edge[r,c])*ht. use max left when substract left edge.
+left_edge[r,c] = max(left_edge[r-1,c], cur_left_edge), max of prev row's left edge.
+rite_edge[r,c] = min(rite_edge[r-1,c], cur_rt_edge), min of prev row's rite edge
+as we use max left edge, cur_left_edge = c+1, we use min rite edge, cur_rite_edge = c
+"""
+def maxRectangle(matrix):
+  for r in xrange(len(matrix)):
+    ht,left_edge,rite_edge = [0]*n, [0]*n, [n]*n
+    cur_left_edge = 0, cur_rite_edge = n
+    for c in xrange(len(matrix[0])):
+      if matrix[r][c] == 1:
+        ht[c] += 1
+      else:
+        htc[c] = 0
+      if matrix[r][c] == 1:
+        left_edge[c] = max(left_edge[c], cur_left_edge) # max left when substract
+      else:
+        left_edge[c] = 0      # reset when matrix 0
+        cur_left_edge = c+1   # mov left edge -->
+      if matrix[r][c] == 1:
+        rite_edge[c] = min(rite_edge[c], cur_rite_edge) # min rite to narrow
+      else:
+        rite_edge[c] = n    # defaut is n as we using min rite
+        cur_rite_edge = c   # shrink rite edge
+    for c in xrange(n):
+      maxA = max(maxA, (rite_edge[c]-left_edge[c])*ht[c])
+  return maxA
 
 
 """ largest Rect with swap of any pairs of cols 
