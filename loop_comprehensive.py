@@ -402,41 +402,29 @@ print findMax([120, 100, 80, 20, 0])
 
 ''' bisect always check l,r boundary first a[l-1]<t<=a[l] '''
 def floorceil(arr, t):
-  f,c = -1,-1
-  l,r = 0,len(arr)-1
-  if t < arr[0]:
-    return None,arr[0]
-  if t > arr[-1]:
-    return arr[-1],None
-  while l != r:         # at least 2 eles in the loop
-    mid = l + (r-l)/2
-    if arr[mid] < t:
-      l = mid+1
-    else:
-      r = mid
-  # when out of loop, double check
-  if arr[l] == t:
-    f = l
-  else:
-    f = l
-
-  l,r = 0,len(arr)-1
-  while l != r:
-    mid = l + (r-l)/2
-    if arr[mid] <= t:  # for ceiling, lift l when equals.
-      l = mid+1
-    else:
-      r = mid
-  if arr[l] == t:
-    c = l
-  else:
-    c = l-1
-
-  if f >= 0:
-    f = arr[f]
-  if c >= 0:
-    c = arr[c]
-  return f,c
+  def floor(arr, t):
+    l,r = 0, len(t)-1
+    while l < r:
+      mid = l + (r-l)/2
+      if arr[mid] < t:
+        l = mid+1
+      else:
+        r = mid
+    return arr[l] == t ? l : -1
+  def ceiling(arr, t):
+    l,r = 0, len(t)-1
+    while l < r:
+      mid = l + (r-l)/2
+      if arr[mid] > t:
+        r = mid-1
+      else:
+        l = mid
+    return r
+  l = floor(arr, t)
+  if l == -1:
+    return [-1, -1]
+  r = ceiling(arr,t)
+  return [l, r]
 print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 2)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
@@ -4646,42 +4634,23 @@ print distinct("aeb", "be")
 print distinct("abbbc", "bc")
 print distinct("rabbbit", "rabbit")
 
-""" as tab[i][j] only from tab[i-1][j-1], two rows solution """
+""" DP boundary case: tab[0][j]=1 empty target string has 1 subseq in any src.
+tab[i][0]=0 : empty src has 0 subseq. """
 def distinct(s,t):
-  pre, row = [0]*len(t), [0]*len(t)
-  for r in xrange(len(s)):
-    for c in xrange(len(t)):
-      if s[r] == t[c]:
-        if c == 0:
-          row[c] += 1
-        else:
-          row[c] += pre[c-1]
-    pre = row[:]
-  return row[len(t)-1]
+  dist = [0]*(len(t)+1)
+  dist[0] = 1
+  for sidx in xrange(1,len(s)):
+    pre = 1
+    for tidx in xrange(1, len(t)):
+      tmp = dist[tidx]
+      if s[sidx-1] == t[tidx-1]:
+        dist[tidx] = dist[tidx] + pre
+      else:
+        dist[tidx] = dist[tidx]
+      pre = tmp
+  return dist[len(t)]
 print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
-
-""" one row version, in rolling row version, row's index does not matter.
-we iter each col, cache row[col] as pre before mutate row[col], as col-1 already mutated
-"""
-def distinct(s,t):
-  row = [0]*len(t)
-  pre = 0
-  for r in xrange(len(s)):
-    for c in xrange(len(t)):
-      if s[r] == t[c]:
-        if c == 0:
-          pre = row[c] # cache to pre before mutate, for next row use
-          row[c] += 1  # cumulate pre row c equals. "bbb", "bb"
-        else:
-          tmp = row[c]  # cache to pre before mutate, for next row use.
-          # can not do row[c-1] as when in prerow[col-1] already change in currow[col-1]
-          row[c] += pre
-          pre = tmp  # cache pre for next row, j+1
-      else:
-        pre = row[c]
-  return row[len(t)-1]
-print distinct("bbc", "bbc")
 
 
 """ keep track of 2 thing, max of incl cur ele, excl cur ele """
