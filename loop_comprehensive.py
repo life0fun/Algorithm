@@ -3100,6 +3100,24 @@ def minwin(arr, words):
       mnw = min(mnw, r-l)        
   return mnw
 
+""" Longest substring with at most 2 distinct chars 
+sliding win, i -> win start, j -> the second char in win.
+slide k, K++ if A[k] = A[k-1]
+case 1: A[k] == A[j], still 2 char, but need to let j = k-1 so i will jmp to j+1.
+case 2: A[k] != A[j], i,j are 2 chars, upbeat, and set i = j-1 and update j=k-1.
+so i reset to the first char(j=k-1), as last time when (A[k] != A[k-1] and A[k] == A[j]), 
+"""
+def longestTwoChar(arr):
+  i,j = 0, -1, mxlen = 0
+  for k in xrange(1, len(arr)):
+    if arr[k] == arr[k-1]:
+      continue
+    if j >= 0 and arr[k] != arr[j]:
+      mxlen = max(mxlen, k-i)
+      i = j + 1
+    j = k -1
+  return mxlen
+
 
 """
 max distance between two items where right item > left items.
