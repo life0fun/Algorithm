@@ -229,36 +229,17 @@ def sortColor(arr):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
   i,wr,wb=0,0,len(arr)-1
-  while i < len(arr):   # for loop only good for 2 types.
-    if arr[i] == 0 and wr < i:   # swap to wr only when i > wr
-      swap(arr, i, wr)
-      wr += 1
-    elif arr[i] == 2 and i < wb:
+  for i in xrange(len(arr)):
+    while arr[i] == 2 and i < wb:
       swap(arr, i, wb)
       wb -= 1
-    else:
-      i += 1
+    while arr[i] == 0 and i > wr:
+      swap(arr, i, wr)
+      wr += 1
   return arr
-print color([2,0,1])
-print color([1,2,1,0,1,2,0,1,2,0,1])
+print sortColor([2,0,1])
+print sortColor([1,2,1,0,1,2,0,1,2,0,1])
 
-""" mid start point of 1, which sep 0/2. swap mid """
-def sortColor(arr):
-  def swap(arr, i, j):
-    arr[i],arr[j] = arr[j],arr[i]
-  lo,mid,hi = 0,0,len(arr)-1
-  while mid <= hi:
-    if arr[mid] == 0:
-      swap(arr, lo, mid)
-      lo += 1
-      mid += 1
-    elif arr[mid] == 2:
-      swap(arr, mid, hi)
-      hi -= 1
-    else:
-      mid += 1
-  return arr
-print sortColor([0,0,2,1])
 
 def hIndex(citations):
   def partition(arr, l, r):
@@ -622,9 +603,9 @@ def medianmedian(A, beg, end, k):
   def partition(A, l, r, pivot):
     widx = l
     for i in xrange(l, r+1):
-        if A.i < pivot:
-            A.widx, A.i = A.i, A.widx
-            widx += 1
+      if A.i < pivot:
+        A.widx, A.i = A.i, A.widx
+        widx += 1
     # i will park at last item that is < pivot
     return widx-1   # left shift as we always right shift after swap.
 
@@ -643,9 +624,19 @@ def medianmedian(A, beg, end, k):
   pivotidx = partition(A, beg, end, pivot)  # scan from begining to find pivot idx.
   rank = pivotidx - beg + 1
   if k <= rank:
-      return medianmedian(A, beg, pivotidx, k)
+    return medianmedian(A, beg, pivotidx, k)
   else:
-      return medianmedian(A, pivotidx+1, end, k-rank)
+    return medianmedian(A, pivotidx+1, end, k-rank)
+
+def removeDup(arr):
+  pos, start = 1,2
+  for i in xrange(start, len(arr)):
+    if arr[i] == arr[pos-1] && arr[i] == arr[pos]:
+      continue
+    arr[pos] = arr[i]
+    pos += 1
+  return pos
+
 
 """ insert into circular link list 
     1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
