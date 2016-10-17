@@ -311,6 +311,10 @@ print bisect([1,1,3,5,7])
 def binarySearchRotated(arr,t):
   l,r=0,len(arr)-1
   while l <= r:      # if =, will enter loop even when only one ele.
+    while l < r and arr[l] == arr[l+1]:
+      l += 1
+    while r > l and arr[r] == arr[r-1]:
+      r -= 1
     mid = l+(r-l)/2
     if t == arr[mid]:
       return True, mid
@@ -336,18 +340,13 @@ print bisectRotated([3], 2)
 def rotatedMin(arr):
   l,r=0,len(arr)-1
   while l != r:     # into loop only when >= 2 ele, ret l when out
+    while l < r and arr[l] == arr[l+1]:
+      l += 1
+    while r > l and arr[r] == arr[r-1]:
+      r -= 1
     mid = (l+r)/2
     if arr[mid] > arr[mid+1]:
       return arr[mid+1]
-    # first, mov mid to skip dups. if arr[l]=arr[r] pivot is on left
-    while arr[l] == arr[mid] and mid < r:
-      # check at each mov of mid
-      if arr[mid] > arr[mid+1]:
-        return arr[mid+1]
-      mid += 1
-    if mid == r:  # two ends eqs, cut in dup, min on left,  /--|--/ => ---/ \ /---
-      r = (l+r)/2  # r = mid
-      continue
     ''' l - mid in the first same segment '''
     if arr[l] < arr[mid] and mid < r:
       l = mid+1
@@ -772,7 +771,7 @@ def postorderMorris(self, root):
   return out[::-1]
 
 """ pre-order with rite first, then reverse, got post-order 
-At each cur, shall move to rite, but first stash cur's left before move.
+process cur, stash left, and mov to rite. if rite null, will pop.
 """
 def postOrder(root):
   stk = []
@@ -802,15 +801,13 @@ process cur node, replace cur node from stack if null
 """
 def flatten(r):
   while stk or r:
-    if r:   # need visit root, mov to r.left, stash r.rite for later
+    if r:   # process cur, stash rite, mov to r.left, stash r.rite for later
       # visit cur, replace cur from stk top if leaf, descend to rite
-      if not r.left and r.rite:
-        r.rite = stk.top()
-        r = stk.pop()
-      else:
-        if r.rite:
-          stk.append(r.rite)  # stash rite before move
+      if r.rite:
+        stk.append(r.rite)  # stash rite before move
       r.rite = r.left
+      if not r.left:
+        r.rite = stk.top()      
       r = r.rite  # advance, if not r, will pop stk
     else:
       r = stk.pop()
@@ -949,24 +946,24 @@ def deserTree(l):
 """ no same char shall next to each other """
 from collections import defaultdict
 def noAdj(text):
-    cnt = defaultdict(lambda: 0)
-    sz = len(text)
-    for i in xrange(sz):
-        cnt[text[i]] += 1
-    l = sorted(cnt.items(), key=lambda x: x[1], reverse=True)
-    start = 0
-    out = [None]*sz
-    for e in l:
-        gap = sz/e[1]
-        for s in xrange(e[1]):
-            pos = start + s*gap
-            while out[pos]:
-                pos += 1
-                if pos >= sz:
-                return False, out
-            out[pos] = e[0]
-        start += 1
-    return True, out
+  cnt = defaultdict(lambda: 0)
+  sz = len(text)
+  for i in xrange(sz):
+      cnt[text[i]] += 1
+  l = sorted(cnt.items(), key=lambda x: x[1], reverse=True)
+  start = 0
+  out = [None]*sz
+  for e in l:
+      gap = sz/e[1]
+      for s in xrange(e[1]):
+          pos = start + s*gap
+          while out[pos]:
+              pos += 1
+              if pos >= sz:
+              return False, out
+          out[pos] = e[0]
+      start += 1
+  return True, out
 
 print noAdj("abacbcdc")
 print noAdj("aabbc")
@@ -1589,7 +1586,7 @@ class RMQ(object):
       return sys.maxint, -1
     if lo <= root.lo and hi >= root.hi:
       return root.minval, root.minvalidx
-    lmin,rmin = root.minval, root.minval
+    lmin,docker stop = root.minval, root.minval
     # ret min of both left/rite.
     if root.left:
       lmin,lidx = self.rangeMin(root.left, lo, hi)
@@ -2395,106 +2392,104 @@ class MaxHeap():
       self.siftdown(0)
 
 def KthMaxSum(p, q, k):
-    color = [[0 for i in xrange(len(q)) ] for i in xrange(len(p)) ]
-    outl = []
-    outk = 0
-    i = 0
-    j = 0
-    heap = MaxHeap()
-    heap.insert(p[i]+q[j], i, j)
-    color[0][0] = 1
+  color = [[0 for i in xrange(len(q)) ] for i in xrange(len(p)) ]
+  outl = []
+  heap = MaxHeap()
+  heap.insert(p[i]+q[j], 0, 0)
+  color[0][0] = 1
 
-    for i in xrange(k):
-        print ' heap ', heap.toString()
-        head = heap.head()
-        maxv = head.val
-        i, j = head.ij
-        outl.append((maxv, i, j))
-        heap.extract()
+  for i in xrange(k):
+      print ' heap ', heap.toString()
+      head = heap.head()
+      maxv = head.val
+      i, j = head.ij
+      outl.append((maxv, i, j))
+      heap.extract()
 
-        # insert [i+1,j] and [i, j+1]
-        if i+1 < len(p) and not color[i+1][j]:
-            color[i+1][j] = 1
-            heap.insert(p[i+1]+q[j], i+1, j)
-        if j+1 < len(q) and not color[i][j+1]:
-            color[i][j+1] = 1
-            heap.insert(p[i]+q[j+1], i, j+1)
-    print 'result ', outl
+      # insert [i+1,j] and [i, j+1]
+      if i+1 < len(p) and not color[i+1][j]:
+          color[i+1][j] = 1
+          heap.insert(p[i+1]+q[j], i+1, j)
+      if j+1 < len(q) and not color[i][j+1]:
+          color[i][j+1] = 1
+          heap.insert(p[i]+q[j+1], i, j+1)
+  print 'result ', outl
 
 def testKthMaxSum():
     p = [100, 50, 30, 20, 1]
     q = [110, 20, 5, 3, 2]
     KthMaxSum(p, q, 7)
 
-""" min heap for priority queue """
+""" key2idx to map key to idx in the heap arr """
 from collections import defaultdict
 class MinHeap(object):
-    def __init__(self, mxSize=10):
-        self.arr = []
-        self.size = 0
-        self.mxSize = mxSize
-        self.key2idx = defaultdict()
-    def get(self, idx):
-        if idx >= 0 and idx < self.size:
-            return self.arr[idx][0]
-        return None
-    def getByVal(self, val):
-        idx = self.key2idx[val]
-        return self.get(idx)
-    def lchild(self, idx):
-        if idx*2+1 < self.size:
-            return idx*2+1
-        return None
-    def rchild(self, idx):
-        if idx*2+2 < self.size:
-            return idx*2+2
-        return None
-    def parent(self,idx):
-        if idx > 0:
-            return (idx-1)/2
-        return None
-    def swap(self, src, dst):
-        srcv = self.get(src)
-        dstv = self.get(dst)
-        self.arr[src], self.arr[dst] = [dstv], [srcv]
-        self.key2idx[srcv] = dst
-        self.key2idx[dstv] = src
-    def insert(self, key, val):
-        entry = [key, val]
-        self.arr.append(entry)
-        self.key2idx[key] = self.size
-        self.size += 1
-        return self.siftup(self.size-1)
-    def siftup(self, idx, end=self.size):
-        parent = self.parent(idx)
-        if parent >= 0 and self.get(parent)[0] > self.get(idx)[0]:
-            self.swap(parent, idx)
-            return self.siftup(parent)
-        return parent
-    def siftdown(self, idx, end=self.size):
-        l,r = self.lchild(idx), self.rchild(idx)
-        minidx = idx
-        if l and self.get(l)[0] < self.get(minidx)[0]:
-            minidx = l
-        if r and self.get(r)[0] < self.get(minidx)[0]:
-            minidx = r
-        if minidx != idx:
-            self.swap(idx, minidx)
-            return self.siftdown(minidx)
-        return minidx
-    def heapify(self):
-        mid = (len(self.arr)-1)/2
-        while mid >= 0:
-            self.siftdown(mid)
-            mid -= 1
-    def extractMin(self):
-        self.swap(0, self.size-1)
-        self.size -= 1
-        self.siftdown(0)
-    def decreaseKey(self, v, newv):
-        idx = self.key2idx[v]
-        self.arr[idx] = [newv]
-        self.siftup(idx)
+  def __init__(self, mxSize=10):
+    self.arr = []
+    self.size = 0
+    self.mxSize = mxSize
+    self.key2idx = defaultdict()
+  def get(self, idx):
+    if idx >= 0 and idx < self.size:
+      return self.arr[idx][0]
+    return None
+  # given a value, found its offset/idx in the array
+  def getByVal(self, val):
+    idx = self.key2idx[val]
+    return self.get(idx)
+  def lchild(self, idx):
+    if idx*2+1 < self.size:
+      return idx*2+1
+    return None
+  def rchild(self, idx):
+    if idx*2+2 < self.size:
+      return idx*2+2
+    return None
+  def parent(self,idx):
+    if idx > 0:
+      return (idx-1)/2
+    return None
+  def swap(self, src, dst):  # update idx also
+    srcv = self.get(src)
+    dstv = self.get(dst)
+    self.arr[src], self.arr[dst] = [dstv], [srcv]
+    self.key2idx[srcv] = dst
+    self.key2idx[dstv] = src
+  def insert(self, key, val):
+    entry = [key, val]
+    self.arr.append(entry)
+    self.key2idx[key] = self.size
+    self.size += 1
+    return self.siftup(self.size-1)
+  def siftup(self, idx, end=self.size):
+    parent = self.parent(idx)
+    if parent >= 0 and self.get(parent)[0] > self.get(idx)[0]:
+      self.swap(parent, idx)
+      return self.siftup(parent)
+    return parent
+  def siftdown(self, idx, end=self.size):
+    l,r = self.lchild(idx), self.rchild(idx)
+    minidx = idx
+    if l and self.get(l)[0] < self.get(minidx)[0]:
+      minidx = l
+    if r and self.get(r)[0] < self.get(minidx)[0]:
+      minidx = r
+    if minidx != idx:
+      self.swap(idx, minidx)
+      return self.siftdown(minidx)
+    return minidx
+  def heapify(self):
+    mid = (len(self.arr)-1)/2
+    while mid >= 0:
+      self.siftdown(mid)
+      mid -= 1
+  def extractMin(self):
+    self.swap(0, self.size-1)
+    self.size -= 1
+    self.siftdown(0)
+  def decreaseKey(self, v, newv):
+    idx = self.key2idx[v]
+    self.arr[idx] = [newv]
+    self.siftup(idx)
 def testMinHeap():
     h = MinHeap()
     h.insert(5)
@@ -4372,7 +4367,6 @@ def rmParenth(s, res):
         L -= 1
       else:
         R += 1
-  
   recur(res, s, 0, L, R, 0, path)
   return res
   # recur each pos, L,R is balance of l-r, either L=0 or R=0
@@ -4400,21 +4394,7 @@ s="()())()";path=[];res=[];print rmParenth(s,0,path,0,0,res)
 s="()())()";path=[];res=[];print rmParenth(s,0,path,0,0,res)
 
 
-def rmParenth(arr, pos, rmpos, res):
-  lcnt = 0
-  for i in xrange(pos, len(s)):
-    if arr[i] == "(":
-      lcnt += 1
-    else:
-      lcnt -= 1
-    if lcnt < 0:
-      for j in xrange(rmpos, i+1):
-        if arr[j] == ")" and (j == rmpos or arr[j-1] != ")"):
-          rmParenth(arr[:j]+arr[j+1:], i, j, res)
-      return
-  res.append(arr)
-
-""" anything we can do with recursion, we should do with bfs """
+""" recur, generize formula, with boundary condition first """
 from collections import deque
 def bfsInvalidParen(s):
   res = []
@@ -4463,16 +4443,6 @@ def addOperator(arr, l, r):
             out.append([lv-rv, "{}-{}".format(lexp,rexp)])
     tab[i][j] = out
   return tab[l][r]
-
-""" tab[i,j] = [[v1, exp1], [v2, exp2], ...] """
-def addOpsTarget(arr, l, r, target):
-  out = []
-  tab = addOpsTarget(arr, l, r)
-  for v, exp in tab[l][r]:
-    if v == target:
-      out.append(exp)
-  return out
-
 
 """ add operators to exp forms. As no parenth, so go dfs offset.
 If allow parenth, need for each gap, fill tab[i,j] with lv/rv,lexpr/rexpr.
