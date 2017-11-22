@@ -1,3 +1,5 @@
+# Jianchao's Blog
+# www.cnblogs.com/jcliBlogger/
 
 import sys
 import math
@@ -329,12 +331,11 @@ def binarySearchRotated(arr,t):
         l = mid + 1
       else:
         r = mid - 1
-    else:
+    else:   # arr.l == arr.m, advance l
       l += 1
   # when out loop not return, not found.
-  return False, None
-print bisectRotated([3, 4, 5, 1, 2], 2)
-print bisectRotated([3], 2)
+print binarySearchRotated([3, 4, 5, 1, 2], 2)
+print binarySearchRotated([3], 2)
 
 """ find min in rotated. with dup, advance mid, and check on each mov """
 def rotatedMin(arr):
@@ -681,7 +682,7 @@ map a curry fn that is recursive calls walk f to non-leaf node """
   [f form]
   (let [pf (partial walk f)]
     (if (coll? form)
-      (f (into (empty form) (map pf form)))
+      (into (empty form) (map pf form))
       (f form))))
 
 """ outer fn is apply to leaf node. inner fn is for nested list forms.
@@ -694,15 +695,15 @@ inner is fn need to apply to nested form. outer is fn apply to non-nest form
   data structure of the same type, then applies outer to the result.
   Recognizes all Clojure data structures. Consumes seqs as with doall."
   
-  [inner outer form]
+  [fn-to-coll fn-to-leaf form]
   (cond
-   (list? form) (outer (apply list (map inner form)))
-   (instance? clojure.lang.IMapEntry form) (outer (vec (map inner form)))
-   (seq? form) (outer (doall (map inner form)))
+   (list? form) (fn-to-leaf (apply list (map fn-to-coll form)))
+   (instance? clojure.lang.IMapEntry form) (fn-to-leaf (vec (map fn-to-coll form)))
+   (seq? form) (fn-to-leaf (doall (map fn-to-coll form)))
    (instance? clojure.lang.IRecord form)
-     (outer (reduce (fn [r x] (conj r (inner x))) form form))
-   (coll? form) (outer (into (empty form) (map inner form)))
-   :else (outer form)))
+     (fn-to-leaf (reduce (fn [r x] (conj r (fn-to-coll x))) form form))
+   (coll? form) (fn-to-leaf (into (empty form) (map fn-to-coll form)))
+   :else (fn-to-leaf form)))
 
 """ f is fn apply to leaf form. for non-leaf/list, recursive apply f into """
 (defn postwalk
@@ -976,7 +977,7 @@ class AVLTree(object):
     self.key = key
     self.size = 1
     self.height = 1
-    self.left = None
+    self.left = None   # children are AVLTree
     self.rite = None
   def __repr__(self):
       return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
@@ -1548,7 +1549,7 @@ search always starts from seg 0, and found which segment [lo,hi] lies.
 """
 import math
 import sys
-class RMQ(object):
+class RMQ(object):  # RMQ has heap ary and tree. Tree repr by root Node.
   class Node():
     def __init__(self, lo=0, hi=0, minval=0, minvalidx=0, segidx=0):
       self.lo = lo
@@ -1556,12 +1557,13 @@ class RMQ(object):
       self.segidx = segidx      # segment idx in rmq heap tree.
       self.minval = minval      # range minimal, can be range sum
       self.minvalidx = minvalidx  # idx in origin val arr
-      self.left = self.rite = None
+      self.left = self.rite = None  # Node childeren are Node
   def __init__(self, arr=[]):
     self.arr = arr  # original arr
     self.size = len(self.arr)
+    # heap repr by ary.
     self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
-    # build the seg tree with root segidx
+    # seg tree repr by root Node with segidx 0, left segidx 1, rite segidx 2
     self.root = self.build(0, self.size-1, 0)[0]
   # 0th segment covers entire, 1th, left half, 2th, rite half
   def build(self, lo, hi, segRootIdx):  # root segRootIdx, lc/rc of segRootIdx
@@ -2247,7 +2249,7 @@ def radixsort(arr):
       count[int(karr[i])] += 1
     for i in xrange(1,10):
       count[i] += count[i-1]
-    # must go from end to start, as ranki-1.
+    # iterate original ary for rank for each, must go from end to start,
     for i in xrange(len(karr)-1, -1, -1):
       ranki = count[int(karr[i])]  # use key to get rank, and set val with origin ary
       # ranki starts from 1, -1 to convert to index
