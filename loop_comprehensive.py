@@ -1,6 +1,3 @@
-# Jianchao's Blog
-# www.cnblogs.com/jcliBlogger/
-
 import sys
 import math
 from collections import defaultdict
@@ -13,6 +10,10 @@ cnt = defaultdict(lambda: 0)
 l = sorted(cnt.items(), key=lambda x: x[1], reverse=True)
 l = filter(lambda x: n%x==0, [x for x in xrange(2,100)])
 
+"""
+# Jianchao's Blog
+# www.cnblogs.com/jcliBlogger/
+"""
 
 ''' recursive, one line print int value bin string'''
 int2bin = lambda n: n>0 and int2bin(n>>1)+str(n&1) or ''
@@ -660,21 +661,111 @@ def insertCircle(l, val):
             return
     return minnode
 
-''' uniq id generator '''
-insta5.next_id(OUT result bigint)
-    our_epoch bigint := 1314220021721;
-    seq_id bigint;
-    now_millis bigint;
-    shard_id int := 5;
-BEGIN
-    SELECT nextval('insta5.table_id_seq') %% 1024 INTO seq_id;
+"""
+/**
+ * 1. a graph, start from a root.
+ * 2. a queue for each level.
+ * 3. head, for each child,
+ * 4. a) not visited, visit edge, set parent. enqueue
+ *    b) in stack, visit edge. not parent, no enqueue.
+ *    c) visited, must be directed graph, otherwise, cycle detected, not a DAG.
+ */
+bfs(graph *g, int start) {
+  init_queue(&q);
+  enqueue(&q,start);
+  discovered[start] = TRUE;
 
-    SELECT FLOOR(EXTRACT(EPOCH FROM clock_timestamp()) * 1000) INTO now_millis;
-    result := (now_millis - our_epoch) << 23;
-    result := result | (shard_id << 10);
-    result := result | (seq_id);
-END;
+  while (empty_queue(&q) == FALSE) {
+    v = dequeue(&q);         // deq to current
+    process_vertex_early(v);
+    processed[v] = TRUE;     // mark
+    edges = g->edges[v];
+    while (edges != NULL) {
+      for each edge to child e, ( v -> e):
+        if ((processed[e] == FALSE) || g->directed )
+          process_edge(v,e);
+        if (discovered[y] == FALSE) {
+          parent[y] = v;
+          discovered[y] = TRUE;
+          enqueue(&q,y);
+        }
+      }
+    process_vertex_late(v);
+  }
+}
 
+def two_color(G, start):
+  def process_edge(u, v):
+    if color[u] == color[v]:
+      bipartite = false
+    color[v] = complement(color[u])
+
+
+
+/**
+ * 1. recursive from current root
+ * 2. visit order matters, (parent > child), topology sort
+ * 3. process edge
+ * 4. a) not visited, process edge, set parent. recursion
+ *    b) in stack, process edge. not parent, no recursion.
+ *    c) visited, must be directed graph, otherwise, cycle detected, not a DAG.
+ */
+
+dfs(root):
+  if not root: return
+  instack[root] = true
+  process_vertex_early(v);
+  rank.root = gRanks++   // set rank
+  for c in root.children:
+    if not visited[c]:
+      parent[c] = root
+      process_edge(root, c)
+      instack[c] = true
+      dfs(c)
+    else if instack[c]:
+      process_edge(root, c)
+    else if visited[c]:     // must be DAG, otherwise, not DAG.
+      process_edge(root, c)
+  visited[root] = true
+  process_vertex_late(v);
+
+
+def topology_sort(G):
+  sorted = []
+  for v in g where visited[v] == false:
+    dfs(v)
+
+  def process_vertex_late(v):
+    sorted.append(v)
+
+def strong_component(g):
+  // for each edge from x -> y, fan out, get min from back edges.
+  def process_edge(x, y):
+    class = edge_classification(x,y)
+    if (class == TREE)
+      tree_out_degree[x] = tree_out_degree[x] + 1
+    if ((class == BACK) && (parent[x] != y))
+      if (entry_time[y] < entry_time[ reachable_ancestor[x]]
+        reachable_ancestor[x] = y;
+
+  // when finish all edges from node x
+  process_vertex_late(v):
+    if (parent[v] < 1)
+      if (tree_out_degree[v] > 1)
+        return;
+    root = (parent[parent[v]] < 1); /* is parent[v] the root? */
+    if ((reachable_ancestor[v] == parent[v]) && (!root))
+      printf("parent articulation vertex: %d \n",parent[v]);
+    if (reachable_ancestor[v] == v)
+      printf("bridge articulation vertex: %d \n",parent[v]);
+      if (tree_out_degree[v] > 0) /* test if v is not a leaf */
+        printf("bridge articulation vertex: %d \n",v);
+
+    time_v = entry_time[reachable_ancestor[v]];
+    time_parent = entry_time[ reachable_ancestor[parent[v]] ];
+    if (time_v < time_parent)
+      reachable_ancestor[parent[v]] = reachable_ancestor[v];
+"""
 
 """ walk with f, where f is for leaf node. for list form, map(walk f ...)
 map a curry fn that is recursive calls walk f to non-leaf node """
