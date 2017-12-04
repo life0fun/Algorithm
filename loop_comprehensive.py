@@ -1,14 +1,5 @@
 import sys
 import math
-from collections import defaultdict
-l = []
-multi = [[x] for i in xrange(10)]
-l.append(e)   # not ret l
-l.pop() / l.popleft()
-''.join(reversed(txt))
-cnt = defaultdict(lambda: 0)
-l = sorted(cnt.items(), key=lambda x: x[1], reverse=True)
-l = filter(lambda x: n%x==0, [x for x in xrange(2,100)])
 
 """
 # Jianchao's Blog
@@ -701,7 +692,6 @@ def two_color(G, start):
     color[v] = complement(color[u])
 
 
-
 /**
  * 1. recursive from current root
  * 2. visit order matters, (parent > child), topology sort
@@ -711,7 +701,7 @@ def two_color(G, start):
  *    c) visited, must be directed graph, otherwise, cycle detected, not a DAG.
  */
 
-dfs(root):
+dfs(root, params):
   if not root: return
   instack[root] = true
   process_vertex_early(v);
@@ -888,8 +878,9 @@ def postorderTraversal(self, root):
       stack.append(tmp.right)
   return ans[::-1]
 
-""" stack to stash r or r.rite, when stash r, stk.pop, cur=cur.rite. avoid redo r.left
-process cur node, replace cur node from stack if null 
+""" after visit cur node, you have two choices, left, rite. Stash rite, make rite to point
+to left. If left is null, rite shall point to stk top.
+if cur is null, pop from stack.
 """
 def flatten(r):
   while stk or r:
@@ -898,8 +889,8 @@ def flatten(r):
       if r.rite:
         stk.append(r.rite)  # stash rite before move
       r.rite = r.left
-      if not r.left:
-        r.rite = stk.top()      
+      if not r.rite:        # cur rite shall point to stk top if no rite.
+        r.rite = stk.top()
       r = r.rite  # advance, if not r, will pop stk
     else:
       r = stk.pop()
@@ -922,12 +913,13 @@ def numBST(n):
   tab = [0]*(n+1)
   tab[0] = tab[1] = 1
   for i in xrange(2,n):
-    for r in xrange(1,i+1):
-      tab[i] += tab[r-1]*tab[i-r]   # each lchild combine with each rchild. lxr
+    for k in xrange(1,i+1):
+      tab[i] += tab[k-1]*tab[i-k]   # each lchild combine with each rchild. lxr
   return tab[n]
 
 
-""" find pair node in bst tree sum to a given value, lgn 
+""" find pair node in bst tree sum to a given value, lgn.
+first, lseek to lmin, rseek to rmax, stk along the way, then back one by one.
 down to both ends(lstop/lcur), with stk to rem parent, then mov rite or left """
 def pairNode(root, target):
   lstk,rstd = deque(),deque()  # use lgn stk to store tree path parent
@@ -1019,7 +1011,7 @@ def dfsSerde(root, out):
   print "$"
   out.append("$")
 
-""" deserialize, use stk top is parent of cur """
+""" stk top is parent of cur during deser"""
 # 1 [2 [4 $] $] [3 [5 $] $] $
 from collections import deque
 def deserTree(l):
@@ -1060,8 +1052,10 @@ def noAdj(text):
 print noAdj("abacbcdc")
 print noAdj("aabbc")
 
-""" AVL tree with rank, getRank ret num node smaller. left/rite rotate.
-    Ex: count smaller ele on the right, find bigger on the left, max(a[i]*a[j]*a[k])
+""" 
+AVL tree repr-ed by its root node.
+AVL tree with rank, getRank ret num node smaller. left/rite rotate.
+Ex: count smaller ele on the right, find bigger on the left, max(a[i]*a[j]*a[k])
 """
 class AVLTree(object):
   def __init__(self,key):
@@ -1072,109 +1066,8 @@ class AVLTree(object):
     self.rite = None
   def __repr__(self):
       return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
-  # left heavy, pos balance, right heavy, neg balance
-  # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
-  def balance(self):
-    if not self.left and not self.rite:
-      return 0
-    if self.left and self.rite:
-      return self.left.height - self.rite.height
-    if self.left:
-      return self.left.height
-    else:
-      return self.rite.height
-  def updateHeightSize(self):
-    self.height = 0
-    self.size = 0
-    if self.left:
-      self.height = self.left.height
-      self.size = self.left.size
-    if self.rite:
-      self.height = max(self.height, self.rite.height)
-      self.size += self.rite.size
-    self.height += 1
-    self.size += 1
-  def rotate(self, key):
-    bal = self.balance()
-    if bal > 1 and self.left and key < self.left.key:
-        return self.riteRotate()
-    elif bal < -1 and self.rite and key > self.rite.key:
-        return self.leftRotate()
-    elif bal > 1 and self.left and key > self.left.key: # < , left rotate left subtree.
-        self.left = self.left.leftRotate()
-        return self.riteRotate()  # then rite rotate after /
-    elif bal < -1 and self.rite and key < self.rite.key: # >, rite rotate rite subtree.
-        self.rite = self.rite.riteRotate()
-        return self.leftRotate()  # left rotate after \
-    return self  # no rotation
-  ''' bend / left heavy subtree to ^ subtree '''
-  def riteRotate(self):
-    newroot = self.left
-    newrite = newroot.rite
-    newroot.rite = self
-    self.left = newrite
-
-    self.updateHeightSize()
-    newroot.updateHeightSize()
-    return newroot
-  ''' bend \ subtree to ^ subtree '''
-  def leftRotate(self):
-    newroot = self.rite
-    newleft = newroot.left
-    newroot.left = self
-    self.rite = newleft
-    
-    self.updateHeightSize()
-    newroot.updateHeightSize()
-    return newroot
-  def searchkey(self, key):
-    if self.key == key:
-      return True, self
-    elif key < self.key:
-      if self.left:
-        return self.left.search(key)
-      else:
-        return False, self
-    else:
-      if self.rite:
-        return self.rite.search(key)
-      else:
-        return False, self
-  ''' max smaller of the tree '''
-  def maxSmaller(self, key):
-    if key < self.key:
-      if not self.left:
-        return None   # no smaller in this sub tree.
-      else:
-        return self.left.maxSmaller(key)
-    if key > self.key:
-      if not self.rite:
-        return self    # cur is largest smaller
-      else:
-        rtmx = self.rite.maxSmaller(key)
-        node = rtmx ? rtmx : self
-        return node
-    return self
-  ''' rank is num of node smaller than key '''
-  def getRank(self, key):
-    if key == self.key:
-      if self.left:
-        return self.left.size + 1
-      else:
-        return 1
-    elif self.key > key: 
-      if self.left:
-        return self.left.getRank(key)
-      else:
-        return 0
-    else:
-      r = 1
-      if self.left:
-          r += self.left.size
-      if self.rite:
-          r += self.rite.getRank(key)
-      return r
-  # return subtree root, and # of node smaller or equal
+  # recurisve insert, after ins, must rotate. as ins is recursive, rotate is also recursive.
+  # return subtree root, and # of node smaller or equal.
   def insert(self,key):
     if self.key == key:
       return self
@@ -1218,6 +1111,110 @@ class AVLTree(object):
     subtree = self.rotate(key)
     return subtree
 
+  # left heavy, pos balance, right heavy, neg balance
+  # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
+  def balance(self):    # balance subtree root is this node.
+    if not self.left and not self.rite:
+      return 0
+    if self.left and self.rite:
+      return self.left.height - self.rite.height
+    if self.left:
+      return self.left.height
+    else:
+      return self.rite.height
+  # update all subtree nodes ht and sz
+  def updateHeightSize(self):
+    self.height = 0
+    self.size = 0
+    if self.left:
+      self.height = self.left.height
+      self.size = self.left.size
+    if self.rite:
+      self.height = max(self.height, self.rite.height)
+      self.size += self.rite.size
+    self.height += 1
+    self.size += 1
+  def rotate(self, key):
+    bal = self.balance()
+    if bal > 1 and self.left and key < self.left.key:
+        return self.riteRotate()
+    elif bal < -1 and self.rite and key > self.rite.key:
+        return self.leftRotate()
+    elif bal > 1 and self.left and key > self.left.key: # < , left rotate left subtree.
+        self.left = self.left.leftRotate()
+        return self.riteRotate()  # then rite rotate after /
+    elif bal < -1 and self.rite and key < self.rite.key: # >, rite rotate rite subtree.
+        self.rite = self.rite.riteRotate()
+        return self.leftRotate()  # left rotate after \
+    return self  # no rotation
+  ''' bend / left heavy subtree to ^ subtree '''
+  def riteRotate(self):
+    newroot = self.left
+    newrite = newroot.rite
+    newroot.rite = self
+    self.left = newrite
+
+    self.updateHeightSize()
+    newroot.updateHeightSize()
+    return newroot   # ret the new root of subtree. parent point needs to update.
+  ''' bend \ subtree to ^ subtree '''
+  def leftRotate(self):
+    newroot = self.rite
+    newleft = newroot.left
+    newroot.left = self
+    self.rite = newleft
+    
+    self.updateHeightSize()
+    newroot.updateHeightSize()
+    return newroot
+  def searchkey(self, key):
+    if self.key == key:
+      return True, self
+    elif key < self.key:
+      if self.left:
+        return self.left.search(key)
+      else:
+        return False, self
+    else:
+      if self.rite:
+        return self.rite.search(key)
+      else:
+        return False, self
+  ''' recurisve, find subtree node that is max smaller than the key '''
+  def maxSmaller(self, key):
+    if key < self.key:
+      if not self.left:
+        return None   # no smaller in this sub tree.
+      else:
+        return self.left.maxSmaller(key)
+    if key > self.key:
+      if not self.rite:
+        return self    # cur is largest smaller
+      else:
+        rtmx = self.rite.maxSmaller(key)
+        node = rtmx ? rtmx : self
+        return node
+    return self
+  ''' rank is num of node smaller than key '''
+  def getRank(self, key):
+    if key == self.key:
+      if self.left:
+        return self.left.size + 1
+      else:
+        return 1
+    elif self.key > key: 
+      if self.left:
+        return self.left.getRank(key)
+      else:
+        return 0
+    else:
+      r = 1
+      if self.left:
+          r += self.left.size
+      if self.rite:
+          r += self.rite.getRank(key)
+      return r
+  
 
 # rite Smaller, and left smaller, the same.
 def riteSmaller(arr):
@@ -1236,7 +1233,7 @@ assert(riteSmaller([5, 4, 3, 2, 1]) == [5, 4, 3, 2, 1])
 
 
 """ bst with lo as the bst search key, augment max to the max of ed of all nodes under root.
-    interval tree annotate with max.
+    recursive dfs with insert and search. carry parent down during recursvie.
 """
 class IntervalTree(object):
   def __init__(self, lo=None, hi=None):
@@ -1607,6 +1604,7 @@ def rangeSum(nums, lower, upper):
 
   return prefixSum(prefix, 0, len(prefix)-1, lower, upper);
   
+  ''' recursion, pass down param from parent '''
   def prefixSum(prefix, l, r, lower, upper):
     return 0 if l >= r
 
@@ -1679,7 +1677,7 @@ class RMQ(object):  # RMQ has heap ary and tree. Tree repr by root Node.
       return sys.maxint, -1
     if lo <= root.lo and hi >= root.hi:
       return root.minval, root.minvalidx
-    lmin,docker stop = root.minval, root.minval
+    lmin,rmin = root.minval, root.minval
     # ret min of both left/rite.
     if root.left:
       lmin,lidx = self.rangeMin(root.left, lo, hi)
@@ -1821,14 +1819,16 @@ def test():
 class Trie:
   def __init__(self, val):
     self.val = val
-    self.next = defaultdict(TrieNode)
+    self.next = defaultdict(TernaryTree)
     self.leaf = False
+''' Ternary tree is repr-ed by its root, recurisve at root for ops '''
 class TernaryTree(object):
   def __init__(self, key=None):
     self.key = key
     self.cnt = 1  # when leaf is true, the cnt, freq of the node
     self.leaf = False
     self.left = self.rite = self.eq = None
+  ''' recursive down to subtree root and new word header '''
   def insert(self, word):
     hd = word[0]
     if not self.key:  # at first, root does not have key.
@@ -1959,7 +1959,7 @@ def diameter(root):
         return 0, [root, root], [root] # first diameter, second diamter leaf, last ht path
     ldiameter, ldialeaves, lhtpath = diameter(root.lchild)
     rdiameter, rdialeaves, rhtpath = diameter(root.rchild)
-    if max(ldiameter, rdiameter)) > max(ldepth+rdepth)+1:
+    if max(ldiameter, rdiameter) > max(ldepth+rdepth)+1:
         leaves = ldialeaves
     else:
         leaves = [last(lhtpath), last(rhtpat)]
@@ -2128,8 +2128,9 @@ it at the end of duplicates. return the insertion point.
 def findInsertionPosition(l, val):
   beg = 0
   end = len(l) - 1
-  # the most important part is, when reduce to bottom, beg==end,
-  # how do we handle ? all other cases will be reduced to this extreme.
+  ''' when l=r can enter loop, need to ensure index out of bound when m-1 and m+1 '''
+  if val < l[0] or val > l[-1]:
+    return 0, len(l)
   while beg <= end:
       mid = (beg+end)/2  # mid is Math.floor
       if l[mid] > val:
@@ -2203,7 +2204,7 @@ def numOfIncrSeq(l, start, cursol, k):
 http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
 '''
 
-''' recursively on sublist '''
+''' for list and ary, recursion or iterative, fix begin and end '''
 def list2BST(head, tail):
     mid = len(tail-head)/2
     mergesort(head)
@@ -2381,7 +2382,7 @@ def radixsort(arr):
   return arr
 print radixsort([170, 45, 75, 90, 802, 24, 2, 66])
 
-""" min stack, when push x, push a pair (x, min) """
+""" when push x, push a pair (x, min) """
 class MinStack:
   def __init__(self, minv=sys.maxint):
       self.stk = []
@@ -2411,7 +2412,7 @@ class MinStack:
 '''
 class MaxHeap():
   class Node():
-    def __init__(self, val, i, j):
+    def __init__(self, val, i, j):  # fix beg and end for ary traverse.
       self.val = val
       self.ij = (i,j)   # the i,j index in the two array
     ''' recursive in-order iterate the tree this node is the root '''
@@ -2513,7 +2514,7 @@ def testKthMaxSum():
     q = [110, 20, 5, 3, 2]
     KthMaxSum(p, q, 7)
 
-""" key2idx to map key to idx in the heap arr """
+""" track each key's offset in heap ary thru key2idx, keep santiy during swap """
 from collections import defaultdict
 class MinHeap(object):
   def __init__(self, mxSize=10):
@@ -2656,6 +2657,7 @@ class SkipList:
         for level in reversed(xrange(len(self.head.next))):  # for each level down: park next node just before node >= ele.(insertion ponit).
             while levelhd.next[level] != None and levelhd.next[level].ele < ele:  # advance skipNode till to node whose next[level] >= ele, then down level
                 levelhd = levelhd.next[level]  # store skip node(ele, next[...])
+            # when stop at this level, record stop pos. hd < cur < next.
             levelNextNode[level] = levelhd
         return levelNextNode
     def find(self, ele):
@@ -2705,7 +2707,7 @@ class HashTimeTable:
         if ts > arr[-1][1]:
             return False, len(arr)
         l,r = 0, len(arr)-1
-        while l != r:
+        while l != r:   # fix beg / end before traverse 
             m = l + (r-l)/2
             if ts > arr[m][1]:
                 l = m+1
@@ -3039,7 +3041,7 @@ def concatKeys(txt, keys):
 print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "foo"])
 print concatKeys("barfoothebarfoobarfooman", ["foo", "bar", "bar"])
 
-""" use expected[] and found[] """
+""" use expected[] and found[] to track the stats on each traverse """
 from collections import defaultdict
 def concatKeys(s, arr):
   l,r,k = 0,0,len(arr[0])
@@ -3295,9 +3297,9 @@ print LAP([5, 10, 15, 20, 25, 30])
 
 """ 
 left < cur < rite, for each i, max smaller on left and max rite. 
-first, populate max[i] = arr[i]*rmax. Then from left, avl tree find
-max left smaller, max = max(max[i]*lmax)
-lmax smaller ary is the same as rmax smaller, avl or merge sort
+from rite -> left, find rmax and populate riteMax[i] = arr[i]*rmax.
+from left -> rite, build an avl tree to find max smaller on the left, 
+max = max(max[i]*lmax)
 """
 def triplet_maxprod(arr):
   maxl,maxtriplet = -1,1
@@ -3895,17 +3897,17 @@ At each row/col, recur incl/excl situation.
 Boundary condition: check when i/j=0 can not i/j-1.
 """ """ """ """ """
 def minjp(arr):
-  mjp,rite,nxtrite=1,arr[0],arr[0]
+  mjp,rite,maxrite=1,arr[0],arr[0]
   for i in xrange(1,n):
     if i < rite:
-      nxtrite = max(nxtrite, i+arr[i])
+      maxrite = max(maxrite, i+arr[i])
     else:
       mjp += 1
-      rite = nxtrite
+      rite = maxrite
     if rite >= n:
       return mjp
 
-# tab[i] : min cost from start->i
+# tab[i] : min cost from 0->i
 import sys
 def minjp(arr):
   tab = [sys.maxint]*len(arr)
@@ -3977,7 +3979,7 @@ def minpath(G, src, dst):
   return tab[src]
 
 
-''' start from minimal, only item 0, i loop items, w loops weights at each item. 
+''' start from minimal, only item 0, loop items i=0..n, w loops weights at each item. 
 v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
 v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
 '''
@@ -3997,6 +3999,7 @@ def knapsack(arr, varr, W):
   return row[W]
 print knapsack([2, 3, 5, 7], [1, 5, 2, 9], 18)
 
+# mem optimization. only 2 rows needed.
 def backpack(arr, W):
   pre,row = [0]*(W+1), [0]*(W+1)
   for i in xrange(len(arr)):
@@ -4072,18 +4075,19 @@ def coinchange(coins, V):
   return tab[V]
 print coinchange([2,3,5], 10)
 
+
 # comb can exam head, branch at header incl and excl
-def combination(arr, path, sz, pos, result):
-  if sz == 0:
-    result.append(path)  # add to result only when sz
+def combination(arr, path, remain, pos, result):
+  if remain == 0:
+    result.append(path)  # add to result only when remain
     return result
   if pos >= len(arr):
     result.append(path)
     return result
   l = path[:]  # deep copy path before recursion
   l.append(arr[pos])
-  combination(arr, l,    sz-1, pos+1, result)
-  combination(arr, path, sz, pos+1, result)
+  combination(arr, l,    remain-1, pos+1, result)
+  combination(arr, path, remain, pos+1, result)
   return
 
 def comb(arr,r):
@@ -4103,43 +4107,15 @@ def comb(arr,r):
 print comb("abc", 2)
 
 
-# Generate all possible sorted arrays from alternate eles of two sorted arrays
-def alterCombRecur(a,b,ai,bi,froma,path,out):
-  if froma:
-    v = a[ai]
-    found,bs = bisect(b, v)
-    path.append(v)
-    for j in xrange(bs,len(b)):
-      l = path[:]  # deep cpoy path before each recursion
-      alterCombRecur(a,b,ai,j,False,l,out)
-  else:
-    path.append(b[bi])
-    out.append(path)
-    found,sa = bisect(a,b[bi])
-    for i in xrange(sa, len(a)):
-      l = path[:] # deep copy path before each recursion
-      alterCombRecur(a,b,i,bi,True,l,out)
-def alterComb(a,b):
-  out = []
-  for ai in xrange(len(a)):  # a new recursion seq
-    av = a[ai]
-    found,bi = bisect(b, av)
-    path = []  # empty new path for each recursion
-    if bi < len(b):
-      alterCombRecur(a,b,ai,bi,True,path,out)
-  return out
-print alterComb([10, 15, 25], [1,5,20,30])
-
-
 """ recur with partial path, for loop each, as incl/excl """
-def comb(arr, pos, r, path, res):
-  if r == 0:  # stop recursion when r = 1
+def comb(arr, pos, remain, path, res):
+  if remain == 0:  # stop recursion when remain = 1
     cp = path[:]
     res.append(cp)
     return res
-  for i in xrange(pos, len(arr)-r+1):  # can be [pos..n]
+  for i in xrange(pos, len(arr)-remain+1):  # can be [pos..n]
     path.append(arr[i])
-    comb(arr, i+1, r-1, path, res)  # iter from idx+1, as not 
+    comb(arr, i+1, remain-1, path, res)  # iter from idx+1, as not 
     path.pop()   # deep copy path or pop
   return res
 res=[];comb([1,2,3,4],0,2,[],res);print res;
@@ -4151,7 +4127,7 @@ recur fn params must be subproblem with offset and partial result.
 # [a [ab [abc]] [ac]] , [b [bc]] , [c]
 """
 def powerset(arr, offset, path, result):
-  # subproblem with partial result, incl all interim results.
+  ''' subproblem with partial result, incl all interim results. '''
   result.append(path)
   # within cur subproblem, for loop to incl/excl for next level.
   for i in xrange(offset, len(arr)):
@@ -4168,24 +4144,24 @@ path=[];result=[];powerset([1,2,2], 0, path, result);print result;
 for dup, sort, skip current i is it is a dup of offset.
 recur fn params must be subproblem with offset and partial result.
 """
-def permDup(arr, offset, path, res):
+def perm(arr, offset, path, res):
   def swap(arr, i, j):
     arr[i],arr[j] = arr[j],arr[i]
   if offset == len(arr):
     return res.append(path[:])
-  # within subproblem, iterate to incl/excl as head to next level.
+  ''' perm, each one can be the head at offset, swap, recur. '''
   for i in xrange(offset, len(arr)):
-    # if i follow offset and is dup of *offset*, skip it. not compare to i-1
+    ''' if i follow offset and is dup of *offset*, skip it. not compare to i-1 '''
     if i > offset and arr[offset] == arr[i]:
       continue
     swap(arr, offset, i)
     path.append(arr[offset])
     # when recur, both arr, path and offset changed as subproblem
-    permDup(arr, offset+1, path, res)
+    perm(arr, offset+1, path, res)
     path.pop()
     swap(arr, offset, i)
-path=[];res=[];permDup(list("123"), 0, [], res);print res
-path=[];res=[];permDup(list("112"), 0, [], res);print res
+path=[];res=[];perm(list("123"), 0, [], res);print res
+path=[];res=[];perm(list("112"), 0, [], res);print res
 
 
 # need to pass different arr upon each recursion, vs. different offset.
@@ -4285,6 +4261,33 @@ print permRankDup('baa')
 print permRankDup('BOOKKEEPER') == 10743
 assert permRankDup("BCBAC") == 15
 
+
+# Generate all possible sorted arrays from alternate eles of two sorted arrays
+def alterCombRecur(a,b,ai,bi,froma,path,out):
+  if froma:
+    v = a[ai]
+    found,bs = bisect(b, v)
+    path.append(v)
+    for j in xrange(bs,len(b)):
+      l = path[:]  # deep cpoy path before each recursion
+      alterCombRecur(a,b,ai,j,False,l,out)
+  else:
+    path.append(b[bi])
+    out.append(path)
+    found,sa = bisect(a,b[bi])
+    for i in xrange(sa, len(a)):
+      l = path[:] # deep copy path before each recursion
+      alterCombRecur(a,b,i,bi,True,l,out)
+def alterComb(a,b):
+  out = []
+  for ai in xrange(len(a)):  # a new recursion seq
+    av = a[ai]
+    found,bi = bisect(b, av)
+    path = []  # empty new path for each recursion
+    if bi < len(b):
+      alterCombRecur(a,b,ai,bi,True,path,out)
+  return out
+print alterComb([10, 15, 25], [1,5,20,30])
 
 """ thief can at cave k on day i. For all possibilities, strategy needs to cover all.
 To cover day i at cave k, if strategy can cover day i-1, k-1 or k+1, [i,k] is covered.
@@ -4425,7 +4428,7 @@ def genParenth(n, l, r, path, res):
 path=[];res=[];genParenth(3,0,0,path,res);print res;
 
 from collections import deque
-def genParath(n):
+def genParenth(n):
   out = []
   q = deque()
   q.append(["(", 1, 0])
@@ -4445,7 +4448,7 @@ def genParath(n):
         p = str(path) + ")"
         q.append([p,l,r+1])
   return out
-print genParath(3)
+print genParenth(3)
 
 
 """ first, find unbalance(l-r), recur each pos, dfs excl/incl each pos, no dp short """
@@ -4669,7 +4672,7 @@ def distinctSeq(s,t):
         continue
       tab[i][j] = tab[i-1][j]   # not using s[i], so use tab[i-1]
       if t[j] == s[i]:   # use s[i] only when equals
-        if j == 0:  # s[i]==t[0], match in s can start from s[i]
+        if j == 0:  # s[i]==t[0], match scan start from s[i]
           tab[i][0] = tab[i-1][0] + 1
         else:
           tab[i][j] += tab[i-1][j-1]  # reduce one j to j-1
@@ -4680,7 +4683,7 @@ print distinctSeq("rabbbit", "rabbit")
 
 """
 column is src, and inc bottom up each char in target. only 1 char in target, 2, ..
-excl s[j], tab[i,j-1], incl s[j], +tab[i-1,j-1], 
+two cases, when not eq, excl s[j], take j-1, tab[i,j-1], when incl s[j], +=tab[i-1,j-1], 
   \ a  b   a   b  c
  a  1  1   2   2  2
  b  0 0+1  1  2+1 3
@@ -4706,7 +4709,7 @@ print distinct("aeb", "be")
 print distinct("abbbc", "bc")
 print distinct("rabbbit", "rabbit")
 
-""" DP boundary case: tab[0][j]=1 empty target string has 1 subseq in any src.
+""" DP boundary starting point: tab[0][j]=1 empty target string has 1 subseq in any src.
 tab[i][0]=0 : empty src has 0 subseq. """
 def distinct(s,t):
   dist = [0]*(len(t)+1)
@@ -4725,18 +4728,19 @@ print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
 
 
-""" keep track of 2 thing, max of incl cur ele, excl cur ele """
+""" keep track of 2 values for each ele, max of exclude this ele, and the
+max of no care of whether incl or excl cur ele. """
 def calPack(arr):
-  incl,excl=arr[0],0
+  maxsofar,exclPre=arr[0],0
   for i in xrange(1,len(arr)):
-    curincl = excl+arr[i]
-    curexcl = max(incl,excl)
-    incl = max(curincl,curexcl)
-    excl = curexcl
-  return max(incl,excl)
+    curincl = exclPre+arr[i]
+    curexcl = max(maxsofar, exclPre)
+    maxsofar = max(curincl,curexcl)
+    exclPre = curexcl
+  return max(maxsofar,exclPre)
 
 
-""" DP with O(1), cur = pre, cur = prepre + pre """
+""" DP with O(1), cur = prepre + pre, pre = cur """
 def decode(dstr):
   if len(dstr) == 1:
     return 1
@@ -4747,29 +4751,11 @@ def decode(dstr):
       prepre = 0
       continue
     if dstr[i-1-1] == '1' or (dstr[i-1-1]=='2' and dstr[i-1]<='6'):
-      cur += prepre  # fib seq here.
+      cur += prepre  # cur init to pre, now cur = (prepre+pre)
     prepre, pre = pre, cur
   return cur
 print decode("122")
 
-
-""" top down offset n -> 1 when dfs inclusion recursion """
-def subsetsumRecur(l, offset, n, path, result):
-  if offset < 0:
-    return    
-  if n == l[offset]:
-    p = path[:]
-    p.append(l[offset])
-    result.append(p)
-  if n > l[offset]:  # branch incl when when l.i smaller
-    p = path[:]   # deep copy new path before recursion.
-    p.append(l[offset])
-    # dup allowed, offset stay when include, incl 1+ times.
-    # subsetsumRecur(l, offset,   n-l[offset], p, result)
-    subsetsumRecur(l, offset-1, n-l[offset], p, result)
-  # always reduce when excl current, with excl l[i] path.
-  subsetsumRecur(l, offset-1, n, path, result)
-#path=[];result=[];l=[2,3,4,7];subsetsum(l,3,7,path,result);print result
 
 """ recur i+1, dup not allowed, recur i, dup allowed. """
 def comb(arr, t, pos, path, res):
@@ -4801,15 +4787,6 @@ def comb(arr, t, pos, path, res):
   return res
 path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
 
-def coinchange(arr, V):
-  tab = [0]*(V+1)
-  tab[0] = 1
-  # outer loop bottom up coin, effective as incl the coin, and excl when passed.
-  for i in xrange(len(arr)):
-    for v in xrange(arr[i],V+1):   # bottom up each value
-      tab[v] += tab[v-arr[i]]   # not tab[v]=tab[v-1]+1
-  return tab[V]
-print coinchange([2,3,5], 10)
 
 """ if different coins count the same as 1 coin only, the same as diff ways to stair """
 def nways(steps, n):
@@ -4912,7 +4889,7 @@ def dice(m,n,x):
     tab[1][f] = 1
   for i in xrange(1, n):      # bottom up coins, 1 coin, 2 coin
     for v in xrange(x):       # bottom up each value after inc coin
-      for f in xrange(m,v):   # iterate each face value
+      for f in xrange(m,v):   # iterate each face value within each tab[dice, V]
         tab[i][v] += tab[i-1][v-f]
   return tab[n,x]
 
@@ -5112,7 +5089,9 @@ assert nextPalindrom(9) == 11
 assert nextPalindrom(99) == 101
 assert nextPalindrom(1234) == 1331
 
-""" min insertion into str to convert to palindrom. tab[i,j]=min ins to convert str[i:j]
+""" min insertion into str to convert to palindrom. 
+for ary, tab[i] track [0..i], to track any seg, tab[i,j]. Impl with increasing gap.
+tab[i,j]=min ins to convert str[i:j]
 tab[i][j] = tab[i+1,j-1] or min(tab[i,j-1], tab[i+1,j])
 """
 def minInsertPalindrom(arr):
@@ -5232,9 +5211,10 @@ def minLeft(arr, k):
     tab[lo][hi] = ret
     return ret
 
-''' sub regioin [l..r], consider m as the LAST to burst, so last 3 l,m,r.
-matrix product tab[l,r] = tab[l,k]+tab[k+1,r]+p[l-1]*p[m]*p[r]
+''' sub regioin [l..r], iterate m between l..r, think m as the LAST to burst. Matrix Production.
+matrix product tab[l,r] = tab[l,k] + tab[k+1,r] + p[l-1]*p[m]*p[r].
 tab[l,r] = max(tab[l,k]+tab[k+1,r]+arr[l]*arr[k]*arr[r])
+Implementation wise, loop inc gap, for each e as l, r = l+gap+1, m=[l..r]
 '''
 def burstBalloon(arr):
   earr = [1] + arr + [1]   # set boundary
@@ -5262,17 +5242,18 @@ def matrix(arr):
   return tab[1][len(arr)-1]
 print matrix([1,2,3,4])
 
-''' bfs search on Matrix for min dist '''
+''' bfs search on Matrix for min dist, put intermediate result in q, exhaust Queue '''
 from collections import deque
-def matrixBFSk(G):
+def matrixBFSk(G, m, n):
   q = deque()
-  for i in xrange(m):
-    for j in xrange(n):
-      if G[i,j] == 1:  # start from cell val 1
-        G[i,j] = 0
-        q.append([i,j])  # can do bfs from this cell
-      else:
-        G[i,j] = sys.maxint  # unknow space init dist to max
+  def init(G, m, n):
+    for i in xrange(m):
+      for j in xrange(n):
+        if G[i,j] == 1:  # start from cell val 1
+          G[i,j] = 0
+          q.append([i,j])  # can do bfs from this cell
+        else:
+          G[i,j] = sys.maxint  # unknow space init dist to max
   while len(q) > 0:
     [i,j] = q.popleft()
     if G[i,j] < k:
@@ -5293,12 +5274,13 @@ def matrixBFSk(G):
       if G[i,j] < k:
         G[i,j] = 1
 
-""" word ladder, bfs, for each intermediate word, at each position, 
-enum all ascii to get new char, recur not visited.
+""" word ladder, bfs, for each intermediate word, for each pos of the word,
+iterate all ascii to get new char, recur not visited.
 """
 from collections import deque
 import string
 def wordladder(start, end, dict):
+  ''' given a word, for each pos of the wd '''
   def getNext(wd, seen):
     nextwds = []
     for i in xrange(len(list(wd))):
@@ -5320,7 +5302,7 @@ def wordladder(start, end, dict):
         nextwds.append(nextwd)
         seen.add(nextwd)
     return nextwds
-  ''' bfs search '''
+  ''' bfs search from start, ladder as queue'''
   if start == end:
     return
   ladder = []
@@ -5357,6 +5339,7 @@ def boggle(G, dictionary):
   def dfs(G, dictionary, r, c, seen, path, out):
     if "".join(path) in dictionary:
       out.append("".join(path))
+    ''' iterate each neighbor as child, if not visited, recur with partial '''
     for nr,nc in [[-1,-1],[-1,0],[-1,1]...]:
       if isValid(nr,nc,M,N,seen):
         path.append(G[nr][nc])
@@ -5377,7 +5360,10 @@ def boggle(G, dictionary):
       seen.remove(G[i][j])
   return out
 
-""" w[i]: cost of word wrap [0:i]. w[j] = w[i-1] + lc[i,j]"""
+""" 
+1. track to put all possible [st,ed] into one line, the extra spaces[st,ed]
+2. w[i]: cost of word wrap [0:i]. foreach k=[i..j], w[j] = w[i-1] + lc[i,j]
+"""
 def wordWrap(words, m):
   sz = len(words)
   #extras[i][j] extra spaces if words i to j are in a single line
