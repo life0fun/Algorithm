@@ -979,12 +979,26 @@ def match(s,p):
 def regMatch(s, p):
   if p[1] == "*":
     while s and (s[0] == p[0] or p[0] == "."):
+      # wildcard can match 1+, so recursively check one by one
       if regMatch(s,p+2):
         return True
       s += 1
     return regMatch(s,p+2)
   else:
     return (s[0] == p[0] or p[0] == ".") and regMatch(s+1,p+1)
+
+""" reg match . *. recursion, loop try 0,1,2...times for *. """
+def regMatch(T, P, offset):
+  if P is None: return T is None
+  if p+1 is not '*':
+      return p == s or p is '.' and regMatch(T,P, offset+1)
+  else:
+      # wildcard can match 1+, so iterate all of them
+      while p == s or p is '.':
+          if regMatch(T, P+2, offset+2): return True
+          s += 1
+      # match 0 time
+      return regMatch(T, P, offset+2)
 
 
 """ serde of bin tree with l/r child, no lchild and rchild, append $ $"""
@@ -1191,9 +1205,7 @@ class AVLTree(object):
       if not self.rite:
         return self    # cur is largest smaller
       else:
-        rtmx = self.rite.maxSmaller(key)
-        node = rtmx ? rtmx : self
-        return node
+        return max(self, self.rite.maxSmaller(key))
     return self
   ''' rank is num of node smaller than key '''
   def getRank(self, key):
@@ -1675,7 +1687,7 @@ class RMQ(object):  # RMQ has heap ary and tree. Tree repr by root Node.
     # out of cur node scope, ret max, as we looking for range min.
     if lo > root.hi or hi < root.lo:
       return sys.maxint, -1
-    if lo <= root.lo and hi >= root.hi:
+    if lo <= root.lo and root.hi <= hi:
       return root.minval, root.minvalidx
     lmin,rmin = root.minval, root.minval
     # ret min of both left/rite.
@@ -1841,14 +1853,14 @@ class TernaryTree(object):
         if not self.eq:  # new eq point to new node 
           self.eq = TernaryTree(word[1])  # eq point to next char.
         self.eq.insert(word[1:])
-      elif hd < self.key:
-        if not self.left:
-          self.left = TernaryTree(hd)  # left tree root is hd
-        self.left.insert(word)
-      else:
-        if not self.rite:
-          self.rite = TernaryTree(hd)  # rite tree root is hd
-        self.rite.insert(word)
+    elif hd < self.key:
+      if not self.left:
+        self.left = TernaryTree(hd)  # left tree root is hd
+      self.left.insert(word)
+    else:
+      if not self.rite:
+        self.rite = TernaryTree(hd)  # rite tree root is hd
+      self.rite.insert(word)
   def search(self, word):   # return parent where eq originated
     if not len(word):
       return False, self
@@ -3199,9 +3211,8 @@ def longestTwoChar(arr):
     j = k -1
   return mxlen
 
-
 """
-max distance between two items where right item > left items.
+max distance between two items where right > left items.
 http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
 Lmin[0..n]   store min see so far. so min[i] is mono descrease.
 Rmax[n-1..0] store max see so far from left <- right. so mono increase.
@@ -3209,23 +3220,24 @@ the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j
 Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
 """
 def max_distance(l):
-    sz = len(l)
-    Lmin = [l[0]]*sz
-    Rmax = [l[sz-1]]*sz
-    for i in xrange(1, sz-1:
-        Lmin[i] = min(Lmin[i-1], l[i])  # lmin mono decrease
-    for j in xrange(sz-2,0,-1):
-        Rmax[j] = max(Rmax[j+1], l[j])  # rmax flat decrease
-    i = j = 0   # both start from 0, Lmin/Rmax 
-    maxdiff = -1
-    while j < sz and i < sz:
-      # found one, upbeat, Rmax also mono decrease, stretch
-      if Lmin[i] < Rmax[j]:
-          maxdiff = max(maxdiff, j-i)
-          j += 1
-      else: # Lmin is bigger, mov lmin as Lmin is mono decrease
-          i += 1
-    return maxdiff
+  sz = len(l)
+  Lmin = [l[0]]*sz
+  Rmax = [l[sz-1]]*sz
+  for i in xrange(1, sz-1):
+    Lmin[i] = min(Lmin[i-1], l[i])  # lmin mono decrease
+  for j in xrange(sz-2,0,-1):
+    Rmax[j] = max(Rmax[j+1], l[j])  # rmax flat decrease
+  i = 0   # both start from 0, Lmin/Rmax 
+  j = 0
+  maxdiff = -1
+  while j < sz and i < sz:
+    # find a pair l < r, continue to stretch.
+    if Lmin[i] < Rmax[j]:
+      maxdiff = max(maxdiff, j-i)
+      j += 1
+    else: # Lmin is bigger, mov lmin as Lmin is mono decrease
+      i += 1
+  return maxdiff
 
 """ Lmin[i] contains idx in the left arr[i] < cur, or -1
     Rmax[i] contains idx in the rite cur < arr[i]. or -1
@@ -3296,9 +3308,9 @@ print LAP([5, 10, 15, 20, 25, 30])
 
 
 """ 
-left < cur < rite, for each i, max smaller on left and max rite. 
-from rite -> left, find rmax and populate riteMax[i] = arr[i]*rmax.
-from left -> rite, build an avl tree to find max smaller on the left, 
+left < cur < rite, for each i, max smaller on left and max rite.
+reduce to problem to pair, so left <- rite. find rmax  riteMax[i] = arr[i]*rmax
+for left max smaller, left -> rite, build AVL tree while get left max smaller.
 max = max(max[i]*lmax)
 """
 def triplet_maxprod(arr):
@@ -3583,7 +3595,7 @@ def firstMissing(L):
           L[i] = 0    # Li is a dup, can not swap anymore, set it to 0, skip
           L[v] -= 1
         else:         # L[v] >= 0: when dup, entry was set to 0, we still can swap to it.
-          L[i],L[v] = L[v],L[i]
+          L[i],L[v] = L[v],L[i]  # swap and mark the flag as already done.
           L[v] = -1
       # natureally in correct pos, turn to -1
       if L[i] == i+1:
@@ -3862,7 +3874,7 @@ def integer_partition(A, n, k):
   d = [[0 for i in xrange(n)] for j in xrange(k)]  # where divider is
   # calculate prefix sum
   for i in xrange(A): psum[i] = psum[i-1] + A[i]
-  # boundary, one divide, and one element
+  # fix and initial boundary, one divide, and one element
   for i in xrange(A): m[i][1] = psum[i]
   for j in xrange(k): m[1][j] = A[1]
   for i in xrange(2, n):
@@ -3875,20 +3887,6 @@ def integer_partition(A, n, k):
                   d[i][j] = x     # divide at pos x
 
 
-""" reg match . *. recursion, loop try 0,1,2...times for *. """
-def regMatch(T, P, offset):
-  if P is None: return T is None
-  if p+1 is not '*':
-      return p == s or p is '.' and regMatch(T,P, offset+1)
-  else:
-      # loop match 1, 2, 3...
-      while p == s or p is '.':
-          if regMatch(T, P+2, offset+2): return True
-          s += 1
-      # match 0 time
-      return regMatch(T, P, offset+2)
-
-
 """ """ """ """ """
 Dynamic Programming, better than DFS/BFS.
 bottom up each row, inside each row, iter each col.
@@ -3897,7 +3895,7 @@ At each row/col, recur incl/excl situation.
 Boundary condition: check when i/j=0 can not i/j-1.
 """ """ """ """ """
 def minjp(arr):
-  mjp,rite,maxrite=1,arr[0],arr[0]
+  mjp,rite,maxrite = 1,arr[0],arr[0]
   for i in xrange(1,n):
     if i < rite:
       maxrite = max(maxrite, i+arr[i])
@@ -3926,8 +3924,7 @@ def minpath(G,src,dst,cost,tab):
   for v in G.vertices():
     if v != src and v != dst:
       mincost = min(mincost,
-          minpath(G,src,v) +
-          minpath(G,v,dst))
+          minpath(G,src,v) + minpath(G,v,dst))
       tab[src][dst] = mincost
   return tab[src][dst]
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
@@ -3940,7 +3937,7 @@ def minpath(G, src, dst):
         tab[i] = min(tab[j]+cost[i][j], tab[i])
   return tab[n-1]
 
-''' mobile pad k edge, tab[src][dst][k] '''
+''' mobile pad k edge, BFS search each direction and track min with tab[src][dst][k] '''
 def minpath(G, src, dst, k):
   for gap in xrange(k):
     for s in G.vertices():
@@ -3955,9 +3952,9 @@ def minpath(G, src, dst, k):
             tab[s][d][gap] = min(tab[k][d][gap-1]+G[src][k])
   return tab[src][dst][k]
 
-''' topology sort, tab[i] = min cost to reach dst from i'''
+''' first step to use topology sort prune, tab[i] = min cost to reach dst from i'''
 def minpath(G, src, dst):
-  def topsort(G,src,stk):
+  def topsort(G,src, stk):  # sort result in a stk
     def dfs(s,G,stk):
       for v in neighbor(G,s):
         if not visited[v]:
@@ -4035,18 +4032,20 @@ def coinchangeSet(coins, V):
   return tab[V][len(coins)-1]
 print coinchangeSet([1, 2, 3], 4)
 
-''' outer loop thru all value, and inner thru all coin,
-diff order counts, [1,1,1], [1,2], [2,1]
+''' 
+coin order counts, so at each value, need to loop thru all coins.
+outer loop thru all value, loop trand inner thru all coin, [1,1,1], [1,2], [2,1]
 '''
 def coinchangePerm(coins, V):
   tab = [0]*(V+1)
   tab[0] = 1   # when coin face value = value, match.
-  for v in xrange(1,V+1):
+  for v in xrange(1, V+1):
     for c in xrange(len(coins)):
       if v >= coins[c]:
         tab[v] += tab[v-coins[c]]  # XX f(i)=f(i-1)+1
   return tab[V]
 print coinchangePerm([1, 2], 3)
+
 
 """ tot ways for a change. permutation. [2,3] [3,2].
 bottom up each val, a new row [c1,c2,...], bottom up coin col first, 
@@ -4215,6 +4214,7 @@ def permRank(arr):
   return rank
 print permRank("bacefd")
 
+
 """ find the index of the char of each next subsize, 
 rank/factorial(n) is the index of the char in the sorted arr """
 from math import factorial
@@ -4230,6 +4230,7 @@ def nthPerm(arr, n):
     arr = arr[:idx] + arr[idx+1:]   # del arr[idx] after pick
   return "".join(out)
 assert(nthPerm("1234", 15), "3241")
+
 
 """ iter each pos i from 0 <- n. for width w, w! perms.
 At each i, there are (n-i)! perms. If there are k eles smaller than cur,
@@ -4700,7 +4701,7 @@ def distinct(s,t):
           if i == 0:
             tab[i][j] = tab[i][j-1] + 1
           else:
-            tab[i][j] = tab[i-1][j-1] + tab[i][j-1]
+            tab[i][j] = tab[i-1][j-1] + tab[i][j-1]  # not +1 as exclude src, use same t
       else:
         if j > 0:
           tab[i][j] = tab[i][j-1]
@@ -4734,7 +4735,7 @@ def calPack(arr):
   maxsofar,exclPre=arr[0],0
   for i in xrange(1,len(arr)):
     curincl = exclPre+arr[i]
-    curexcl = max(maxsofar, exclPre)
+    curexcl = maxsofar
     maxsofar = max(curincl,curexcl)
     exclPre = curexcl
   return max(maxsofar,exclPre)
@@ -4795,6 +4796,27 @@ def nways(steps, n):
     for step in steps:
       ways[i] += ways[i-step]
   return ways[n-1]
+
+""" tab[i,v] = tot non descreasing at ith digit, end with value v
+bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
+tab[n,d] = sum(tab[n-1,k] where k takes various value[0..9]
+Total count = ∑ count(n-1, d) where d varies from 0 to n-1
+"""
+def nonDecreasingCount(slots):
+  tab = [[0]*10 for i in xrange(slots)]
+  for v in xrange(10):
+    tab[0][v] = 1
+  for i in xrange(1,slots):
+    for val in xrange(10):
+      for k in xrange(val+1): # k is capped by prev digit v
+        tab[i][val] += tab[i-1][k]
+  tot = 0
+  for v in xrange(10):
+    tot += tab[n-1][v]
+  return tot
+assert(nonDecreasingCount(2), 55)
+assert(nonDecreasingCount(3), 220)
+
 
 """ bottom up each pos, at each set[0:pos], each val as a new col, entry is a list
 [ [v1-list, v2-list, ...], [v1-list, v2-lsit, ...], ...] 
@@ -4894,39 +4916,19 @@ def dice(m,n,x):
   return tab[n,x]
 
 
-""" tab[i,v] = tot non descreasing at ith digit, end with value v
-bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
-tab[n,d] = sum(tab[n-1,k] where k takes various value[0..9]
-Total count = ∑ count(n-1, d) where d varies from 0 to n-1
-"""
-def nonDecreasingCount(n):
-  tab = [[0]*10 for i in xrange(n)]
-  for v in xrange(10):
-    tab[0][v] = 1
-  for i in xrange(1,n):
-    for v in xrange(10):
-      for k in xrange(v+1): # k is capped by prev digit v
-        tab[i][v] += tab[i-1][k]
-  tot = 0
-  for v in xrange(10):
-    tot += tab[n-1][v]
-  return tot
-assert(nonDecreasingCount(2), 55)
-assert(nonDecreasingCount(3), 220)
-
 ''' digitSum(2,5) = 14, 23, 32, 41 and 50
 bottom up each row of i digits, each val is a col, 
 [[1,2,..], [v1, v2, ...], ..] tab[i,v] = sum(tab[i-1,k] for k in 0..9)
 '''
-def digitSum(n,s):
-  tab = [[0]*max(s+1,10) for i in xrange(n)]
+def digitSum(slot,tot):
+  tab = [[0]*max(tot+1,10) for i in xrange(slot)]
   for i in xrange(10):
     tab[0][i] = 1
-  for i in xrange(1,n):     # bottom up each slot
-    for v in xrange(s+1):   # bottom up each sum
-      for d in xrange(v):   # foreach face(0..9)
-        tab[i][v] += tab[i-1][v-d]
-  return tab[n-1][s]
+  for i in xrange(1,slot):     # bottom up each slot
+    for val in xrange(tot+1):   # bottom up each sum
+      for face in xrange(val):   # foreach face(0..9)
+        tab[i][val] += tab[i-1][val-face]
+  return tab[slot-1][tot]
 assert(digitSum(2,5), 5)
 assert(digitSum(3,6), 21)
 
@@ -4978,21 +4980,21 @@ print diffone(3)
 
 """ adding + in between. [1,2,0,6,9] and target 81.
 tab[i,sm] exist [0..i] val sum to sm
-more complex than subset sum, one loop from i left to coerce k:i as cur num.
-bottom up row, for each j to i that forms num, then for each num 
+more complex than subset sum, one loop from i left to coerce k:i as cur val.
+bottom up row, for each j to i that forms val, then for each val 
 """
 def plusBetween(arr, target):
   def toInt(arr, st, ed):
     return int("".join(map(lambda x:str(x), arr[st:ed+1])))
   tab = [[False]*(target+1) for i in xrange(len(arr))]
   for i in xrange(len(arr)):
-    for j in xrange(i,-1,-1):  # one loop j:i to coerce current num
-      num = toInt(arr,j,i)
-      if j == 0 and num <= target:
-        tab[i][num] = True   # tab[i,num], not tab[i,target]
-      # enum all values between num to target, for tab[i,s]
-      for v in xrange(num, target+1):
-        tab[i][v] |= tab[j-1][v-num]
+    for j in xrange(i,-1,-1):  # one loop j:i to coerce current val
+      val = toInt(arr,j,i)
+      if j == 0 and val <= target:
+        tab[i][val] = True   # tab[i,val], not tab[i,target]
+      # enum all values between val to target, for tab[i,s]
+      for v in xrange(val, target+1):
+        tab[i][v] |= tab[j-1][v-val]
   return tab[len(arr)-1][target]
 print plusBetween([1,2,0,6,9], 81)
 
