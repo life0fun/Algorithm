@@ -1,5 +1,5 @@
 import sys
-import math
+  import math
 
 """
 # Jianchao's Blog
@@ -93,36 +93,49 @@ def multiply(a, b):
   return out
 print multiply(345, 678)
 
-""" merge two sorted arry """
-def merge(a,b):
-  ia,ib,la,lb=0,0,len(a),len(b)
-  out = []
-  while ia < la and ib < lb:
-    if a[ia] > b[ib]:
-      out.append(a[ia])
-      ia += 1
-    else:
-      out.append(b[ib])
-      ib += 1
-  for i in xrange(ia, la):
-    out.append(a[i])
-  for j in xrange(ib, lb):
-    out.append(b[j])
-  return out
-print merge([9,8,3], [6,5])
+""" insert into circular link list 
+    1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
+"""
+def insertCircle(l, val):
+    if not l: return Node(val)
+    if l.next == l: 
+        l.next = Node(val)
+        return min(l.val, val)
+    pre = head
+    cur = head.next
+    minnode = None
+    while True:
+        if prev < val < cur:
+            prev.next = val
+            return
+        # at the end, val is max or min
+        elif prev > cur and val > pre or val < cur:   
+            prev.next = val
+            minnode = pre
+            return
+    return minnode
 
 """ the max num can be formed from k digits from a, preserve the order in ary.
 key point is drop digits along the way."""
-def maxKbits(a, k):
-  drops = len(a)-k   # how many ele from a to be dropped
-  out = []
-  for i in xrange(len(a)):
-    # when a[i] grt than last in out and we have room to drop
-    while drops > 0 and len(out) > 0 and a[i] > out[-1]:
-      out.pop()
-      drops -= 1
-    out.append(a[i])
-  return out[:k]  # only keep first k bits
+static int maxkbits(int[] arr, int k ) {
+    int sz = arr.length;
+    int left = sz - k; 
+    Stack<Integer> stk = new Stack<Integer>();
+    stk.add(arr[0]);
+    for (int i = 1;i<arr.length;i++) {
+        while (stk.size() > 0 && arr[i] > stk.peek() && left > 0) {
+            stk.pop();
+            left -= 1;
+        }
+        stk.add(arr[i]);
+    }
+    int tot = 0;
+    for(int i=0;i<k;i++) {
+        tot = tot*10 + stk.get(i);
+    }
+    System.out.print("maxbits " + tot);
+    return tot;
+}
 print reduce(lambda x,y: x*10+y, maxKbits([3,9,5,6,8,2], 2))
 
 """ max k digit num can be formed from a, b, preserve the order in each ary 
@@ -219,59 +232,39 @@ arr = qsort([1, 34, 3, 98, 9, 76, 45, 4],0,7)
 print int("".join(map(str, list(reversed(arr)))))
 
 """ put 0 at head, 2 at tail, 1 in the middle, wr+1/wb-1 """
-def sortColor(arr):
-  def swap(arr, i, j):
-    arr[i],arr[j] = arr[j],arr[i]
-  i,wr,wb=0,0,len(arr)-1
-  for i in xrange(len(arr)):
-    while arr[i] == 2 and i < wb:
-      swap(arr, i, wb)
-      wb -= 1
-    while arr[i] == 0 and i > wr:
-      swap(arr, i, wr)
-      wr += 1
-  return arr
+static void swap(int[] arr, int i, int j) {
+    int tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+}
+static int[] sortColor(int[] arr) {
+    int l = 0;
+    int r = arr.length-1;
+    int stidx = 0;
+    for (int i=0;i<=r;i++) {
+        if (arr[i] == 0 && i > stidx) {
+            swap(arr, stidx, i);
+            stidx += 1;
+        }
+    }
+    int edidx = r;
+    for (int i=0;i<=r;i++) {
+        if (arr[i] == 2 && i < edidx) {
+            swap(arr, edidx, i);
+            edidx -= 1;
+        }
+    }
+    System.out.println(Arrays.toString(arr));
+    return arr;
+}
 print sortColor([2,0,1])
 print sortColor([1,2,1,0,1,2,0,1,2,0,1])
 
 
-def hIndex(citations):
-  def partition(arr, l, r):
-    piv = min(arr, l, r, (l+r)/2)
-    swap(arr, piv, r)
-    wi = l
-    for i in xrange(l, r):
-      if arr[i] < arr[piv]:
-        arr[wi++] = arr[i]
-    swap(arr, wi, r)
-    return wi
-
-  sz,l,r,piv,ans = len(citations),0,sz-1,0,0
-  while l > r:
-    hidx = partition(arr, l, r)
-    if citiations[hidx] >= hidx:
-      ans = hdix
-      l = hidx+1
-    else:
-      r = hidx-1
-  return ans
-
-""" use 0..n bucket to count """
-def hIndex(citations):
-  n = len(citations)
-  bucket = [0]*(n+1)
-  for i in xrange(n):
-    bucket[min(citations[i],n)] += 1
-  for i in xrange(n,0,-1):
-    sm += bucket[i]
-    if sm >= i:
-      ret = i
-  return ret
-
 """ only search, enter loop even when only 1 ele, lo <= hi """
 def binarySearch(arr, k):
   lo,hi = 0, len(arr)-1
-  while lo <= hi:
+  while lo < hi:
     mid = lo+(hi-lo)/2
     if arr[mid] == k:
       return mid
@@ -283,69 +276,68 @@ def binarySearch(arr, k):
 
 """ ret insertion pos, the first pos t <= a[idx]. a[idx-1] < t <= a[idx]. even with dups.
 when find high end, idx-1 is the first ele smaller than searching val."""
-def bisect(arr, val):
-  lo,hi = 0, len(arr)-1
-  if val > arr[-1]:
-    return False, len(arr)
-  # lo != hi, reduced to at least 2 ele, so l=m+1 wont boundary.
-  while lo != hi:
-    md = (lo+hi)/2
-    if val > arr[md] # target grt than mid, ins pos m+1
-      lo = md+1
-    else:
-      hi = md   # target <=, mov r, as we want to find first pos eqs target
-  # check lo when out lo = hi
-  if arr[lo] == val:
-    return True, lo
-  else:
-    return False, lo
+static int bsect(int[] arr, int v) {
+    int l = 0;
+    int r = arr.length-1;
+    while (l < r) {
+        int m = (l+r)/2;
+        // if (v > arr[m]) { l = m+1; }
+        if (v >= arr[m]) { // when using =, insert pos is to the end.
+            l = m+1;
+        } else {
+            r = m;
+        }
+    }
+    return l;
+}
 print bisect([1,1,3,5,7])
 
 """ not to find insertion point, check which seg is mono """
-def binarySearchRotated(arr,t):
-  l,r=0,len(arr)-1
-  while l <= r:      # if =, will enter loop even when only one ele.
-    while l < r and arr[l] == arr[l+1]:
-      l += 1
-    while r > l and arr[r] == arr[r-1]:
-      r -= 1
-    mid = l+(r-l)/2
-    if t == arr[mid]:
-      return True, mid
-    # l != mid, so mid+1 wont boundary.
-    if arr[l] < arr[mid]:  #[l...mid] is mono increase
-      if arr[l] <= t and t < arr[mid]:
-        r = mid - 1
-      else:
-        l = mid + 1
-    elif arr[l] > arr[mid]:  # [mid...r] is mono increase
-      if arr[mid] < t and t <= arr[r]:
-        l = mid + 1
-      else:
-        r = mid - 1
-    else:   # arr.l == arr.m, advance l
-      l += 1
-  # when out loop not return, not found.
+static int bsearchRotate(int[] arr, int v) {
+    int l = 0;
+    int r = arr.length-1;
+    while (l < r) {
+        int m = (l+r)/2;
+        if (arr[l] < arr[m]) {
+            if (arr[l] <= v && v < arr[m]) {  // <= v
+                r = m;
+            } else {
+                l = m+1;
+            }
+        } else if (arr[m] < arr[r]){
+            if (arr[m] < v && v <= arr[r]) {  // <=
+                l = m+1;
+            } else {
+                r = m;
+            }
+        } else {
+            l += 1;
+        }
+    }
+    return l;
+}
 print binarySearchRotated([3, 4, 5, 1, 2], 2)
 print binarySearchRotated([3], 2)
 
 """ find min in rotated. with dup, advance mid, and check on each mov """
-def rotatedMin(arr):
-  l,r=0,len(arr)-1
-  while l != r:     # into loop only when >= 2 ele, ret l when out
-    while l < r and arr[l] == arr[l+1]:
-      l += 1
-    while r > l and arr[r] == arr[r-1]:
-      r -= 1
-    mid = (l+r)/2
-    if arr[mid] > arr[mid+1]:
-      return arr[mid+1]
-    ''' l - mid in the first same segment '''
-    if arr[l] < arr[mid] and mid < r:
-      l = mid+1
-    else:
-      r = mid     # r=mid-1 only when loop in when l <= r
-  return arr[l]
+static int rotateMin(int[] arr) {
+    int l = 0;
+    int r = arr.length-1;
+    while (l < r) {
+        while (l < r && arr[l] == arr[l+1]) l += 1;
+        while (r > l && arr[r] == arr[r-1]) r -= 1;
+        int m = (l+r)/2;
+        if (arr[m] > arr[m+1]) {
+            return arr[m];
+        }
+        if (arr[l] < arr[m] && m < r) {
+            l = m+1;
+        } else {
+            r = m;
+        }
+    }
+    return -1
+}
 print rotatedMin([4,5,0,1,2,3])
 print rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4])
 print rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4,4,4])
@@ -357,116 +349,72 @@ print rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
 
 
 """ find the max in a ^ ary """
-def findMax(arr):
-  l,r=0,len(arr)-1
-  while l < r:
-    mid = l+(r-l)/2
-    if arr[mid-1] < arr[mid] > arr[mid+1]:
-      return arr[mid]
-    if arr[mid] < arr[mid+1]:  # mid .. mid+1 incr, max is on rite
-      l = mid+1
-    else:         # mid .. mid+1 decrease, max on left
-      r = mid
-  return arr[r]
+static int findMax(int[] arr) {
+    int l = 0;
+    int r = arr.length-1;
+    while (l < r) {
+        int m = (l+r)/2;
+        if (arr[m+1] > arr[m]) {
+            l = m+1;
+        } else if(arr[m+1] < arr[m]) {
+            r = m;
+        }
+    }
+    return l;
+}
 print findMax([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
 print findMax([10, 20, 30, 40, 50])
 print findMax([120, 100, 80, 20, 0])
 
 
 ''' bisect always check l,r boundary first a[l-1]<t<=a[l] '''
-def floorceil(arr, t):
-  def floor(arr, t):
-    l,r = 0, len(t)-1
-    while l < r:
-      mid = l + (r-l)/2
-      if arr[mid] < t:
-        l = mid+1
-      else:
-        r = mid
-    return arr[l] == t ? l : -1
-  def ceiling(arr, t):
-    l,r = 0, len(t)-1
-    while l < r:
-      mid = l + (r-l)/2
-      if arr[mid] > t:
-        r = mid-1
-      else:
-        l = mid
-    return r
-  l = floor(arr, t)
-  if l == -1:
-    return [-1, -1]
-  r = ceiling(arr,t)
-  return [l, r]
+static int ceiling(int[] arr, int t) {
+    int l = 0;
+    int r = arr.length -1;
+    while (l < r) {
+        int m = (l+r) / 2;
+        if (arr[m] <= /* = */ t) {
+            l = m+1;
+        } else {
+            r = m;
+        }
+    }
+    System.out.println("celing is " + l);
+    return l;
+}
 print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 2)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
 
 
-""" inverse count with merge sort """
-def mergesort(arr, lo, hi):
-  def merge(arr, ai, bi, hi):
-    out = []
-    i,j,k=ai,bi,hi
-    cnt = 0
-    while i < bi and j < hi:
-      if arr[i] <= arr[j]:
-        out.append(arr[i])
-        i += 1
-      else:
-        out.append(arr[j])
-        cnt += j-i  # entire left from i->end is bigger than rite[j]
-    while i < bi:
-      out.append(arr[i])
-      i += 1
-    while j < hi:
-      out.append(arr[j])
-      j += 1
-    return cnt
-  inv = 0
-  if lo < hi:
-    mid = (lo+hi)/2
-    inv = mergesort(arr, lo, mid)
-    inv += mergesort(arr, mid+1, hi)
-    inv += merge(arr, lo, mid+1, hi)
-  return inv
+""" merge two sorted arry """
+static int[] merge(int[] arra, int[] arrb) {
+    int al = 0;
+    int ar = arra.length-1;
+    int bl = 0;
+    int br = arrb.length-1;
+    int[] out = new int[ar+1+br+1];
+    int outidx = 0;
+    while (al < arra.length && bl < arrb.length) {
+        if (arra[al] < arrb[bl]) {
+            out[outidx++] = arra[al++];
+        } else {
+            out[outidx++] = arrb[bl++];
+        }
+    }
+    // after break
+    if (al < arra.length) {
+        System.arraycopy(arra, al, out, outidx, arra.length-al);
+    }
+    if (bl < arrb.length) {
+        System.arraycopy(arrb, bl, out, outidx, arrb.length-bl);
+    }
+    System.out.println(Arrays.toString(out));
+    return out;
+}
+print merge([9,8,3], [6,5])
 
-""" rite smaller with merge sort, when merging left and rite,
-left[l] > rite[0..r-1], because we mov r when rite[r] < left[l].
-so rank[l]+= r.
-"""
-def riteSmaller(arr):
-  def merge(left, rite):
-    ''' left rite ary is sorted and contains idx of ary '''
-    l,r = 0,0
-    out = []
-    while l < len(left) and r < len(rite):
-      lidx,ridx = left[l],rite[r]
-      if arr[lidx] < arr[ridx]:  # mov l until could not. rank+=r
-        rank[lidx] += r
-        out.append(lidx)
-        l += 1
-      else:
-        out.append(ridx)
-        r += 1
-    for i in xrange(l, len(left)):
-      out.append(left[i])
-      rank[left[i]] += r
-    for i in xrange(r, len(rite)):
-      out.append(rite[i])
-    return out  
-  def mergesort(arr, l, r):
-    if l == r:
-      return [l]
-    m = (l+r)/2
-    left = mergesort(arr, l, m)    # ret ary of idx of origin arr
-    rite = mergesort(arr, m+1, r)
-    return merge(left,rite)
 
-  rank = [0]*len(arr)
-  mergesort(arr, 0, len(arr)-1)
-  return rank
-print riteSmaller([5, 4, 7, 6, 5, 1])
 
 """ find all pairs sum[l:r] within range [mn,mx]. merge sort
 arr, divide and conquer, better than gap n^2.
@@ -545,7 +493,7 @@ two index at A, B array, and inc smaller array's index each step for k steps.
 """
 def findKth(A, m, B, n, k):
   if m > n:
-      return findKth(B,n,A,m,k)
+    return findKth(B,n,A,m,k)
   if m == 0: return B[k-1]
   if k == 1: return min(A[0],B[0])
   ia = min(k/2, m)
@@ -620,37 +568,46 @@ def medianmedian(A, beg, end, k):
   else:
     return medianmedian(A, pivotidx+1, end, k-rank)
 
-def removeDup(arr):
-  pos, start = 1,2
-  for i in xrange(start, len(arr)):
-    if arr[i] == arr[pos-1] && arr[i] == arr[pos]:
-      continue
-    arr[pos] = arr[i]
-    pos += 1
-  return pos
 
+## Median of a data stream
+# split data stream to 2 heap, max heap of 1..mid, min heap of mid..n.
+# when add, add to min heap or max heap.
+class MedianFinder {
+    // max queue is always larger or equal to min queue
+    PriorityQueue<Integer> min = new PriorityQueue();
+    PriorityQueue<Integer> max = new PriorityQueue(1000, Collections.reverseOrder());
+    // Adds a number into the data structure.
+    public void addNum(int num) {
+        max.offer(num);
+        min.offer(max.poll());
+        if (max.size() < min.size()){
+            max.offer(min.poll());
+        }
+    }
+    // Returns the median of current data stream
+    public double findMedian() {
+        if (max.size() == min.size()) return (max.peek() + min.peek()) /  2.0;
+        else return max.peek();
+    }
+};
 
-""" insert into circular link list 
-    1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
-"""
-def insertCircle(l, val):
-    if not l: return Node(val)
-    if l.next == l: 
-        l.next = Node(val)
-        return min(l.val, val)
-    pre = head
-    cur = head.next
-    minnode = None
-    while True:
-        if prev < val < cur:
-            prev.next = val
-            return
-        # at the end, val is max or min
-        elif prev > cur and val > pre or val < cur:   
-            prev.next = val
-            minnode = pre
-            return
-    return minnode
+int[] arr = new int[]{1,3,3,3,3,5,5,5,7};
+static void removeDup(int[] arr) {
+    int widx = 1;
+    int l = 2;
+    for (int i=l;i<arr.length;i++) {
+        if (arr[i] == arr[widx] && arr[i] == arr[widx-1]) {
+            continue;
+        }
+        widx += 1;
+        arr[widx] = arr[i];
+    }
+    System.out.println(" " + Arrays.toString(arr));
+}
+
+## remove dup letter, result shall be the smallest in lexicographical order among all possible results.
+# 1. find out the last appeared position for each letter;
+# https://leetcode.com/problems/remove-duplicate-letters/discuss/76766/Easy-to-understand-iterative-Java-solution
 
 """
 /**
@@ -661,6 +618,7 @@ def insertCircle(l, val):
  *    b) in stack, visit edge. not parent, no enqueue.
  *    c) visited, must be directed graph, otherwise, cycle detected, not a DAG.
  */
+
 bfs(graph *g, int start) {
   init_queue(&q);
   enqueue(&q,start);
@@ -710,7 +668,6 @@ dfs(root, params):
     if not visited[c]:
       parent[c] = root
       process_edge(root, c)
-      instack[c] = true
       dfs(c)
     else if instack[c]:
       process_edge(root, c)
@@ -813,7 +770,10 @@ def clone(root, storeMap):
   return nroot
 
 
-""" track pre, cur when traverse, and threading left rite most """
+""" 
+iterative, while (cur) { pre = cur; cur = cur.left;}
+recursive, root.left = root.recur(root.left); 
+"""
 def morris(root):
   pre, cur = None, root
   while cur:
@@ -830,11 +790,50 @@ def morris(root):
 
       if tmp.rite == None:
         tmp.rite = cur      # threading to cur
-        cur = cur.left      # descend to left
+        pre,cur = cur, cur.left  # descend to left
       else:  # already threaded, visit, reset, to rite
         out.append(cur)     # visit
         tmp.rite = None
         pre,cur = cur, cur.rite
+
+class Node {
+    Node left;
+    Node rite;
+    int value;
+    public Node(Node l, Node r, int v) {
+        this.left = left;
+        this.rite = rite;
+        this.value = value;
+    }
+}
+
+static Node morris(Node root) {
+    Node pre;
+    Node cur = root;
+    Stack<Node> stk = new Stack<>();
+    while (cur != null) {
+        if (cur.left == null) {
+            pre = cur;
+            cur = cur.rite;
+        } else {
+            Node tmp = cur.left;
+            while (tmp.rite != null && tmp.rite != cur) {
+                tmp = tmp.rite;
+            }
+            if (tmp.rite == null) {
+                tmp.rite = cur;
+                cur = cur.left;
+                pre = cur;
+            } else {
+                stk.add(cur);
+                tmp.rite = null;  // have traversed left, restart
+                cur = cur.rite;
+                pre = cur;
+            }
+        }
+    }
+    return stk;
+}
 
 """ threading rite child's left most's left to root's left """
 def postorderMorris(self, root):
@@ -895,6 +894,23 @@ def flatten(r):
     else:
       r = stk.pop()
 
+static Node flatten(Node root) {
+    Stack<Node> stk = new Stack<>();
+    // iterative, while loop. not recursive
+    while (root != null || stk.size() > 0 ) {
+        if (root != null) {
+            if (root.rite != null) {
+                stk.add(root.rite);
+            }
+            root.rite = root.left;
+            root = root.rite;
+        } else {
+            root = stk.pop();
+        }
+    }
+    return root;
+}
+
 def flattenlist(arr):
   stk = []
   stk.append([0, arr])
@@ -906,6 +922,241 @@ def flattenlist(arr):
     else:
       stk.append([idx+1,l])
       stk.append([0, l[idx]])
+
+""" 
+AVL tree with rank, getRank ret num node smaller. left/rite rotate.
+Ex: count smaller ele on the right, find bigger on the left, max(a[i]*a[j]*a[k])
+"""
+class AVLTree(object):
+  def __init__(self,key):
+    self.key = key
+    self.size = 1
+    self.height = 1
+    self.left = None   # children are AVLTree
+    self.rite = None
+  def __repr__(self):
+      return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
+  # recurisve insert, after ins, must rotate. as ins is recursive, rotate is also recursive.
+  # return subtree root, and # of node smaller or equal.
+  def insert(self, key):
+    if self.key == key: return self
+    elif key < self.key:
+      if not self.left: self.left = AVLTree(key)
+      else:             self.left = self.left.insert(key)
+    else:
+      if not self.rite: self.rite = AVLTree(key)
+      else:             self.rite = self.rite.insert(key)
+    # after insersion, rotate if needed.
+    self.updateHeightSize()  # rotation may changed left. re-calculate
+    newself = self.rotate(key)  ''' current node changed after rotate '''
+    print "insert ", key, " new root after rotated ", newself
+    return newself  # ret rotated new root
+  int insert(int k) {
+      AVLTree cur = this;
+      AVLTree pre = null;
+      while (cur != null) {
+          pre = cur;
+          if (cur.value > k) { cur = cur.left;} 
+          else { cur = cur.rite; }
+      }
+      if (pre.value > k) { pre.left = new AVLTree(k); }
+      else { pre.rite = new AVLTree(k); }
+  }
+  int insert(int k) {
+      if (k < value && left == null) { left = new AVLTree(k); }
+      else if (k > value && rite == null) { rite = new AVLTree(k); }
+      else if (k < value) { left = left.insert(k); }
+      else { rite = rite.insert(k); }
+      AVLTree newMe = balance();
+      return newMe;
+    }
+  # delete a node.
+  def delete(self,key):
+    if key < self.key:   self.left = self.left.delete(key)
+    elif key > self.key: self.rite = self.rite.delete(key)
+    else:
+      if not self.left or not self.rite:
+        node = self.left
+        if not node:
+            node = self.rite
+        if not node:
+            return None
+        else:
+            self = node
+      else:
+        node = self
+        while node.left:
+            node = node.left
+        self.key = node.key
+        self.rite = self.rite.delete(node.key)
+    self.updateHeightSize()
+    subtree = self.rotate(key)
+    return subtree
+
+  # left heavy, pos balance, right heavy, neg balance
+  # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
+  def balance(self):    # balance subtree root is this node.
+    if not self.left and not self.rite:
+      return 0
+    if self.left and self.rite:
+      return self.left.height - self.rite.height
+    if self.left:
+      return self.left.height
+    else:
+      return self.rite.height
+  # update all subtree nodes ht and sz
+  def updateHeightSize(self):
+    self.height = 0
+    self.size = 0
+    if self.left:
+      self.height = self.left.height
+      self.size = self.left.size
+    if self.rite:
+      self.height = max(self.height, self.rite.height)
+      self.size += self.rite.size
+    self.height += 1
+    self.size += 1
+  def rotate(self, key):
+    bal = self.balance()
+    if bal > 1 and self.left and key < self.left.key:
+        return self.riteRotate()
+    elif bal < -1 and self.rite and key > self.rite.key:
+        return self.leftRotate()
+    elif bal > 1 and self.left and key > self.left.key: # < , left rotate left subtree.
+        self.left = self.left.leftRotate()
+        return self.riteRotate()  # then rite rotate after /
+    elif bal < -1 and self.rite and key < self.rite.key: # >, rite rotate rite subtree.
+        self.rite = self.rite.riteRotate()
+        return self.leftRotate()  # left rotate after \
+    return self  # no rotation
+  ''' bend / left heavy subtree to ^ subtree '''
+  def riteRotate(self):
+    newroot = self.left
+    newrite = newroot.rite
+    newroot.rite = self
+    self.left = newrite
+
+    self.updateHeightSize()
+    newroot.updateHeightSize()
+    return newroot   # ret the new root of subtree. parent point needs to update.
+  ''' bend \ subtree to ^ subtree '''
+  def leftRotate(self):
+    newroot = self.rite
+    newleft = newroot.left
+    newroot.left = self
+    self.rite = newleft
+    
+    self.updateHeightSize()
+    newroot.updateHeightSize()
+    return newroot
+  def searchkey(self, key):
+    if self.key == key:
+      return True, self
+    elif key < self.key:
+      if self.left:
+        return self.left.search(key)
+      else:
+        return False, self
+    else:
+      if self.rite:
+        return self.rite.search(key)
+      else:
+        return False, self
+  ''' recurisve, find subtree node that is max smaller than the key '''
+  def maxSmaller(self, key):
+    if key < self.key:
+      if not self.left:
+        return None   # no smaller in this sub tree.
+      else:
+        return self.left.maxSmaller(key)
+    if key > self.key:
+      if not self.rite:
+        return self    # cur is largest smaller
+      else:
+        return max(self, self.rite.maxSmaller(key))
+    return self
+  ''' rank is num of node smaller than key '''
+  def getRank(self, key):
+    if key == self.key:
+      if self.left:
+        return self.left.size + 1
+      else:
+        return 1
+    elif self.key > key: 
+      if self.left:
+        return self.left.getRank(key)
+      else:
+        return 0
+    else:
+      r = 1
+      if self.left:
+          r += self.left.size
+      if self.rite:
+          r += self.rite.getRank(key)
+      return r
+  
+
+# rite Smaller, and left smaller, the same.
+def riteSmaller(arr):
+    sz = len(arr)
+    root = AVLTree(arr[-1])
+    riteSmaller = [0]*sz
+    for i in xrange(sz-2, -1, -1):
+        v = arr[i]
+        rank = root.getRank(v)
+        root = root.insert(v)
+        riteSmaller[i] = rank
+    return riteSmaller
+
+assert(riteSmaller([12, 1, 2, 3, 0, 11, 4]) == [6, 1, 1, 1, 0, 1, 0] )
+assert(riteSmaller([5, 4, 3, 2, 1]) == [5, 4, 3, 2, 1])
+
+""" inverse count with merge sort """
+def mergesort(arr, lo, hi):
+  inv = 0
+  if lo < hi:
+    mid = (lo+hi)/2
+    inv = mergesort(arr, lo, mid)
+    inv += mergesort(arr, mid+1, hi)
+    inv += merge(arr, lo, mid+1, hi)
+  return inv
+
+""" rite smaller with merge sort, when merging left and rite,
+left[l] > rite[0..r-1], because we mov r when rite[r] < left[l].
+so rank[l]+= r.
+"""
+def riteSmaller(arr):
+  def merge(left, rite):
+    ''' left rite ary is sorted and contains idx of ary '''
+    l,r = 0,0
+    out = []
+    while l < len(left) and r < len(rite):
+      lidx,ridx = left[l],rite[r]
+      if arr[lidx] < arr[ridx]:  # mov l until could not. rank+=r
+        rank[lidx] += r
+        out.append(lidx)
+        l += 1
+      else:
+        out.append(ridx)
+        r += 1
+    for i in xrange(l, len(left)):
+      out.append(left[i])
+      rank[left[i]] += r
+    for i in xrange(r, len(rite)):
+      out.append(rite[i])
+    return out  
+  def mergesort(arr, l, r):
+    if l == r:
+      return [l]
+    m = (l+r)/2
+    left = mergesort(arr, l, m)    # ret ary of idx of origin arr
+    rite = mergesort(arr, m+1, r)
+    return merge(left,rite)
+
+  rank = [0]*len(arr)
+  mergesort(arr, 0, len(arr)-1)
+  return rank
+print riteSmaller([5, 4, 7, 6, 5, 1])
 
 
 ''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
@@ -1065,183 +1316,6 @@ def noAdj(text):
 
 print noAdj("abacbcdc")
 print noAdj("aabbc")
-
-""" 
-AVL tree repr-ed by its root node.
-AVL tree with rank, getRank ret num node smaller. left/rite rotate.
-Ex: count smaller ele on the right, find bigger on the left, max(a[i]*a[j]*a[k])
-"""
-class AVLTree(object):
-  def __init__(self,key):
-    self.key = key
-    self.size = 1
-    self.height = 1
-    self.left = None   # children are AVLTree
-    self.rite = None
-  def __repr__(self):
-      return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
-  # recurisve insert, after ins, must rotate. as ins is recursive, rotate is also recursive.
-  # return subtree root, and # of node smaller or equal.
-  def insert(self,key):
-    if self.key == key:
-      return self
-    elif key < self.key:
-      if not self.left:
-        self.left = AVLTree(key)
-      else:
-        self.left = self.left.insert(key)
-    else:
-      if not self.rite:
-        self.rite = AVLTree(key)
-      else:
-        self.rite = self.rite.insert(key)
-    # after insersion, rotate if needed.
-    self.updateHeightSize()  # rotation may changed left. re-calculate
-    newself = self.rotate(key)  ''' current node changed after rotate '''
-    print "insert ", key, " new root after rotated ", newself
-    return newself  # ret rotated new root
-  # delete a node.
-  def delete(self,key):
-    if key < self.key:
-      self.left = self.left.delete(key)
-    elif key > self.key:
-      self.rite = self.rite.delete(key)
-    else:
-      if not self.left or not self.rite:
-        node = self.left
-        if not node:
-            node = self.rite
-        if not node:
-            return None
-        else:
-            self = node
-      else:
-        node = self
-        while node.left:
-            node = node.left
-        self.key = node.key
-        self.rite = self.rite.delete(node.key)
-    self.updateHeightSize()
-    subtree = self.rotate(key)
-    return subtree
-
-  # left heavy, pos balance, right heavy, neg balance
-  # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
-  def balance(self):    # balance subtree root is this node.
-    if not self.left and not self.rite:
-      return 0
-    if self.left and self.rite:
-      return self.left.height - self.rite.height
-    if self.left:
-      return self.left.height
-    else:
-      return self.rite.height
-  # update all subtree nodes ht and sz
-  def updateHeightSize(self):
-    self.height = 0
-    self.size = 0
-    if self.left:
-      self.height = self.left.height
-      self.size = self.left.size
-    if self.rite:
-      self.height = max(self.height, self.rite.height)
-      self.size += self.rite.size
-    self.height += 1
-    self.size += 1
-  def rotate(self, key):
-    bal = self.balance()
-    if bal > 1 and self.left and key < self.left.key:
-        return self.riteRotate()
-    elif bal < -1 and self.rite and key > self.rite.key:
-        return self.leftRotate()
-    elif bal > 1 and self.left and key > self.left.key: # < , left rotate left subtree.
-        self.left = self.left.leftRotate()
-        return self.riteRotate()  # then rite rotate after /
-    elif bal < -1 and self.rite and key < self.rite.key: # >, rite rotate rite subtree.
-        self.rite = self.rite.riteRotate()
-        return self.leftRotate()  # left rotate after \
-    return self  # no rotation
-  ''' bend / left heavy subtree to ^ subtree '''
-  def riteRotate(self):
-    newroot = self.left
-    newrite = newroot.rite
-    newroot.rite = self
-    self.left = newrite
-
-    self.updateHeightSize()
-    newroot.updateHeightSize()
-    return newroot   # ret the new root of subtree. parent point needs to update.
-  ''' bend \ subtree to ^ subtree '''
-  def leftRotate(self):
-    newroot = self.rite
-    newleft = newroot.left
-    newroot.left = self
-    self.rite = newleft
-    
-    self.updateHeightSize()
-    newroot.updateHeightSize()
-    return newroot
-  def searchkey(self, key):
-    if self.key == key:
-      return True, self
-    elif key < self.key:
-      if self.left:
-        return self.left.search(key)
-      else:
-        return False, self
-    else:
-      if self.rite:
-        return self.rite.search(key)
-      else:
-        return False, self
-  ''' recurisve, find subtree node that is max smaller than the key '''
-  def maxSmaller(self, key):
-    if key < self.key:
-      if not self.left:
-        return None   # no smaller in this sub tree.
-      else:
-        return self.left.maxSmaller(key)
-    if key > self.key:
-      if not self.rite:
-        return self    # cur is largest smaller
-      else:
-        return max(self, self.rite.maxSmaller(key))
-    return self
-  ''' rank is num of node smaller than key '''
-  def getRank(self, key):
-    if key == self.key:
-      if self.left:
-        return self.left.size + 1
-      else:
-        return 1
-    elif self.key > key: 
-      if self.left:
-        return self.left.getRank(key)
-      else:
-        return 0
-    else:
-      r = 1
-      if self.left:
-          r += self.left.size
-      if self.rite:
-          r += self.rite.getRank(key)
-      return r
-  
-
-# rite Smaller, and left smaller, the same.
-def riteSmaller(arr):
-    sz = len(arr)
-    root = AVLTree(arr[-1])
-    riteSmaller = [0]*sz
-    for i in xrange(sz-2, -1, -1):
-        v = arr[i]
-        rank = root.getRank(v)
-        root = root.insert(v)
-        riteSmaller[i] = rank
-    return riteSmaller
-
-assert(riteSmaller([12, 1, 2, 3, 0, 11, 4]) == [6, 1, 1, 1, 0, 1, 0] )
-assert(riteSmaller([5, 4, 3, 2, 1]) == [5, 4, 3, 2, 1])
 
 
 """ bst with lo as the bst search key, augment max to the max of ed of all nodes under root.
@@ -1605,7 +1679,7 @@ class BITree:
             self.update(i, self.arr[i])
 
 """
-https://leetcode.com/discuss/79907/summary-divide-conquer-based-binary-indexed-based-solutions
+https://leetcode.com/problems/count-of-range-sum/discuss/77990/Share-my-solution
 count range sum. i,j so low < prefixsum(j-i) < upper.
 """
 def rangeSum(nums, lower, upper):
@@ -3090,20 +3164,35 @@ def concatKeys(s, arr):
 
 """ sliding win, outer while loop move rite, inner while loop mov left 
 always enque r first, then check r-l+1==m"""
-def maxWin(arr, m):
-  l,r,mx = 0,0,0
-  out,stk = [],[]
-  for r in xrange(len(arr)):
-    # clean stk off arr[r]
-    while len(stk) and stk[-1][1] < arr[r]:
-      stk.pop()
-    stk.append([r,arr[r]])
-    if r-l+1 == m:
-      out.append(stk[0])
-      if l == stk[0][0]:
-        stk.pop(0)
-      l += 1
-  return out
+static int[] slidingWinMax(int[] arr, int k) {
+    int sz = arr.length;
+    int[] maxarr = new int[sz];
+    Stack<Integer> maxStk = new Stack<>();
+    Stack<Integer> maxIdxStk = new Stack<>();
+    int l = 0;
+    int winsize = 0;
+    int widx = 0;
+    for(int i=0;i<sz;i++) {
+        while (maxStk.size() > 0 && arr[i] > maxStk.peek()) {
+            maxStk.pop();
+            maxIdxStk.pop();
+        }
+        maxStk.add(arr[i]);
+        maxIdxStk.add(i);
+        winsize += 1;
+        if (winsize >= k) {
+            maxarr[widx++] = maxStk.firstElement();
+            if (maxIdxStk.firstElement() == l) {
+                maxStk.remove(0);
+                maxIdxStk.remove(0);
+            }
+            l += 1;
+            winsize -= 1;
+        }
+    }
+    System.out.println("max in window " + Arrays.toString(maxarr));
+    return maxarr;
+}
 print maxWin([5,3,4,6,9,7,2],2)
 print maxWin([5,3,4,6,9,7,2],3)
 
@@ -3144,33 +3233,66 @@ def maxWinSizeWithMzero(arr,m):
   return maxWinsize
 print maxWinSizeWithMzero([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1],2)
 
+// park at m+1 to include extends non-zero elements.
+static int maxWinMzero(int[] arr, int m) {
+    int l = 0;
+    int sz = arr.length;
+    int zcnts = 0;
+    int maxwinsize = 0;
+    for (int i=0;i<sz;i++) {
+        if (arr[i] == 1) {
+            if (zcnts == m) { maxwinsize = Math.max(maxwinsize, i-l+1); }
+            continue;
+        } else {
+            zcnts += 1;
+            if (zcnts == m+1) {
+                maxwinsize = Math.max(maxwinsize, i-l);
+                while (arr[l] != 0) { l += 1; }
+                l += 1;
+                zcnts -= 1;
+            } 
+        }
+    }
+    System.out.println("szie -> " + maxwinsize);
+    return maxwinsize;
+}
+assertEqual(8, maxWinMzero(new int[]{1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1}, 2));
+
 """ 
 loop each char, note down expected count and fount cnt. 
 """
-from collections import defaultdict
-def minwin(arr,t):
-  expected = defaultdict(int)
-  found = defaultdict(int)
-  for c in t:
-    expected[c] += 1
-  l,cnt,mnw = 0,0,99
-  for r in xrange(len(arr)):
-    c = arr[r]
-    if not c in t:
-      continue
-    found[c] += 1
-    # no value when not expected. dup does not count
-    if found[c] <= expected[c]:
-      cnt += 1
-    if cnt == len(t):
-      while arr[l] not in t or found[arr[l]] > expected[arr[l]]:
-        if found[arr[l]] > 0:  # squeeze left when it is dup.
-          found[arr[l]] -= 1
-        l += 1
-      if r-l+1 < mnw:   # only update min when cnt.
-        mnw = r-l+1
-        print arr[l:r+1]
-  return mnw
+static int minWinString(String s, String t) {
+    int[] expects = new int[26];
+    int[] seen = new int[26];
+    for (int i=0;i<t.length();i++) {
+        expects[t.charAt[i] - 'a'] += 1;
+    }
+    int l = 0;
+    int minwin = 999;
+    int winsize = 0;
+    for (int i=0;i<s.length();i++) {
+        char cur = s.charAt(i);
+        int cidx = cur - 'a';
+        seen[cidx] += 1;
+        if (seen[cidx] <= expects[cidx]) {
+            winsize += 1;
+        }
+        if (winsize == t.length()) {
+            while (true) {
+                int lcharidx = s.charAt(l) - 'a';
+                if (seen[lcharidx] > expects[lcharidx]) {
+                    seen[lcharidx] -= 1;
+                    l += 1;
+                } else {
+                    break;
+                }
+            }
+            minwin = Math.min(minwin, i-l+1);
+        }
+    }
+    System.out.println("min win of " + s + " : " + t + " = " + minwin);
+    return minwin;
+}
 print minwin("azcaaxbb", "aab")
 print minwin("ADOBECODEBANC", "ABC")
 
@@ -3193,6 +3315,41 @@ def minwin(arr, words):
       mnw = min(mnw, r-l)        
   return mnw
 
+''' track prepre, pre, cur idx of zeros '''
+def maxones(arr):
+  mx,mxpos = 0,0
+  prepre,pre,cur = -1,-1,-1
+  for i in xrange(len(arr)):
+    if arr[i] == 1:
+      continue
+    cur = i
+    if cur-prepre-1 > mx:
+        mx = cur-prepre-1
+        mxpos = pre
+    prepre,pre = pre,cur
+  if i-prepre > mx:
+    mxpos = pre
+  return mxpos
+print maxones([1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1])
+print maxones([1, 1, 1, 1, 0])
+
+# 1-d array, max length, like slideing wind, track l/r edge.
+def maxWinM(arr,m):
+  l,r,win,maxwinsize = 0,0,0,0
+  while r < len(arr):
+    if win <= m:
+      if arr[r] == 0:
+          win += 1
+      r += 1  # park r to next window rite edge
+    else:
+      if arr[l] == 0:
+          win -= 1
+      l += 1  # park l to next window left edge
+    maxwinsize = max(maxwinsize, r-l)  # dist is half include.
+  return maxwinsize
+print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
+
+
 """ Longest substring with at most 2 distinct chars 
 sliding win, i -> win start, j -> the second char in win.
 slide k, K++ if A[k] = A[k-1]
@@ -3200,16 +3357,28 @@ case 1: A[k] == A[j], still 2 char, but need to let j = k-1 so i will jmp to j+1
 case 2: A[k] != A[j], i,j are 2 chars, upbeat, and set i = j-1 and update j=k-1.
 so i reset to the first char(j=k-1), as last time when (A[k] != A[k-1] and A[k] == A[j]), 
 """
-def longestTwoChar(arr):
-  i,j = 0, -1, mxlen = 0
-  for k in xrange(1, len(arr)):
-    if arr[k] == arr[k-1]:
-      continue
-    if j >= 0 and arr[k] != arr[j]:
-      mxlen = max(mxlen, k-i)
-      i = j + 1
-    j = k -1
-  return mxlen
+static int maxWinTwoChars(int[] arr) {
+    int prepre = 0;
+    int pre = -1;  // no second yet
+    int sz = arr.length;
+    int maxlen = 0;
+    for(int i=1;i<sz;i++){
+        if (arr[i] == arr[i-1]) {
+            continue;
+        } else if (pre == -1) {
+            pre = i;
+            continue;
+        } else if (arr[i] == arr[prepre]) {
+            pre = i - 1;  // relocate pre at the start of non continue gap
+        } else {
+            maxlen = Math.max(maxlen, i-prepre);
+            prepre = pre + 1;  // + 1
+        }
+    }
+    System.out.println("max len is " + maxlen);
+    return maxlen;
+}
+maxWinTwoChars(new int[]{2,1,3,1,1,2,2,1});
 
 """
 max distance between two items where right > left items.
@@ -3219,25 +3388,33 @@ Rmax[n-1..0] store max see so far from left <- right. so mono increase.
 the observation here is, A[i] is shadow by A[i-1] A[i-1] < A[i], the same as A[j-1] by A[j].
 Lmin and Rmax, scan both from left to right, like merge sort. upbeat max-distance.
 """
-def max_distance(l):
-  sz = len(l)
-  Lmin = [l[0]]*sz
-  Rmax = [l[sz-1]]*sz
-  for i in xrange(1, sz-1):
-    Lmin[i] = min(Lmin[i-1], l[i])  # lmin mono decrease
-  for j in xrange(sz-2,0,-1):
-    Rmax[j] = max(Rmax[j+1], l[j])  # rmax flat decrease
-  i = 0   # both start from 0, Lmin/Rmax 
-  j = 0
-  maxdiff = -1
-  while j < sz and i < sz:
-    # find a pair l < r, continue to stretch.
-    if Lmin[i] < Rmax[j]:
-      maxdiff = max(maxdiff, j-i)
-      j += 1
-    else: # Lmin is bigger, mov lmin as Lmin is mono decrease
-      i += 1
-  return maxdiff
+static int maxDist(int[] arr) {
+    int sz = arr.length;
+    int[] lmin = new int[sz];
+    int[] rmax = new int[sz];
+    int min = 999;
+    int max = 0;
+    for (int i=0;i<sz;i++) {
+        min = Math.min(min, arr[i]);
+        lmin[i] = min;
+        max = Math.max(max, arr[sz-i-1]);
+        rmax[sz-i-1] = max;
+    }
+    int l = 0;
+    int r = 0;
+    int maxdist = 0;
+    while (l < sz && r < sz) {
+        if (rmax[r] >= lmin[l]) {
+            maxdist = Math.max(maxdist, r-l+1);  // calculate first, mov left second.
+            r += 1;
+        } else {
+            l += 1;
+        }
+    }
+    System.out.println("max dist = " + maxdist);
+    return maxdist;
+}
+maxDist(new int[]{34, 8, 10, 3, 2, 80, 30, 33, 1});
 
 """ Lmin[i] contains idx in the left arr[i] < cur, or -1
     Rmax[i] contains idx in the rite cur < arr[i]. or -1
@@ -3313,21 +3490,20 @@ reduce to problem to pair, so left <- rite. find rmax  riteMax[i] = arr[i]*rmax
 for left max smaller, left -> rite, build AVL tree while get left max smaller.
 max = max(max[i]*lmax)
 """
-def triplet_maxprod(arr):
-  maxl,maxtriplet = -1,1
-  rmax=[0]*len(arr)
-  mx = 1
-  for i in xrange(len(arr)-1,-1,-1):
-    if arr[i] < mx:
-      rmax[i] = mx*arr[i]
-    mx = max(mx, arr[i])
-
-  lmaxsmaller = AVL(arr[0])
-  for i in xrange(1, len(arr)):
-    maxl = lmaxsmaller.maxSmaller(arr[i])
-    maxtriplet = max(maxtriplet, maxl*rmax[i])
-    lmaxsmaller.insert(arr[i])
-  return maxtriplet
+static int tripletMaxProd(int[] arr) {
+    int sz = arr.length;
+    int[] RMax = new int[sz];
+    RMax[sz-1] = arr[sz-1];
+    for (int i=sz-2;i>=0;i--) {
+        RMax[i] = Math.max(RMax[i+1], arr[i]);
+    }
+    AVLTree root = createAVLTree(arr);
+    for (int i=0;i<sz;i++) {
+        int leftmax = root.getLeftMax(arr[i]);
+        tripletmax = Math.max(tripletmax, leftmax * arr[i] * RMax[i]);
+    }
+    return tripletmax;
+}
 print triplet_maxprod([7, 6, 8, 1, 2, 3, 9, 10])
 print triplet_maxprod([5,4,3,10,2,7,8])
 
@@ -3377,40 +3553,6 @@ def maxProduct(a):
           cur_end, max_end = i,i
           #upbeat(max_beg, max_end)
   return maxProd
-
-''' track prepre, pre, cur idx of zeros '''
-def maxones(arr):
-  mx,mxpos = 0,0
-  prepre,pre,cur = -1,-1,-1
-  for i in xrange(len(arr)):
-    if arr[i] == 1:
-      continue
-    cur = i
-    if cur-prepre-1 > mx:
-        mx = cur-prepre-1
-        mxpos = pre
-    prepre,pre = pre,cur
-  if i-prepre > mx:
-    mxpos = pre
-  return mxpos
-print maxones([1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1])
-print maxones([1, 1, 1, 1, 0])
-
-# 1-d array, max length, like slideing wind, track l/r edge.
-def maxWinM(arr,m):
-  l,r,win,maxwinsize = 0,0,0,0
-  while r < len(arr):
-    if win <= m:
-      if arr[r] == 0:
-          win += 1
-      r += 1  # park r to next window rite edge
-    else:
-      if arr[l] == 0:
-          win -= 1
-      l += 1  # park l to next window left edge
-    maxwinsize = max(maxwinsize, r-l)  # dist is half include.
-  return maxwinsize
-print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
 
 
 """keep track left min, max profit is when bot at min day sell today.
@@ -3626,6 +3768,40 @@ def bucketsort_count(arr):
   return arr
 print bucket([1, 2, 4, 3, 2])
 
+static void swap(int[] arr, int i, int j) {
+    int tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+}
+static int[] buckesort(int[] arr) {
+    int l = 0;
+    int sz = arr.length;
+    int r = sz -1;
+    while (l < sz) {
+        while (arr[l] != l+1 && arr[l] >= 0) {
+            int lv = arr[l];
+            if (arr[lv-1] == -999) {
+                arr[lv-1] = -1;
+                arr[l] = -999;
+            }
+            else if (arr[lv-1] < 0 ) {
+                arr[lv-1] -= 1;
+                arr[l] = -999;
+            } else {
+                swap(arr, l, lv-1);
+                arr[lv-1] = -1;
+            }
+        }
+        if (arr[l] == l+1) {
+            arr[l] = -1;
+        }
+        l += 1;
+    }
+    System.out.println("arr -> " + Arrays.toString(arr));
+    return arr;
+}
+buckesort(new int[]{4,2,5,2,1});
+
 """ bucket tab[arr[i]] for i,j diff by t, and idx i,j with k """
 def containsNearbyAlmostDuplicate(self, nums, k, t):
   if t < 0: return False
@@ -3695,6 +3871,56 @@ def repmiss(arr):
         print "dup at ", i, arr
         break
   return arr
+
+static int hIndex(int[] arr) {
+    int sz = arr.length;
+    // num of paper viewed as largest citation cap.
+    int[] citationPapersArr = new int[sz+1];  //
+    for (int i=0;i<sz;i++) {
+        int curCitation = arr[i];
+        if (curCitation > sz) {
+            citationPapersArr[sz] += 1;  // cap
+        } else {
+            citationPapersArr[curCitation] += 1;  // idx is citation, value is total papers in this cititation.
+        }
+    }
+    int hIndex = 0;
+    int totPapers = 0;
+    for (int i=citationPapersArr.length-1;i>=0;i--) {
+        totPapers += citationPapersArr[i];
+        if (totPapers >= i) {
+            hIndex = i;
+            break;
+        }
+    }
+    System.out.println("hIndex is " + hIndex);
+    return hIndex;
+}
+assertEqual(3, hIndex(new int[]{3,0,6,1,5}));
+
+
+# max gap of an between pairs when they are sorted.
+# use bucket to partition number into bucket,
+# Let gap = ceiling[(max - min ) / (N - 1)]. We divide all numbers in the array into n-1 buckets
+# Each bucket store [min, max], scan the buckets for the max gap
+# https://leetcode.com/problems/maximum-gap/discuss/50643/bucket-sort-JAVA-solution-with-explanation-O(N)-time-and-space
+
+# Patch Ary so all number from 1..n can be formed from some combination sum.
+# bottom up from 1..n, if n is missing, add it.
+static int minPatch(int[] arr, int k) {
+    int missing = 1;
+    int i = 0;
+    int added = 0;
+    while (missing <= k) {
+        if (i < arr.length && arr[i] <= missing) {
+            missing += arr[i];
+        } else {
+            missing += missing;
+            added += 1;
+        }
+    }
+    return added;
+}
 
 # largest subary with equal 0s and 1s
 # change 0 to -1, reduce to largest subary sum to 0.
@@ -3895,14 +4121,14 @@ At each row/col, recur incl/excl situation.
 Boundary condition: check when i/j=0 can not i/j-1.
 """ """ """ """ """
 def minjp(arr):
-  mjp,rite,maxrite = 1,arr[0],arr[0]
+  mjp,maxRightOfCurrentMinJP,maxrite = 1,arr[0],arr[0]
   for i in xrange(1,n):
-    if i < rite:
+    if i < maxRightOfCurrentMinJP:
       maxrite = max(maxrite, i+arr[i])
     else:
       mjp += 1
-      rite = maxrite
-    if rite >= n:
+      maxRightOfCurrentMinJP = maxrite
+    if maxRightOfCurrentMinJP >= n:
       return mjp
 
 # tab[i] : min cost from 0->i
@@ -3959,6 +4185,7 @@ def minpath(G, src, dst):
       for v in neighbor(G,s):
         if not visited[v]:
           dfs(v,G,stk)
+      visited[v] = true
       stk.append(v)
     for v in G:
       dfs(v,G,stk)
@@ -3969,10 +4196,10 @@ def minpath(G, src, dst):
   # after topsort, leave at the end of the list.
   tab[d] = 0
   for nb in d.neighbor():
-      tab[nb] = cost[nb][d]
+    tab[nb] = cost[nb][d]
   for i in xrange(len(toplist)-1,-1,-1):
-      for j in i.neighbor():
-          tab[j] = min(tab[i]+cost[i][j], tab[j])
+    for j in i.neighbor():
+      tab[j] = min(tab[i]+cost[i][j], tab[j])
   return tab[src]
 
 
@@ -4171,7 +4398,7 @@ def perm(arr):
     return result
   for i in xrange(len(arr)):
     hd = arr[i]
-    l = arr[:]i
+    l = arr[:i]
     del l[i]   # change arr for next iteration
     for e in perm(l):
       e.insert(0,hd)
@@ -4451,6 +4678,20 @@ def genParenth(n):
   return out
 print genParenth(3)
 
+static void parenth(int sz, int l, int r, String presult) {
+    if (l == sz) {
+        for(int k=0;k<sz-r;k++) {
+            presult += ")";
+        }
+        System.out.println(presult);
+    } else if (l > r) {
+        parenth(sz, l+1, r, presult+"(");
+        parenth(sz, l, r+1, presult+")");
+    } else {
+        parenth(sz, l+1, r, presult+"(");
+    }
+}
+parenth(3, 0, 0, "");
 
 """ first, find unbalance(l-r), recur each pos, dfs excl/incl each pos, no dp short """
 def rmParenth(s, res):
@@ -4489,6 +4730,56 @@ def rmParenth(s, res):
 
 s="()())()";path=[];res=[];print rmParenth(s,0,path,0,0,res)
 s="()())()";path=[];res=[];print rmParenth(s,0,path,0,0,res)
+
+# https://pathcompression.com/sinya/articles/4
+# Let f(i) be the length of the longest valid substring starting from the i th character. 
+# Then the final solution is the largest of all possible f(i).
+# If the i th character is ‘)’, any substrings starting from the i-th character must be invalid. Thus f(i) = 0.
+# If i th character is ‘(’. First we need to find its corresponding closing parentheses. 
+# If a valid closing parentheses exists, the substring between them must be a valid parentheses string. 
+# Moreover, it must be the longest possible valid parentheses string starting from (i+1) th character. 
+# Thus we know that the closing parentheses must be at (i+1 + f(i+1)) th character. 
+# If this character is not ‘)’, we know that we can never find a closing parentheses and thus f(i) = 0.
+# If the (i+1 + f(i+1)) th character is indeed a closing parentheses. 
+# To find the longest possible valid substring, we need to keep going and see if we can 
+# concatenate more valid parenthesis substring if possible. 
+# The longest we can go is f(i+1 + f(i+1) + 1). Therefore we have
+# f(i) = f(i+1) + 2 + f(i + f(i+1) + 2)
+
+static int longestValidParenth(String parenth) {
+    int sz = parenth.length();
+    int[] f = new int[sz];
+    int maxlen = 0;
+    for (int i=sz-1;i>=0;i--) {
+        if (parenth.charAt(i) == ')') { f[i] == 0; continue;}
+        int closingIdx = i+1 + f[i+1];
+        if (closingIdx < sz && s.charAt(closingIdx) == ')') {
+            f[i] = f[i+1] + 2 + f[closingIdx+1];
+            maxlen = Math.max(maxlen, f[i]);
+        }
+    }
+    return maxlen;
+}
+
+static int longestValidParenth(String parenth) {
+    int sz = parenth.length();
+    int maxlen = 0;
+    Stack<Integer> stk = new Stack<Integer>();
+    for (int i=0;i<sz;i++) {
+        if (parenth.charAt(i) == '(') {
+            stk.add(i);   // push in index
+        } else {
+            if (stk.size() > 0) {
+                stk.pop();
+                int begIdx = stk.size() > 0 ? stk.peek() : 0;
+                maxlen = Math.max(maxlen, i-begIdx);
+            }                
+        }
+    }
+    System.out.println("longest valid " + maxlen);
+    return maxlen;
+}
+longestValidParenth(")()()");
 
 
 """ recur, generize formula, with boundary condition first """
@@ -4710,21 +5001,33 @@ print distinct("aeb", "be")
 print distinct("abbbc", "bc")
 print distinct("rabbbit", "rabbit")
 
-""" DP boundary starting point: tab[0][j]=1 empty target string has 1 subseq in any src.
-tab[i][0]=0 : empty src has 0 subseq. """
-def distinct(s,t):
-  dist = [0]*(len(t)+1)
-  dist[0] = 1
-  for sidx in xrange(1,len(s)):
-    pre = 1
-    for tidx in xrange(1, len(t)):
-      tmp = dist[tidx]
-      if s[sidx-1] == t[tidx-1]:
-        dist[tidx] = dist[tidx] + pre
-      else:
-        dist[tidx] = dist[tidx]
-      pre = tmp
-  return dist[len(t)]
+static int distinctSeq(String s, String t) {
+    int srclen = s.length();
+    int tgtlen = t.length();
+    int[][] tab = new int[tgtlen][srclen];
+    
+    for (int tidx=0;tidx<tgtlen;tidx++) {
+        char tc = t.charAt(tidx);
+        for (int sidx=0;sidx<srclen;sidx++) {
+            char sc = s.charAt(sidx);
+            if (sc == tc) {
+                if (sidx == 0) {
+                    tab[tidx][0] = 1;
+                } else if (tidx == 0) {
+                    tab[0][sidx] = tab[0][sidx-1] + 1;
+                } else {
+                    tab[tidx][sidx] = 1 + tab[tidx-1][sidx-1];
+                }
+            } else {
+                if (sidx > 0) {
+                    tab[tidx][sidx] = tab[tidx][sidx-1];
+                }
+            }
+        }
+    }
+    System.out.println("max seq len is " + Arrays.toString(tab[tgtlen-1]));
+    return tab[tgtlen-1][srclen-1];
+}
 print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
 
@@ -4757,6 +5060,49 @@ def decode(dstr):
   return cur
 print decode("122")
 
+# decode with star, DP tab[i] = tab[i-1]*9
+# https://leetcode.com/problems/decode-ways-ii/discuss/105258/Java-O(N)-by-General-Solution-for-all-DP-problems
+# // tab(i) = ( tab(i-1) * ways(i) ) + ( tab(i-2) *ways(i-1, i) )}
+int ways(int ch) {
+    if(ch == '*') return 9;
+    if(ch == '0') return 0;
+    return 1;
+}
+int ways(char ch1, char ch2) {
+    String str = "" + ch1 + "" + ch2;
+    if(ch1 != '*' && ch2 != '*') {
+        if(Integer.parseInt(str) >= 10 && Integer.parseInt(str) <= 26)
+            return 1;
+    } else if(ch1 == '*' && ch2 == '*') {
+        return 15;
+    } else if(ch1 == '*') {
+        if(Integer.parseInt(""+ch2) >= 0 && Integer.parseInt(""+ch2) <= 6)
+            return 2;
+        else
+            return 1;
+    } else {
+        if(Integer.parseInt(""+ch1) == 1 ) {
+            return 9;
+        } else if(Integer.parseInt(""+ch1) == 2 ) {
+            return 6;
+        } 
+    }
+    return 0;
+}
+
+static int numDecodings(String s) {
+    long[] tab = new long[2];
+    tab[0] = ways(s.charAt(0));
+    if(s.length() < 2) return (int)tab[0];
+
+    tab[1] = tab[0] * ways(s.charAt(1)) + ways(s.charAt(0), s.charAt(1));
+    for(int j = 2; j < s.length(); j++) {
+        long temp = tab[1];
+        tab[1] = (tab[1] * ways(s.charAt(j)) + tab[0] * ways(s.charAt(j-1), s.charAt(j))) % 1000000007;
+        tab[0] = temp;
+    }
+    return  (int)tab[1];
+}
 
 """ recur i+1, dup not allowed, recur i, dup allowed. """
 def comb(arr, t, pos, path, res):
@@ -5098,13 +5444,13 @@ tab[i][j] = tab[i+1,j-1] or min(tab[i,j-1], tab[i+1,j])
 """
 def minInsertPalindrom(arr):
   tab = [[0]*len(arr) for i in xrange(len(arr))]
-  for sublen in xrange(1,len(arr)):
+  for sublen in xrange(2,len(arr)+1):  # need +1 to make sublen = len(arr)
     for i in xrange(len(arr)-sublen):
-      j = i + sublen
+      j = i + sublen - 1
       if arr[i] == arr[j]:
         tab[i][j] = tab[i+1][j-1]
       else:
-        tab[i][j] = min(tab[i][j-1], tab[i+1][j])
+        tab[i][j] = min(tab[i][j-1], tab[i+1][j]) + 1
   return tab[0][len(arr)-1]
 
 def palindromMincut(s, offset):
@@ -5179,15 +5525,15 @@ def nextPalindrom(v):
       arr[mr] = str(int(arr[mr])+1)
   return int(''.join(arr))
 
-""" palindrom pair, concat the two words forms a palindrom
-a) s1 or s2 is blank. 
-b) s1 = reverse(s2), 
-c) s1[0:cut] is palindrom and s1[cut:]=reverse(s2)
-d) s1[0:cut]=reverse(s2) and s1[cut+1:] is palindrom
-build a HashMap to store the String-idx pairs.
+""" palindrom pair, concat(prepend or append) the two words forms a palindrom
+for each word, list all prefix, reverse suffix.
+https://leetcode.com/problems/palindrome-pairs/discuss/79209/Accepted-Python-Solution-With-Explanation
 """
 def palindromPair(arr):
-  pass
+  for each word, find all its prefix and suffix
+    for each prefix, 
+      if prefix is palindrom, reverse corresponding suffix, find in dict, 
+         reverser(suffix) + prefix + suffix  is a palindrom.
 
 """ min number left after remove triplet.
 [2, 3, 4, 5, 6, 4], ret 0, first remove 456, remove left 234.
@@ -5337,8 +5683,8 @@ def boggle(G, dictionary):
     if r >= 0 and r < M and c >= 0 and c < N and G[r][c] not in seen:
       return True
     return False
-  ''' dfs recur from r,c search for all cells '''
-  def dfs(G, dictionary, r, c, seen, path, out):
+  ''' recur from r,c search for all cells '''
+  def recur(G, dictionary, r, c, seen, path, out):
     if "".join(path) in dictionary:
       out.append("".join(path))
     ''' iterate each neighbor as child, if not visited, recur with partial '''
@@ -5346,7 +5692,7 @@ def boggle(G, dictionary):
       if isValid(nr,nc,M,N,seen):
         path.append(G[nr][nc])
         seen.add(G[nr][nc])
-        dfs(G, dictionary, nr, nc, seen, path, out)
+        recur(G, dictionary, nr, nc, seen, path, out)
         path.pop()
         seen.remove(G[nr][nc])
       return out
@@ -5357,7 +5703,7 @@ def boggle(G, dictionary):
       seen.add(G[i][j])
       path = []
       path.append(G[i][j])
-      dfs(G, dictionary, i, j, seen, path, out)
+      recur(G, dictionary, i, j, seen, path, out)
       path.pop()
       seen.remove(G[i][j])
   return out
