@@ -4,6 +4,33 @@ import sys
 """
 # Jianchao's Blog
 # www.cnblogs.com/jcliBlogger/
+
+Strategy is recur with smaller problem. bottom up.
+Ideal is Math.min(tab[i][j]), include/exclude the item, recur find the max.
+
+1. for tree, recur with context, or iterate with root and stk.
+2. for ary, loop recur on each element.
+3. search, dfs or bfs.
+4. loop gap=1,2.., start = i, end = i+gap.
+5. tab[i][j][val] = tab[i-1][j-1][val=0..v]
+6. use heap, priorityqueue for
+7. topsort
+
+Reduce N square to N or lgN
+1. sort and hash, binary search.
+2. prefix sum.
+3. RMQ to
+3. merge sort. partition, recursion
+4. Formalize the problem into DP recursion.
+  for (work set value i = 0 .. n)
+    for (candidate j 0..i )
+      tab[i] = (tab[i-k]+1, tab[i])
+5. stack push / pop when bigger than top. mono inc/desc
+6. use heap / priorityqueue
+7. use union set to merge
+8. use bucket sort / bucket merge.
+9. prepre, pre, cur to track
+10. left rite edge to squeeze. sliding window.
 """
 
 ''' recursive, one line print int value bin string'''
@@ -92,6 +119,58 @@ def multiply(a, b):
     c /= 10
   return out
 print multiply(345, 678)
+
+''' pascal triangle, 
+http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
+'''
+
+''' for list and ary, recursion or iterative, fix begin and end '''
+def list2BST(head, tail):
+    mid = len(tail-head)/2
+    mergesort(head)
+    mergesort(mid)
+    mergeListInPlace(head, mid)  # ref to wip/pydev/sort.py for sort two list in-place.
+
+    if head is tail:
+        head.prev = head.next = None
+        return head
+
+    mid = len(tail-head)/2
+    mid.prev = list2BST(head, mid.prev)
+    mid.next = list2BST(mid.next, tail)
+    return mid
+
+def bst2minheap(l):
+    heapify(l)          # if array, just heapify, O(n)
+    bst2linklist(root)  # if tree, convert to list, a sorted list alrady a min heap
+
+''' continue when the smaller one, which is the remain of mod, still not zeroed '''
+def gcd(a, b):
+    while b != 0:   # continue as long as there is remain in mod
+        a, b = b, a % b
+    return a
+
+def lcm(a, b): return a * b / gcd(a, b)
+
+''' ensure a >= b '''
+def gcd_extension(a, b):
+    if a % b == 0:
+        return (0, 1)
+    else:
+        x, y = gcd_extension(b, a%b)
+        print "gcd_extended x %d, y %d" %(y, x-(y*(a/b)))
+        return (y, x-(y*(a/b)))
+
+
+''' this is a cursion func that take a list and prune, return pruned list
+    why list insert/append not return the new list, recursion is dependent on it.
+'''
+def sieve(l):
+    if not len(l):
+        return []  # at the end of recursion, ret empty list
+    return cons(l[0], sieve(filter(lambda x:x%l[0] != 0, l)))
+    #return sieve(filter(lambda x:x%l[0] != 0, l)).insert(0, l[0])
+
 
 """ insert into circular link list 
     1. pre < val < next, 2. val is max or min, 3. list has only 1 element.
@@ -930,6 +1009,30 @@ def flattenlist(arr):
     else:
       stk.append([idx+1,l])
       stk.append([0, l[idx]])
+
+# recursive
+def kthSmallest(self, node):
+    if not node: return
+    self.kthSmallest(node.left)
+    self.k -= 1
+    if self.k == 0:
+        self.res = node.val
+        return
+    self.kthSmallest(node.right)
+
+# iterative, given a root, and a stk.
+def kthSmallest(root, k):
+    stack = []
+    while root or stack:
+        if root:
+            stack.append(root)
+            root = root.left
+        else:
+            root = stack.pop()
+            k -= 1
+            if k == 0:
+              return root.val
+            root = root.right
 
 """ 
 AVL tree with rank, getRank ret num node smaller. left/rite rotate.
@@ -2283,131 +2386,6 @@ def numOfIncrSeq(l, start, cursol, k):
             tmpsol.append(l[i])
             numOfIncrSeq(l, i+1, tmpsol, k-1)
 
-''' pascal triangle, 
-http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
-'''
-
-''' for list and ary, recursion or iterative, fix begin and end '''
-def list2BST(head, tail):
-    mid = len(tail-head)/2
-    mergesort(head)
-    mergesort(mid)
-    mergeListInPlace(head, mid)  # ref to wip/pydev/sort.py for sort two list in-place.
-
-    if head is tail:
-        head.prev = head.next = None
-        return head
-
-    mid = len(tail-head)/2
-    mid.prev = list2BST(head, mid.prev)
-    mid.next = list2BST(mid.next, tail)
-    return mid
-
-def bst2minheap(l):
-    heapify(l)          # if array, just heapify, O(n)
-    bst2linklist(root)  # if tree, convert to list, a sorted list alrady a min heap
-
-def nfactor(n):
-    filter(lambda x: n%x==0, [x for x in xrange(2,100)])
-
-def factors_of(n):
-  f = 2
-  for step in chain([0,1,2,2], cycle([4,2,4,2,4,6,2,6])):
-    f += step
-    if f*f > n:
-      if n != 1:
-          yield n
-      break
-    if n%f == 0:
-      yield f
-      while n%f == 0:
-          n /= f
-
-def is_prime(n):
-    '''proves primality of n using Lucas test.'''
-    x = n-1
-    if n%2 == 0:
-        return n == 2
-    factors = list( factors_of(x))
-    b = 2
-    while b < n:
-        if pow( b, x, n ) == 1:
-            for q in factors:
-                if pow( b, x/q, n ) == 1:
-                    break
-            else:
-                return True
-        b += 1
-    return False
-
-''' continue when the smaller one, which is the remain of mod, still not zeroed '''
-def gcd(a, b):
-    while b != 0:   # continue as long as there is remain in mod
-        a, b = b, a % b
-    return a
-
-def lcm(a, b): return a * b / gcd(a, b)
-
-''' ensure a >= b '''
-def gcd_extension(a, b):
-    if a % b == 0:
-        return (0, 1)
-    else:
-        x, y = gcd_extension(b, a%b)
-        print "gcd_extended x %d, y %d" %(y, x-(y*(a/b)))
-        return (y, x-(y*(a/b)))
-
-def primes():
-    primes_cache, prime_jumps = [], defaultdict(list)
-    #primes_cache, prime_jumps = [], dict()
-    prime = 1
-    for i in count():
-        if i < len(primes_cache): prime = primes_cache[i]
-        else:
-            prime += 1
-            while prime in prime_jumps:
-                for skip in prime_jumps[prime]:
-                    prime_jumps[prime + skip] += [skip]
-                del prime_jumps[prime]
-                prime += 1
-            prime_jumps[prime + prime] += [prime]
-            #prime_jumps.setdefault((prime + prime),[]).extend([prime])
-            primes_cache.append(prime)
-        yield prime
-
-def factorize(n):
-    for prime in primes():
-        if prime > n: return
-        exponent = 0
-        while n % prime == 0:
-            print 'prime factor %d n %d exp %d' %(prime, n, exponent)
-            exponent, n = exponent + 1, n / prime
-        if exponent != 0:
-            print 'prime %d n %d exp %d' %(prime, n, exponent)
-            yield prime, exponent
-        else:
-            print 'n %d : do nothing on prime %d' %(n, prime)
-
-def phi(n):
-    r = 1
-    for p,e in factorize(n):
-        print p, e
-        r *= (p - 1) * (p ** (e - 1))
-    print r
-
-''' sieve to get prime, for each #, prune all its multiples in the list'''
-def cons(a, l):
-    l.insert(0, a)
-    return l   # must ret a list so recursion can go on!
-
-''' this is a cursion func that take a list and prune, return pruned list
-    why list insert/append not return the new list, recursion is dependent on it.
-'''
-def sieve(l):
-    if not len(l):
-        return []  # at the end of recursion, ret empty list
-    return cons(l[0], sieve(filter(lambda x:x%l[0] != 0, l)))
-    #return sieve(filter(lambda x:x%l[0] != 0, l)).insert(0, l[0])
 
 ''' recursive call this on each 0xFF '''
 def sortdigit(l, startoffset, endoffset):
@@ -5114,6 +5092,25 @@ def calPack(arr):
     exclPre = curexcl
   return max(maxsofar,exclPre)
 
+# 
+int rob(TreeNode root) {
+    int[] res = robSub(root);
+    return Math.max(res[0], res[1]);
+}
+
+int[] robSub(TreeNode root) {
+    if (root == null) return new int[2];
+    
+    int[] left = robSub(root.left);
+    int[] right = robSub(root.right);
+    # 0 is max of entire subtree, 1 is include root.
+    int[] res = new int[2];
+    # max of entire tree, include root or exclude root.
+    res[0] = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);
+    res[1] = root.val + left[0] + right[0];
+    return res;
+}
+
 
 """ DP with O(1), cur = prepre + pre, pre = cur """
 def decode(dstr):
@@ -5263,6 +5260,24 @@ print subsetSum([2,3,6,7],9)
 print subsetSum([2,3,6,7],7, True)
 print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
+
+# sum(P) - sum(N) = target
+# sum(P) + sum(N) + sum(P) - sum(N) = target + sum(P) + sum(N)
+# 2 * sum(P) = target + sum(nums)
+int findTargetSumWays(int[] nums, int s) {
+    int sum = 0;
+    for (int n : nums) sum += n;
+    return sum < s || (s + sum) % 2 > 0 ? 0 : subsetSum(nums, (s + sum) >>> 1); 
+}
+# here subset sum to target, so 1-dim ary.
+int subsetSum(int[] nums, int s) {
+    int[] dp = new int[s + 1]; 
+    dp[0] = 1;
+    for (int n : nums)
+        for (int i = s; i >= n; i--)
+            dp[i] += dp[i - n]; 
+    return dp[s];
+} 
 
 
 """ tab[i,s] i digits sum to s, iterate 0..9, = tab[i-1,s-[1..9]]+[1..9]
