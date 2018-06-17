@@ -6,7 +6,56 @@ import sys
 # www.cnblogs.com/jcliBlogger/
 
 Strategy is recur with smaller problem. bottom up.
-Ideal is Math.min(tab[i][j]), include/exclude the item, recur find the max.
+1. divide to left rite, recur, memoize, and merge.
+2. reucr left when rite is defined, e.g., add 1 more row to result set, 
+3. recur both left rite when rite is not defined, 
+2. calculate dp[l,r,v] directly with gap, i, i+gap.
+
+  1. Math model, dp[i] deps on dp[i-1]/rite defined, or on all Ks between k..i ? incr gap=1..n if l..r;
+  2. recur stop check and boundary; dp[0] = 1
+  3. Edge cases / Recur stop.
+
+Two types of Recursion Track.
+1. add rows to right segment, rite is defined, [...] at each row, enum all values. dp[i][v] = dp[i-1][v-vi]
+2. add rows to right segment, at each row, left of moving, dp[i][v] = max(dp[k][v]  l<k<i)
+3. recur both left and rite segment, gap from 1..n. recur(left), recur(rite)
+
+ ... [i-1] [i]        # only recur [0..i-1] seg, [i-1, i] is definite.
+ ... [j] - [k] - [i]  # recur both segments, [j..k] and [k..i].
+ ... [i] [i+1] - [k] - [j-1] [j]
+prepre, pre, cur, next
+
+tab[i], two loops, outer add more slots. inner enum all possible value in slot.
+tab[i,j], 3 loops, enum k or coin value between i..j.
+
+1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
+dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
+
+1. Total number of ways, tab[i] += tab[i-1][v]
+2. Expand. tab[i][j] = 1 + tab[i+1][j-1]
+after adding more item, rite seg is defined, need to recur on left seg.
+dp[i] = max( dp[k] for k in 1..i-1,)
+  for i in 1..slot:
+    for v in 1..i  or for v in 1..V
+      tab[i] += tab[i-v]  enum all possible v at slot i
+      // or max min
+      tab[i] = min(tab[j+1] + 1, tab[i])
+      tab(i) = ( tab(i-1) * ways(i) ) + ( tab(i-2) *ways(i-1, i) )
+      tot = max(prepre + cur, pre)
+
+3. when left and rite segments both need to recur.  i->k, k->j, enum all 2 segs. each segs recur divide to 2 segs.
+for gap len in i..n, for i in 1..n. 
+    tab[i][j] = min( tab[i][j-1] + tab[i+1][j] )
+    
+    tab[i][j] = min(tab[i][j], tab[i][k] + tab[k+1][j] + arr[i]*arr[k]*arr[j])
+    
+    tab[i][j][k] = for m in i..j: max(tab[i + 1][m - 1][0] + tab[m][j][k + 1]) when a[i]=a[m]
+    
+    #tab[i,j,k] = max profit of arr[i..j] with k trans.
+    tab[i,j,k] = max(tab[i+m, j, k-1]+(arr[i+m]-arr[i]))
+
+4. bfs / dfs search carrying context/partial result. bfs track left length.
+  dfs(arr, l, r, partialResult) -> dfs(arr, l+i, r, pResult)
 
 1. for tree, recur with context, or iterate with root and stk.
 2. for ary, loop recur on each element.
@@ -16,21 +65,31 @@ Ideal is Math.min(tab[i][j]), include/exclude the item, recur find the max.
 6. use heap, priorityqueue for
 7. topsort
 
-Reduce N square to N or lgN
+Reduce N square to N or lgN, break into two segs, recur in each seg.
 1. sort and hash, binary search.
 2. prefix sum.
-3. RMQ to
+3. RMQ
 3. merge sort. partition, recursion
-4. Formalize the problem into DP recursion.
+4. Formalize the problem into DP recursion. when two input array.
   for (work set value i = 0 .. n)
     for (candidate j 0..i )
       tab[i] = (tab[i-k]+1, tab[i])
-5. stack push / pop when bigger than top. mono inc/desc
+5. stack push / pop when bigger than top. mono inc/desc. Stk index of ary. Not value.
 6. use heap / priorityqueue
 7. use union set to merge
 8. use bucket sort / bucket merge.
 9. prepre, pre, cur to track
+  max win two chars, i, i-1, prepre, pre.
+  decodeWays, look ahead. tab[1] = prepre + pre. tab[1] * ways(s.charAt(j)) + tab[0] * ways(s.charAt(j-1), s.charAt(j))
+  regMatch, look ahead and after. Recur within while loop.
 10. left rite edge to squeeze. sliding window.
+"""
+
+"""
+count sort.
+Bucket sort, Union merge. For l in 1..n.
+Sliding window, track win size, and update upon each R mov.
+  max win two chars, i, i-1, prepre, pre.
 """
 
 ''' recursive, one line print int value bin string'''
@@ -481,7 +540,7 @@ static int[] merge(int[] arra, int[] arrb) {
             out[outidx++] = arrb[bl++];
         }
     }
-    // after break
+    // merge
     if (al < arra.length) {
         System.arraycopy(arra, al, out, outidx, arra.length-al);
     }
@@ -493,74 +552,72 @@ static int[] merge(int[] arra, int[] arrb) {
 }
 print merge([9,8,3], [6,5])
 
+# prefixSum(P) - prefixSum(N) = target
+# prefixSum(P) + prefixSum(N) + prefixSum(P) - prefixSum(N) = target + prefixSum(P) + prefixSum(N)
+# 2 * prefixSum(P) = target + prefixSum(nums)
+int findTargetSumWays(int[] nums, int s) {
+    int sum = 0;
+    for (int n : nums) sum += n;
+    return sum < s || (s + sum) % 2 > 0 ? 0 : subsetSum(nums, (s + sum) >>> 1); 
+}
 
 
-""" find all pairs sum[l:r] within range [mn,mx]. merge sort
-arr, divide and conquer, better than gap n^2.
+""" 
+https://leetcode.com/problems/count-of-range-sum/discuss/77990/Share-my-solution
+find all pairs sum[l:r] within range [mn,mx]. merge sort
+as there are negative numbers, prefix sum not mono increase,
 master therom: T(0, n-1) = T(0, m) + T(m+1, n-1) + C
 if the merge part is Constant, it's less than n^2.
-To make merge constant, sort the arr.
+To make merge constant, sort the output.
+
+count range sum. i,j so low < prefixsum(j)-prefixsum(i) < upper.
+merge sort, divide to left, rite, To make merge constant, sort the out result in each merge.
 """
-def countRangeSum(arr,mn,mx):
-  ''' merge two sorted arr '''
-  def mergeSortedAry(arr1, arr2):
-    r, i, j = [], 0, 0
-    while i < len(arr1) and j < len(arr2):
-      if arr1[i] < arr2[j]:
-        r.append(arr1[i])
-        i += 1
-      else:
-        r.append(arr2[j])
-        j += 1
-      r += arr1[i:] + arr2[j:]
-    return r
-
-  def mergesort(arr, prefix, start, end, lower, upper):
-    if start >= end:
-        return 0
-    mid = start + (end - start + 1 >> 1)
-    lout = mergesort(arr, prefix, start, mid-1, lower, upper)
-    rout = mergesort(arr, prefix, mid, end, lower, upper)
-
-    l, r = mid, mid
-    for i in xrange(start, mid):
-      while l <= end and prefix[l] - prefix[i] < lower:
-        l += 1
-      while r <= end and prefix[r] - prefix[i] <= upper:
-        r += 1
-      count += r - l
-
-    prefix[start:end+1] = mergeSortedAry(
-      prefix[start:mid], prefix[mid:end + 1])
-
-    return count
-
-  ''' use prefixsum ary, replacing the origin ary '''
-  def mergesort(prefixsum, lo, hi, mn, mx):
-    if lo == hi:
-      return [prefixsum[lo]] if mn <= prefixsum[lo] <= mx
-    mid = (lo+hi)/2
-    out = []
-    lout = mergesort(prefixsum, lo, mid)
-    rout = mergesort(prefixsum, mid+1, hi)
-    # check range l..mid and l..end
-    mnidx,mxidx = mid+1,hi
-    for l in prefixsum[lo:mid+1]:
-      while prefixsum[mnidx] - prefixsum[l] < mn:
-        mnidx += 1  # mv rite until it bigger
-      while prefixsum[mxidx] - prefixsum[l] > mx:
-        mxidx -= 1
-      out.append([l, mnidx, mxidx])
-    out.extend(lout, rout)
-    # sort the prefixsum range lo..hi to make merge constant.
-    sorted(prefixsum, lo, hi)
-    return out
-
-  # use prefix sum ary
-  prefixsum = [0]*len(arr)
-  for i in xrange(1, len(arr)):
-    prefixsum[i] = prefixsum[i-1] + arr[i]
-  return mergesort(prefixsum, 0, len(prefixsum), mn, mx)
+static int rangeSumCnt = 0;
+static int[] rangeSumBetweenLowUpper(int psum[], int l, int r, int low, int upper) {
+    int sz = psum.length;
+    int[] out = new int[r-l+1];
+    if (l == r) {
+        out[0] = psum[l];
+        if (psum[l] >= low && psum[l] <= upper) {
+            rangeSumCnt += 1;
+        }
+        return out;
+    }
+    // divide, recur, and merge, when merge, make it sorted.
+    int m = (l+r)/2;
+    int[] left = rangeSumBetweenLowUpper(psum, l, m, low, upper);
+    int[] rite = rangeSumBetweenLowUpper(psum, m+1, r, low, upper);
+    // now merge
+    int outidx = 0, li = 0,ri = 0, lsz = left.length, rsz = rite.length;
+    while (li < lsz && ri < rsz) {
+        int diff = rite[ri] - left[li];
+        if (diff >= low &&  diff <= upper) {
+            rangeSumCnt += 1;
+        }
+        if (left[li] <= rite[ri]) {
+            out[outidx++] = left[li];
+            li += 1;
+        } else {
+            out[outidx++] = rite[ri];
+            ri += 1;
+        }
+    }
+    while (li < lsz) {
+        out[outidx++] = left[li++];
+    }
+    while (ri < rsz) {
+        out[outidx++] = rite[ri++];
+    }
+    System.out.println("range sum out " + Arrays.toString(out));
+    return out;
+}
+int[] arr = new int[]{-2,5,-1};
+int[] psum = new int[arr.length];
+psum[0] = arr[0];
+for (int i=1;i<arr.length;i++) { psum[i] += psum[i-1]+arr[i];}
+rangeSumBetweenLowUpper(psum, 0, 2, -2, 2);
+System.out.println("count of range sum is " + rangeSumCnt);
 
 """
 find kth smallest ele in a union of two sorted list
@@ -1319,7 +1376,6 @@ def pairNode(root, target):
         lstop = False
   return lcur,rcur
 
-
 def match(s,p):
   if p[0] == "*":
     while p[0] == "*":
@@ -1788,38 +1844,6 @@ class BITree:
         for i in xrange(len(self.arr)):
             self.update(i, self.arr[i])
 
-"""
-https://leetcode.com/problems/count-of-range-sum/discuss/77990/Share-my-solution
-count range sum. i,j so low < prefixsum(j)-prefixsum(i) < upper.
-"""
-// sum from 0..i stored in sum[i+1]
-static int[] rangeSum(int[] arr, int low, int upper) {
-    int sz = arr.length;
-    int[] sums = new int[sz+1];
-    for (int i=0;i<sz;i++){
-        sums[i+1] = sums[i] + arr[i];
-    }
-    rangeSumRecur(sums, 0, sz, low, upper);
-}
-
-static int rangeSumRecur(int[] sums, int l, int r, int low, int upper) {
-    if (r - l <= 1) { return 0; }
-    int m = (l+r)/2;
-    int cnt = rangeSumRecur(sums, 0, m, low, upper) + rangeSumRecur(sums, m+1, r, low, upper);
-    int j = m, k = m, t = m;
-    int[] cache = new int[r-l+1]; // new sum
-    //  For each i, find two indices k and j in the right half where k is > low and j < upper.
-    for (int i=l,r=0; i<m; i++,r++) {
-        while (k < end && sums[k] - sums[i] < lower) k++;
-        while (j < end && sums[j] - sums[i] <= upper) j++;
-
-        while (t < end && sums[t] < sums[i]) cache[r++] = sums[t++];
-        cache[r] = sum[i];
-        cnt += j-k;
-    }
-    System.arraycopy(cache, 0, sums, l, t-l);
-    return cnt;
-}
 
 """ segment tree. first segment 1 cover 0-n, second segment covers 0-mid, seg 3, mid+1..n. Segment num is btree, child[i] = 2*i,2*i+1.
 search always starts from seg 0, and found which segment [lo,hi] lies.
@@ -2184,35 +2208,6 @@ def vertexCover(root):
 def liss(root):
   root.liss = max(liss(root.left)+liss(root.rite), 1+liss(root.[left,rite].[left,rite]))
 
-
-""" populate next right pointer to point sibling in each node
-    we can do bfs, level by level. or do recursion.
-"""
-def populateSibling(root):
-  if not root:
-      return root
-  if root.lchild:
-      root.lchild.sibling = root.rchild
-  if root.rchild:
-      root.rchild.sibling = root.sibling ? root.sibling.lchild : None
-  populateSibling(root.lchild)
-  populateSibling(root.rchild)
-
-# recursive this fn. iterate within the body.
-def popNext(root):
-  nexthd, nextpre = None,None
-  cur = root
-  while cur:
-    for c in cur.children:
-      if not nexthd:
-        nexthd = c
-        nextpre = c
-      else:
-        nextpre.next = c
-      nextpre = c
-    cur = cur.next
-  nextpre.next = None
-  popnext(nexthd)
 
 ''' insertion is a procedure of replacing null with new node !'''
 def insertBST(root, node):
@@ -2673,6 +2668,36 @@ class HuffmanCode(object):
         self.minheap.Q[0].inorder()
 
 
+""" populate next right pointer to point sibling in each node
+    we can do bfs, level by level. or do recursion.
+"""
+def populateSibling(root):
+  if not root:
+      return root
+  if root.lchild:
+      root.lchild.sibling = root.rchild
+  if root.rchild:
+      root.rchild.sibling = root.sibling ? root.sibling.lchild : None
+  populateSibling(root.lchild)
+  populateSibling(root.rchild)
+
+# recursive this fn. iterate within the body.
+def popNext(root):
+  nexthd, nextpre = None,None
+  cur = root
+  while cur:
+    for c in cur.children:
+      if not nexthd:
+        nexthd = c
+        nextpre = c
+      else:
+        nextpre.next = c
+      nextpre = c
+    cur = cur.next
+  nextpre.next = None
+  # recur on nexthd, or you can another while to avoid recur.
+  popnext(nexthd)
+
 '''
 skip list, a probabilistic alternative to balanced tree
 https://kunigami.wordpress.com/2012/09/25/skip-lists-in-python/
@@ -2697,7 +2722,7 @@ class SkipList:
         """
         levelNextNode = [None]*len(self.head.next)
         levelhd = self.head
-        #  for each level top down, inside each level, while until stop on boundary.
+        #  for each level top down, list travel/while until stop on boundary.
         for level in reversed(xrange(len(self.head.next))):  # for each level down: park next node just before node >= ele.(insertion ponit).
             while levelhd.next[level] != None and levelhd.next[level].ele < ele:  # advance skipNode till to node whose next[level] >= ele, then down level
                 levelhd = levelhd.next[level]  # store skip node(ele, next[...])
@@ -2767,6 +2792,7 @@ class HashTimeTable:
             return self.valueList[idx][0]
         return False
     def insert(self, k, v, ts):
+        lock()   // single writer.
         found, idx = self.bisect(self.valueList, ts)
         if found:
             self.valueList[idx][0] = v
@@ -3347,17 +3373,15 @@ static int maxDist(int[] arr) {
     int sz = arr.length;
     int[] lmin = new int[sz];
     int[] rmax = new int[sz];
-    int min = 999;
-    int max = 0;
+    int min = 999, max = 0;
     for (int i=0;i<sz;i++) {
         min = Math.min(min, arr[i]);
         lmin[i] = min;
         max = Math.max(max, arr[sz-i-1]);
         rmax[sz-i-1] = max;
     }
-    int l = 0;
-    int r = 0;
-    int maxdist = 0;
+    int l = 0, r = 0, maxdist = 0;
+    # squeeze r as r from left to rite is mono decrease.
     while (l < sz && r < sz) {
         if (rmax[r] >= lmin[l]) {
             maxdist = Math.max(maxdist, r-l+1);  // calculate first, mov left second.
@@ -3492,6 +3516,7 @@ print LAP([5, 10, 15, 20, 25, 30])
 left < cur < rite, for each i, max smaller on left and max rite.
 reduce to problem to pair, so left <- rite. find rmax  riteMax[i] = arr[i]*rmax
 for left max smaller, left -> rite, build AVL tree while get left max smaller.
+maxSmaller recur: if root.rite.maxSmalle(k) == None, return cur. if k < root and no left, return None.
 max = max(max[i]*lmax)
 """
 static int tripletMaxProd(int[] arr) {
@@ -3886,6 +3911,7 @@ def repmiss(arr):
         break
   return arr
 
+# HIdx Ary[] whose idx is value of hIdx and value is citations; Cap hIdx Ary[] at len of papers.
 static int hIndex(int[] arr) {
     int sz = arr.length;
     // num of paper viewed as largest citation cap.
@@ -3983,7 +4009,7 @@ def largestRectangle(l):
   stk.append(0)  # 
   for i in xrange(1,len(l)):
     curval = l[i]
-    topidx = stk[-1]
+    topidx = stk[-1]   # use a stk to track max
     topval = l[topidx]
     # push to stk when current > stk top, so first smaller left of current set.
     if curval > topval:
@@ -4062,7 +4088,7 @@ def maxRectangle(matrix):
         rite_edge[c] = n    # defaut is n as we using min rite
         cur_rite_edge = c   # shrink rite edge
     for c in xrange(n):
-      maxA = max(maxA, (rite_edge[c]-left_edge[c])*ht[c])
+      maxA = max(maxA, (rite_edge[c] - left_edge[c])*ht[c])
   return maxA
 
 
@@ -4151,7 +4177,7 @@ def minjp(arr):
     if maxRightOfCurrentMinJP >= n:
       return mjp
 
-# tab[i] : min cost from 0->i
+# tab[i] : min jp from 0->i, track farest of current jp, 
 import sys
 def minjp(arr):
   tab = [sys.maxint]*len(arr)
@@ -4255,73 +4281,6 @@ def backpack(arr, W):
 print backpack([2, 3, 5, 7], 11)
 
 
-""" when outer loop bottom up value, at each value, each coin tried, so coin order matters, permutation. 
-When outer bottom up coins, tab[s, c-1] excl coin c for sum s. its like incl/excl coin.
-"""
-# tab[3,2] = [12],[21] t(3,2) = [111]+[[2,(1,2)]=[2][1]]+[[1,2]]
-def coinchangeSet(coins, V):
-  tab = [[0]*len(coins) for i in xrange(V+1)]
-  tab2 = [[0]*len(coins) for i in xrange(V+1)]
-  for c in xrange(len(coins)):
-    tab[0][c] = 1  # when v = coin_value, init pre subproblem tab[0][c] to 1
-    tab2[coins[c]][c] = 1  # or init real tab[coins[c]][c] to 1, the accumulate later.
-  # outer loops bootom up each value, bottom up each coin at each vaue.
-  for v in xrange(1,V+1):
-    for c in xrange(len(coins)):
-      excl = 0
-      if c >= 1:
-        excl = tab[v][c-1]
-      incl = 0
-      if v >= coins[c]:   # when v = coin value, tab[0][c]
-        incl = tab[v-coins[c]][c]
-      tab[v][c] = excl + incl
-      tab2[v][c] += excl + incl   # accumulate on top, as tab2[0][c]=0 here.
-  return tab[V][len(coins)-1]
-print coinchangeSet([1, 2, 3], 4)
-
-''' 
-coin order counts, so at each value, need to loop thru all coins.
-outer loop thru all value, loop trand inner thru all coin, [1,1,1], [1,2], [2,1]
-'''
-def coinchangePerm(coins, V):
-  tab = [0]*(V+1)
-  tab[0] = 1   # when coin face value = value, match.
-  for v in xrange(1, V+1):
-    for c in xrange(len(coins)):
-      if v >= coins[c]:
-        tab[v] += tab[v-coins[c]]  # XX f(i)=f(i-1)+1
-  return tab[V]
-print coinchangePerm([1, 2], 3)
-
-
-""" tot ways for a change. permutation. [2,3] [3,2].
-bottom up each val, a new row [c1,c2,...], bottom up coin col first, 
-so at coin 2, no knowledge of 3, so 5=[2,3], coin is sorted and bottom up. no [3,2] ever.
-
-if for perm, [2,3] [3,2], bottom up val first, at each value, bottom up coin.
-
-when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
-for coin 10, tab[10]=tab[10]+tab[0], which is #{[5,5],[10]}
-hence, do not init tab[c]=1, and not tab[v]=tab[v-c]+1
-"""
-def coinchange(coins, V):
-  tab = [0]*(V+1)
-  # can not init all coins. v=8, at 3, count(5,3), at 5, double count(3,5)
-  # for v in xrange(1,V+1):
-  #     tab[v] = 1
-  tab[0] = 1
-  # outer loop bottom up coin, tab[s,i-1] mean excl coin i at s.
-  for i in xrange(len(coins)):
-    fv = coins[i]
-    for v in xrange(fv,V+1):
-      # sum up k-ways to reach this value.
-      tab[v] += tab[v-fv]
-      # to get min ways, tab[0]=0, tab[v]=999
-      # tab[v] = min(tab[v], 1+tab[v-fv])
-  return tab[V]
-print coinchange([2,3,5], 10)
-
-
 # comb can exam head, branch at header incl and excl
 def combination(arr, path, remain, pos, result):
   if remain == 0:
@@ -4375,14 +4334,15 @@ recur fn params must be subproblem with offset and partial result.
 def powerset(arr, offset, path, result):
   ''' subproblem with partial result, incl all interim results. '''
   result.append(path)
+  processResult(path)   # optional process result for the path.
   # within cur subproblem, for loop to incl/excl for next level.
   for i in xrange(offset, len(arr)):
     # compare i to i-1 !!! not i to offset, as list is sorted.
-    if i > offset and arr[i] == arr[i-1]:
+    if i > offset and arr[i] == arr[i-1]:  # not arr[offset]
         continue
     l = path[:]
     l.append(arr[i])
-    powerset(arr, i+1, l, result)
+    powerset(arr, i+1, l, result)   # recur with i-1
 path=[];result=[];powerset([1,2,2], 0, path, result);print result;
 
 
@@ -4398,12 +4358,12 @@ def perm(arr, offset, path, res):
   ''' perm, each one can be the head at offset, swap, recur. '''
   for i in xrange(offset, len(arr)):
     ''' if i follow offset and is dup of *offset*, skip it. not compare to i-1 '''
-    if i > offset and arr[offset] == arr[i]:
+    if i > offset and arr[i] == arr[offset]:   # not arr[i-1], but arr[offset]
       continue
     swap(arr, offset, i)
     path.append(arr[offset])
     # when recur, both arr, path and offset changed as subproblem
-    perm(arr, offset+1, path, res)
+    perm(arr, offset+1, path, res)  # recur with offset+1
     path.pop()
     swap(arr, offset, i)
 path=[];res=[];perm(list("123"), 0, [], res);print res
@@ -4671,7 +4631,6 @@ static class IpSeg {
 static int restoreIP(String s) {
   int sz = s.length();
   Deque<IpSeg> ips = new ArrayDeque<>();
-  int[] tab = new int[sz];
   int off = 0;
   for (int k=0;k<3;k++) {
       int v = Integer.parseInt(s.substring(off, off + k + 1));
@@ -4702,7 +4661,7 @@ static int restoreIP(String s) {
     return tot;
 }
 
-""" dfs recursion carrying context, when reaching pos, carry path"""
+""" enum tot, search dfs recursion carrying context, when reaching pos, carry path"""
 from collections import deque
 def genParenth(n):
   out = []
@@ -4741,7 +4700,7 @@ static void parenth(int sz, int l, int r, String presult) {
 }
 parenth(3, 0, 0, "");
 
-""" first, find unbalance(l-r), recur each pos, dfs excl/incl each pos, no dp short """
+""" first, find unbalance(l-r), traverse each pos recur with excl/incl each pos, no dp short """
 def rmParenth(s, res):
   path = []
   L,R = 0,0
@@ -4865,63 +4824,31 @@ def bfsInvalidParen(s):
   return res
 print bfsInvalidParen("()())()")
 
-""" DP, recur each i at each length, each tab[i,j] is a list, not a scala. traverse.
-tab[i,j] = [[v1, exp1], [v2, exp2], ...] can be formed with arr[i:j]
+
+""" adding + in between. [1,2,0,6,9] and target 81.
+dp bottom up, rite segment, [i-k,k] is defined, so only recur left segment, [0..k].
+bottom up row, for each j to i that forms val, then for each val 
 """
-def addOperator(arr, l, r):
-  for gap in xrange(r-l):
-    for i in xrange(l, r-l-gap):
-      j = i+gap
-      for k in xrange(i,j):
-        for lv, lexpr in tab[i][k]:
-          for rv,rexp in tab[k+1][j]:
-            out.append([lv+rv, "{}+{}".format(lexp,rexp)])
-            out.append([lv*rv, "{}*{}".format(lexp,rexp)])
-            out.append([lv-rv, "{}-{}".format(lexp,rexp)])
-    tab[i][j] = out
-  return tab[l][r]
-
-""" add operators to exp forms. As no parenth, so go dfs offset.
-If allow parenth, need for each gap, fill tab[i,j] with lv/rv,lexpr/rexpr.
-"""
-def addOperator(arr, l, r, target):
-  '''recursion must use memoize'''
-  def recur(arr, l, r):
-    if not tab[l][r]:
-      tab[l][r] = defaultdict(list)
-    else:
-      return tab[l][r]
-    out = []
-    if l == r:
-      return [[arr[l],"{}".format(arr[l])]]
-    # arr[l:r] as one num, no divide
-    out.append([int(''.join(map(str,arr[l:r+1]))),
-      "{}".format(''.join(map(str,arr[l:r+1])))])
-    for i in xrange(l,r):
-      L = recur(arr, l, i)
-      R = recur(arr, i+1, r)
-      for lv, lexp in L:
-        for rv, rexp in R:
-          out.append([lv+rv, "{}+{}".format(lexp,rexp)])
-          out.append([lv*rv, "{}*{}".format(lexp,rexp)])
-          out.append([lv-rv, "{}-{}".format(lexp,rexp)])
-    tab[l][r] = out
-    return out
-
-  tab = [[None]*(l+1) for i in xrange(r+1)]
-  out = []
-  for v, exp in dfs(arr, l, r):
-    if v == target:
-      out.append(exp)
-  return out
-print addOperator([1,2,3],0,2,6)
-print addOperator([1,0,5],0,2,5)
+def plusBetween(arr, target):
+  def toInt(arr, st, ed):
+    return int("".join(map(lambda x:str(x), arr[st:ed+1])))
+  dp = [[False]*(target+1) for i in xrange(len(arr))]
+  for i in xrange(len(arr)):
+    for j in xrange(i,-1,-1):  # one loop j:i to coerce current val
+      val = toInt(arr,j,i)
+      if j == 0 and val <= target:
+        dp[i][val] = True   # dp[i,val], not dp[i,target]
+      # enum all values between val to target, for dp[i,s]
+      for v in xrange(val, target+1):
+        dp[i][v] |= dp[j-1][v-val]
+  return dp[len(arr)-1][target]
+print plusBetween([1,2,0,6,9], 81)
 
 
-""" dfs recur on each segment moving idx, note down prepre, pre,
+""" recur on each segment moving idx, note down prepre, pre,
 and calulate this cur in next iteration"""
 def addOperator(arr, target):
-  def dfs(a, exp, t, prepre, pre, sign):
+  def recur(a, exp, t, prepre, pre, sign):
     out = []
     preval = sign ? prepre + pre : prepre - pre
     if len(a) == 0:
@@ -4932,92 +4859,147 @@ def addOperator(arr, target):
       if i >= 2 and a[i] == 0:
         continue
       cur = a[:i+1]
-      dfs(a[i:], "{}+{}".format(exp, cur), t, preval, cur, True)
-      dfs(a[i:], "{}-{}".format(exp, cur), t, preval, cur, False)
-      dfs(a[i:], "{}*{}".format(exp, cur), t, prepre, pre*cur, sign)
+      recur(a[i:], "{}+{}".format(exp, cur), t, preval, cur, True)
+      recur(a[i:], "{}-{}".format(exp, cur), t, preval, cur, False)
+      recur(a[i:], "{}*{}".format(exp, cur), t, prepre, pre*cur, sign)
     return out
-
+  
+  # [l..k..r] both left seg and rite seg needs recur.
   for i in xrange(len(arr)):
     if i >= 2 and arr[i] == 0:
       continue
-    dfs(arr[i:], arr[:i+1], target, 0, int(arr[:i+1]), True)
+    recur(arr[i:], arr[:i+1], target, 0, int(arr[:i+1]), True)
 
+
+""" add operators to exp forms. two way, recur and memoize
+1. divide half, recur, memoize, and merge.
+2. calculate dp[l,r,v] directly with gap, i, i+gap.
+"""
+def addOperator(arr, l, r, target):
+  '''recursion with divide to half, must use memoize dp'''
+  def recur(arr, l, r):
+    if not dp[l][r]:
+      dp[l][r] = defaultdict(list)
+    else:
+      return dp[l][r]
+    out = []
+    if l == r:
+      return [[arr[l],"{}".format(arr[l])]]
+    # arr[l:r] as one num, no divide
+    out.append([int(''.join(map(str,arr[l:r+1]))),
+      "{}".format(''.join(map(str,arr[l:r+1])))])
+    
+    for i in xrange(l,r):
+      L = recur(arr, l, i)
+      R = recur(arr, i+1, r)
+      for lv, lexp in L:
+        for rv, rexp in R:
+          out.append([lv+rv, "{}+{}".format(lexp,rexp)])
+          out.append([lv*rv, "{}*{}".format(lexp,rexp)])
+          out.append([lv-rv, "{}-{}".format(lexp,rexp)])
+    dp[l][r] = out
+    return out
+
+  tab = [[None]*(l+1) for i in xrange(r+1)]
+  out = []
+  for v, exp in recur(arr, l, r):
+    if v == target:
+      out.append(exp)
+  return out
+print addOperator([1,2,3],0,2,6)
+print addOperator([1,0,5],0,2,5)
+
+""" this problem is, both left/rite segment not defined. need to recur.
+dp[l,r,v] = for k in l..r, recur dp[l,k,v] + dp[k,r,v]
+"""
+def addOperator(arr, l, r):
+  for gap in xrange(r-l):
+    for i in xrange(l, r-l-gap):
+      j = i+gap
+      for k in xrange(i,j):
+        for lv, lexpr in dp[i][k]:
+          for rv,rexp in dp[k+1][j]:
+            out.append([lv+rv, "{}+{}".format(lexp,rexp)])
+            out.append([lv*rv, "{}*{}".format(lexp,rexp)])
+            out.append([lv-rv, "{}-{}".format(lexp,rexp)])
+    dp[i][j] = out
+  return dp[l][r]
 
 ''' bottom up, enum pos row up, [[wd1,wd2,...], [wd3,wd4],...]
 tab[i]=arr[0:i] is break. tab[i] = tab[k] and arr[k:i] in dict
 plusBetween is one leve complicated when enum values '''
 def wordbreak(word, dict):
-  tab = [None]*len(word)
+  dp = [None]*len(word)
   for i in xrange(len(word)):
-    tab[i] = []   # init result for ith here
+    dp[i] = []   # init result for ith here
     for j in xrange(i):
       wd = word[j:i+1]
       if wd in dict:
-        if j == 0:  # check j=0 to avoid tab[j-1] index out
-          tab[i].append([wd])
-        elif tab[j-1] != None:
-          for e in tab[j-1]:
+        if j == 0:  # check j=0 to avoid dp[j-1] index out
+          dp[i].append([wd])
+        elif dp[j-1] != None:
+          for e in dp[j-1]:
             tmp = e[:]
             tmp.append(wd)
-            tab[i].append(tmp)
-  return tab[len(word)-1]
+            dp[i].append(tmp)
+  return dp[len(word)-1]
 #print wordbreak("leetcodegeekforgeek",["leet", "code", "for","geek"])
 print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
-''' top down, tab[i] means arr[i:n] is breakable. tab[i] = tab[i+k] and arr[i:i+k] in dict '''
+''' top down, dp[i] means arr[i:n] is breakable. dp[i] = dp[i+k] and arr[i:i+k] in dict '''
 def wordbreak(word, dict):
-  tab = [None]*len(word)
+  dp = [None]*len(word)
   for i in xrange(len(word)-1, -1, -1):
-    tab[i] = []
+    dp[i] = []
     for j in xrange(i+1,len(word)):
       wd = word[i:j+1]
       if wd in dict:
         if j == len(word)-1:
-          tab[i].append([wd])
-        elif tab[j+1] != None:
-          for e in tab[j+1]:
+          dp[i].append([wd])
+        elif dp[j+1] != None:
+          for e in dp[j+1]:
             tmp = e[:]
             tmp.append(wd)
-            tab[i].append(tmp)
-  return tab[0]
+            dp[i].append(tmp)
+  return dp[0]
 print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
-""" tab[ia,ib] means the distance between a[0:ia] and b[0:ib] """
+""" dp[ia,ib] means the distance between a[0:ia] and b[0:ib] """
 def editDistance(a, b):
-  tab = [[0]*(len(b)+1) for i in xrange(len(a)+1)]
+  dp = [[0]*(len(b)+1) for i in xrange(len(a)+1)]
   for i in xrange(len(a)+1):
     for j in xrange(len(b)+1):
       # boundary condition, i=0/j=0 set in the loop, i
       if i == 0:
-        tab[0][j] = j
+        dp[0][j] = j
       elif j == 0:
-        tab[i][0] = i
+        dp[i][0] = i
       elif a[i-1] == b[j-1]:
-        tab[i][j] = tab[i-1][j-1]
+        dp[i][j] = dp[i-1][j-1]
       else:
-        tab[i][j] = 1 + min(tab[i][j-1], tab[i-1][j], tab[i-1][j-1])
-    return tab[len(a)][len(b)]
+        dp[i][j] = 1 + min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1])
+    return dp[len(a)][len(b)]
 
 """ distinct sequence of t in s; bottom up, each s[i] row a list, each t[j] a col in row. 
-tab[i][j] += tab[i-1][j-1], tab[i-1][j], when j==0, and s.i==t.j, tab[i][0] += 1
-incl s[i] for t[j], tab[i-1,j-1], excl, tab[i-1,j], you can do dfs recursion also.
+dp[i][j] += dp[i-1][j-1], dp[i-1][j], when j==0, and s.i==t.j, dp[i][0] += 1
+incl s[i] for t[j], dp[i-1,j-1], excl, dp[i-1,j], you can do dfs recursion also.
 when iter col, cp prev row, new col as the last entry in the new row entry list.
 """
 def distinctSeq(s,t):
-  tab = [[0]*len(t) for i in xrange(len(s))]
-  for i in xrange(len(s)):     # bottom up, i
-    for j in xrange(len(t)):
+  dp = [[0]*len(t) for i in xrange(len(s))]
+  for i in xrange(len(s)):     # bottom up, add more slot
+    for j in xrange(len(t)):   # at each slot, enum all values
       if i == 0:
         if s[0] == t[j]:
-          tab[0][j] = 1
+          dp[0][j] = 1
         continue
-      tab[i][j] = tab[i-1][j]   # not using s[i], so use tab[i-1]
+      dp[i][j] = dp[i-1][j]   # not using s[i], so use dp[i-1]
       if t[j] == s[i]:   # use s[i] only when equals
         if j == 0:  # s[i]==t[0], match scan start from s[i]
-          tab[i][0] = tab[i-1][0] + 1
+          dp[i][0] = dp[i-1][0] + 1
         else:
-          tab[i][j] += tab[i-1][j-1]  # reduce one j to j-1
-  return tab[len(s)-1][len(t)-1]
+          dp[i][j] += dp[i-1][j-1]  # reduce one j to j-1
+  return dp[len(s)-1][len(t)-1]
 print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
 print distinctSeq("rabbbit", "rabbit")
@@ -5031,29 +5013,30 @@ two cases, when not eq, excl s[j], take j-1, tab[i,j-1], when incl s[j], +=tab[i
  c  0  0   0   0  3
 """
 def distinct(s,t):
-  tab = [[0]*len(t) for _ in xrange(len(s))]
+  dp = [[0]*len(t) for _ in xrange(len(s))]
   for i in xrange(len(t)):
     for j in xrange(len(s)):
       if t[i] == s[j]:
         if j == 0:
-          tab[i][0] = 1
+          dp[i][0] = 1
         else:
           if i == 0:
-            tab[i][j] = tab[i][j-1] + 1
+            dp[i][j] = dp[i][j-1] + 1
           else:
-            tab[i][j] = tab[i-1][j-1] + tab[i][j-1]  # not +1 as exclude src, use same t
+            dp[i][j] = dp[i-1][j-1] + dp[i][j-1]  # i,j-1 already carries pre result.
       else:
         if j > 0:
-          tab[i][j] = tab[i][j-1]
-  return tab[len(t)-1][len(s)-1]
+          dp[i][j] = dp[i][j-1]
+  return dp[len(t)-1][len(s)-1]
 print distinct("aeb", "be")
 print distinct("abbbc", "bc")
 print distinct("rabbbit", "rabbit")
 
+# increase target slot, traverse origin src when expanding each new item in problem.
 static int distinctSeq(String s, String t) {
     int srclen = s.length();
     int tgtlen = t.length();
-    int[][] tab = new int[tgtlen][srclen];
+    int[][] dp = new int[tgtlen][srclen];
     
     for (int tidx=0;tidx<tgtlen;tidx++) {
         char tc = t.charAt(tidx);
@@ -5061,38 +5044,27 @@ static int distinctSeq(String s, String t) {
             char sc = s.charAt(sidx);
             if (sc == tc) {
                 if (sidx == 0) {
-                    tab[tidx][0] = 1;
+                    dp[tidx][0] = 1;
                 } else if (tidx == 0) {
-                    tab[0][sidx] = tab[0][sidx-1] + 1;
+                    dp[0][sidx] = dp[0][sidx-1] + 1;
                 } else {
-                    tab[tidx][sidx] = 1 + tab[tidx-1][sidx-1];
+                    dp[tidx][sidx] = dp[tidx-1][sidx-1] + dp[tidx][sidx-1];
                 }
             } else {
                 if (sidx > 0) {
-                    tab[tidx][sidx] = tab[tidx][sidx-1];
+                    dp[tidx][sidx] = dp[tidx][sidx-1];
                 }
             }
         }
     }
-    System.out.println("max seq len is " + Arrays.toString(tab[tgtlen-1]));
-    return tab[tgtlen-1][srclen-1];
+    System.out.println("max seq len is " + Arrays.toString(dp[tgtlen-1]));
+    return dp[tgtlen-1][srclen-1];
 }
 print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
 
 
-""" keep track of 2 values for each ele, max of exclude this ele, and the
-max of no care of whether incl or excl cur ele. """
-def calPack(arr):
-  maxsofar,exclPre=arr[0],0
-  for i in xrange(1,len(arr)):
-    curincl = exclPre+arr[i]
-    curexcl = maxsofar
-    maxsofar = max(curincl,curexcl)
-    exclPre = curexcl
-  return max(maxsofar,exclPre)
-
-# 
+# tot = max(prepre + cur, pre)
 int rob(TreeNode root) {
     int[] res = robSub(root);
     return Math.max(res[0], res[1]);
@@ -5111,6 +5083,25 @@ int[] robSub(TreeNode root) {
     return res;
 }
 
+""" keep track of 2 values for each ele, max of exclude this ele, and the
+max of no care of whether incl or excl cur ele. """
+def calPack(arr):
+  maxsofar,exclPre=arr[0],0
+  for i in xrange(1,len(arr)):
+    curincl = exclPre+arr[i]
+    curexcl = maxsofar
+    maxsofar = max(curincl,curexcl)
+    exclPre = curexcl
+  return max(maxsofar,exclPre)
+
+
+""" if different coins count the same as 1 coin only, the same as diff ways to stair """
+def nways(steps, n):
+  ways[i] = steps[i]
+  for i in xrange(steps[1], n):
+    for step in steps:
+      ways[i] += ways[i-step]
+  return ways[n-1]
 
 """ DP with O(1), cur = prepre + pre, pre = cur """
 def decode(dstr):
@@ -5132,7 +5123,7 @@ print decode("122")
 # # https://leetcode.com/problems/decode-ways-ii/discuss/105258/Java-O(N)-by-General-Solution-for-all-DP-problems
 # 1. ways(i) -> that gives the number of ways of decoding a single character
 # 2. ways(i, j) -> that gives the number of ways of decoding the two character string formed by i and j.
-# tab(i) = ( tab(i-1) * ways(i) ) + ( tab(i-2) *ways(i-1, i) )}
+# tab(i) = ( tab(i-1) * ways(i) ) + ( tab(i-2) *ways(i-1, i) )
 int ways(int ch) {
     if(ch == '*') return 9;
     if(ch == '0') return 0;
@@ -5201,14 +5192,6 @@ def comb(arr, t, pos, path, res):
 path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
 
 
-""" if different coins count the same as 1 coin only, the same as diff ways to stair """
-def nways(steps, n):
-  ways[i] = steps[i]
-  for i in xrange(steps[1], n):
-    for step in steps:
-      ways[i] += ways[i-step]
-  return ways[n-1]
-
 """ tab[i,v] = tot non descreasing at ith digit, end with value v
 bottom up each row i, each digit as v, sum. [[1,2,3...], [1,2..], ...]
 tab[n,d] = sum(tab[n-1,k] where k takes various value[0..9]
@@ -5220,7 +5203,7 @@ def nonDecreasingCount(slots):
     tab[0][v] = 1
   for i in xrange(1,slots):
     for val in xrange(10):
-      for k in xrange(val+1): # k is capped by prev digit v
+      for k in xrange(val+1):  # k is capped by prev digit v
         tab[i][val] += tab[i-1][k]
   tot = 0
   for v in xrange(10):
@@ -5232,7 +5215,10 @@ assert(nonDecreasingCount(3), 220)
 
 """ bottom up each pos, at each set[0:pos], each val as a new col, entry is a list
 [ [v1-list, v2-list, ...], [v1-list, v2-lsit, ...], ...] 
-when dup allowed, recur same pos, tab[pos], else tab[pos-1] """
+
+when dup allowed, recur same row(item), tab[item][v-vi], else tab[item-1][v-vi].
+so when dup allowed, the problem reduced to coin change, 1-dim array is good.
+"""
 def subsetSum(arr, t, dupAllowed=False):
   tab = [[None]*(t+1) for i in xrange(len(arr))]
   for i in xrange(len(arr)):
@@ -5261,76 +5247,173 @@ print subsetSum([2,3,6,7],7, True)
 print subsetSum([2,3,6],8)
 print subsetSum([2,3,6],8, True)
 
-# sum(P) - sum(N) = target
-# sum(P) + sum(N) + sum(P) - sum(N) = target + sum(P) + sum(N)
-# 2 * sum(P) = target + sum(nums)
-int findTargetSumWays(int[] nums, int s) {
-    int sum = 0;
-    for (int n : nums) sum += n;
-    return sum < s || (s + sum) % 2 > 0 ? 0 : subsetSum(nums, (s + sum) >>> 1); 
+
+# subset/combination sum, rite segment is defined, rite deps on left seg, recur left seg.
+# when dup allowed, after selecting item i, += dp[i][v-vi], instead of dp[i-1][v-vi]
+# continue use item i, dp[i][v] += dp[i][v-vi], as coin change, update dp[V] for each item/coin.
+# if dup not allowed, keep two rows, i and i-1, so dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
+# keep boundary condition dp[0] = 1, when item i value=target.
+
+static int subsetSum(int[] arr, int target) {
+    int sz = arr.length;
+    int[] pre = new int[target+1], cur = new int[target+1];
+    pre[0] = 1;
+    for (int i=0;i<sz;i++) {
+        int iv = arr[i];
+        for (int v=0;v<=target;v++) {   // start from 0, not iv, to carry prev result that less than iv
+            // tot is sum of incl/excl cur item.
+            cur[v] += pre[v];      // exclude cur item
+            if (v >= iv) {
+              cur[v] += pre[v-iv];   // include cur item, 
+            }
+        }
+        System.arraycopy(cur, 0, pre, 0, target+1);
+        System.out.println("cur " + iv + " pre " + Arrays.toString(pre));
+        for (int v=0;v<=target;v++) { 
+          cur[v] = 0;   // clear before re-use
+        }
+    }
+    System.out.println("subset sum " + pre[target]);
+    return pre[target];
 }
-# here subset sum to target, so 1-dim ary.
-int subsetSum(int[] nums, int s) {
-    int[] dp = new int[s + 1]; 
-    dp[0] = 1;
-    for (int n : nums)
-        for (int i = s; i >= n; i--)
-            dp[i] += dp[i - n]; 
-    return dp[s];
-} 
+subsetSum(new int[]{2,3,6,7}, 9);
 
+static int combinSum(int[] arr, int target) {
+    int sz = arr.length;
+    int[] dp = new int[target+1];  // value from 1..target
+    dp[0] = 1;   // when item value = target, count single item 1.
+    for (int i=0;i<sz;i++) {
+        int iv = arr[i];
+        for (int v=iv;v<=target;v++) {
+            dp[v] += dp[v-iv];
+        }
+    }
+    System.out.println("comb sum " + dp[target]);
+    return dp[target];
+}
+combinSum(new int[]{2,3,6,7}, 9);
 
-""" tab[i,s] i digits sum to s, iterate 0..9, = tab[i-1,s-[1..9]]+[1..9]
+""" dp[i,s] i digits sum to s, iterate 0..9, = dp[i-1,s-[1..9]]+[1..9]
 not as subset sum, no incl/excl of arr[i]. so NOT cp prev row.
 bottom up, start from 1 slot, face=[0..9]; dup allowed.
 when each slot needs to be distinct, only append j when it is bigger
 """
 def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
-  tab = [[None]*(sm+1) for i in xrange(n)]
+  dp = [[None]*(sm+1) for i in xrange(n)]
   for i in xrange(n):       # bottom up n slots
-    for s in xrange(sm+1):  # enum to sm for each slot, tab[i,sm]
-      if tab[i][s] == None:
-        tab[i][s] = []
+    for s in xrange(sm+1):  # enum to sm for each slot, dp[i,sm]
+      if dp[i][s] == None:
+        dp[i][s] = []
       for f in xrange(1, 10):  # each slot face, 1..9
-        if i == 0:   # tab[0][0..9] = [0..9]
-          tab[i][f].append([f])   # first slot, straight.
+        if i == 0:   # dp[0][0..9] = [0..9]
+          dp[i][f].append([f])   # first slot, straight.
           continue
-        if s > f and tab[i-1][s-f] and len(tab[i-1][s-f]) > 0:
-          for e in tab[i-1][s-f]:
+        if s > f and dp[i-1][s-f] and len(dp[i-1][s-f]) > 0:
+          for e in dp[i-1][s-f]:
             # if need to be distinct, append j only when it is bigger.
             if distinct and f <= e[-1]:
               continue
             de = e[:]
             de.append(f)
-            tab[i][s].append(de)
-  return tab[n-1][sm]
+            dp[i][s].append(de)
+  return dp[n-1][sm]
 print combinationSum(3,9,True)
 
 ''' contain sol sz < n, [1,6], [7], [1, 0, 6] '''
 def combsum(n, t):
-  tab = [[None]*(t+1) for i in xrange(n)]
-  for i in xrange(n):
+  dp = [[None]*(t+1) for i in xrange(n)]
+  for i in xrange(n):   # comb, not perm, outer loop slots, for each slot, enum possible values.
     for v in xrange(10):
       for s in xrange(max(1,v), t+1):
-        if not tab[i][s]:
-          tab[i][s] = []
+        if not dp[i][s]:
+          dp[i][s] = []
         if v == s:
-          tab[i][s].append([v])
+          dp[i][s].append([v])
         else:
-          if tab[i-1][s-v]:
-            for e in tab[i-1][s-v]:
+          if dp[i-1][s-v]:
+            for e in dp[i-1][s-v]:
               de = e[:]
               de.append(v)
-              tab[i][s].append(de)
+              dp[i][s].append(de)
           else:
             if i > 0:
-              tab[i][s] = tab[i-1][s][:]
-  return tab[n-1][t]
+              dp[i][s] = dp[i-1][s][:]
+  return dp[n-1][t]
 print combsum(3,7)
 
 
+""" min number of coins, 1-dim tab. tab[v] = min of tab[v-1/2/5]+1
+"""
+int minCoins(int[] coins, int amount) {
+    if(coins == null) return 0;
+    
+    long[] dp = new long[amount+1];
+    Arrays.fill(dp, Integer.MAX_VALUE);
+    dp[0]=0;
+    for(int i=0; i<coins.length; i++){
+        for(int amt=1; amt<dp.length; amt++){
+            if(amt-coins[i]>=0)
+                dp[amt] = Math.min(dp[amt], dp[amt-coins[i]]+1); 
+        }
+    } 
+    return dp[amount] == Integer.MAX_VALUE ? -1 : (int) dp[amount];
+}
+
+
+""" tot ways for a change. permutation. [2,3] [3,2].
+bottom up each val, a new row [c1,c2,...], bottom up coin col first, 
+so at coin 2, no knowledge of 3, so 5=[2,3], coin is sorted and bottom up. no [3,2] ever.
+
+if for perm, [2,3] [3,2], bottom up val first, at each value, bottom up coin.
+
+when iter coin 3, tab[3,6,9..]=1; for coin 5, tab[5,10]=1
+for coin 10, tab[10]=tab[10]+tab[0], which is #{[5,5],[10]}
+hence, do not init tab[c]=1, and not tab[v]=tab[v-c]+1
+"""
+def coinchangePerm(coins, V):
+  tab = [0]*(V+1)
+  tab[0] = 1   # when coin face value = target, value is 0.
+  # at each value, loop each coin, 
+  for v in xrange(1, V+1):
+    for c in xrange(len(coins)):
+      if v >= coins[c]:
+        tab[v] += tab[v-coins[c]]  # XX f(i)=f(i-1)+1
+  return tab[V]
+print coinchangePerm([1, 2], 3)
+
+def coinchangeCombinations(coins, V):
+  tab = [0]*(V+1)
+  tab[0] = 1  # <-- when coin face value equals target.
+  # loop coin in order, at each coin, loop each value
+  for i in xrange(len(coins)):
+    for v in xrange(coin[i],V+1):
+      # sum up k-ways to reach this value.
+      tab[v] += tab[v-coin[i]]
+      # to get min ways, tab[0]=0, tab[v]=999
+      # tab[v] = min(tab[v], 1+tab[v-fv])
+  return tab[V]
+print coinchange([2,3,5], 10)
+
+static int coinChangeCombinationSets(int[] coins, int target) {
+    int sz = coins.length;
+    int[] tab = new int[target+1];
+    
+    tab[0] = 1;  // face value equals target, value = 0
+    // iterate each coin, so order is ensured. (3,5), you never see (5,3).
+    for (int i=0;i<sz;i++) {
+        int c = coins[i];
+        for (int v=c;v<=target;v++) {
+            tab[v] += tab[v-c];
+        }
+    }
+    System.out.println("coin set :" + tab[target]);
+    return tab[target];
+}
+coinSet(new int[]{1,2,5}, 5);
+
+
 """ m faces, n dices, num of ways to get value x.
-bottom up, 1 dice, 2 dices,...,n dices. Last dice take face value 1..m.
+bottom up, 1 dice, 2 dices,..., 3 dices, n dices. Last dice take face value 1..m.
 [[v1,v2,...], [v1,v2,...], d2, d3, ...], each v1 column is cnt of face 1..m
 tab[d,v] += tab[d-1,v-[1..m]]. Outer loop is enum dices, so it's like incl/excl.
 """
@@ -5354,8 +5437,8 @@ def digitSum(slot,tot):
   tab = [[0]*max(tot+1,10) for i in xrange(slot)]
   for i in xrange(10):
     tab[0][i] = 1
-  for i in xrange(1,slot):     # bottom up each slot
-    for val in xrange(tot+1):   # bottom up each sum
+  for i in xrange(1,slot):       # bottom up each slot
+    for val in xrange(tot+1):    # bottom up each sum
       for face in xrange(val):   # foreach face(0..9)
         tab[i][val] += tab[i-1][val-face]
   return tab[slot-1][tot]
@@ -5408,27 +5491,6 @@ def diffone(n):
 print diffone(3)
 
 
-""" adding + in between. [1,2,0,6,9] and target 81.
-tab[i,sm] exist [0..i] val sum to sm
-more complex than subset sum, one loop from i left to coerce k:i as cur val.
-bottom up row, for each j to i that forms val, then for each val 
-"""
-def plusBetween(arr, target):
-  def toInt(arr, st, ed):
-    return int("".join(map(lambda x:str(x), arr[st:ed+1])))
-  tab = [[False]*(target+1) for i in xrange(len(arr))]
-  for i in xrange(len(arr)):
-    for j in xrange(i,-1,-1):  # one loop j:i to coerce current val
-      val = toInt(arr,j,i)
-      if j == 0 and val <= target:
-        tab[i][val] = True   # tab[i,val], not tab[i,target]
-      # enum all values between val to target, for tab[i,s]
-      for v in xrange(val, target+1):
-        tab[i][v] |= tab[j-1][v-val]
-  return tab[len(arr)-1][target]
-print plusBetween([1,2,0,6,9], 81)
-
-
 """ the idea is to use rolling hash, A/C/G/T maps to [00,01,10,11]
 or use last 3 bits of the char, c%7. 3 bits, 10 chars, 30bits, hash stored in last 30 bits
 """
@@ -5446,43 +5508,6 @@ def dna(arr):
     tab[hashv] += 1
   return out
 print dna("AAAAACCCCCAAAAACCCCCCAAAAAGGGTTT")
-
-
-""" tab[i][j] whether a[0:i] is interleave b[0:j]; tab[i,j] = tab[i-1,j], etc"""
-def isInterleave(a, b, c):
-  tab = [[[0]*(len(b)+1) for i in xrange(len(a)+1)]]
-  for i in xrange(len(s1)+1):
-    for j in xrange(len(s2)+1):
-      if i == 0 and j == 0:
-        tab[i][j] = True
-      elif i == 0 and b[j-1] == c[j-1]:
-        tab[i][j] = tab[i][j-1]
-      elif j == 0 and a[i-1] == c[i-1]:
-        tab[i][j] = tab[i-1][j]
-      elif c[i+j-1] == a[i-1]:
-        tab[i][j] = tab[i-1][j]
-      elif c[i+j-1] == b[j-1]::
-        tab[i][j] = tab[i][j-1]
-  return tab[len(a)][len(b)]
-
-""" 2 string, lenth,ia,ib; 3 dim, in each len, test sublen k/len-k. tab[0..k][ia][ib];
-normally, one dim ary with each tab[lenth,i], j=i+len,
-here, vary all 3; tab[len,i,j], break lenth in sublen, and i,j with sublen.
-tab[l,i,j] = 1 iff (tab[k,i,j] and tab[l-k,i+k,j+k]
-"""
-def isScramble(a, b):
-  tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
-  for length in xrange(len(a)):
-    for ia in xrange(len(a)-length):
-      for ib in xrange(len(b)-length):
-        if length == 0:
-          tab[length][ia][ib] = a[ia] == b[ib]
-        for k in xrange(length):
-          if tab[k][ia][ib] and tab[length-k][ia+k][ib+k]:
-            tab[length][ia][ib] = True
-          elif tab[k][ia][ib+length-k] and tab[length-k][ia+k][ib]:
-            tab[length][i][j] = True
-  return tab[len(a)-1][0][0]
 
 
 """ next palindrom num, cp left -> rite, inc mid, propagate carry left/rite is mid=9"""
@@ -5528,32 +5553,22 @@ tab[i][j] = tab[i+1,j-1] or min(tab[i,j-1], tab[i+1,j])
 """
 def minInsertPalindrom(arr):
   tab = [[0]*len(arr) for i in xrange(len(arr))]
-  for sublen in xrange(2,len(arr)+1):  # need +1 to make sublen = len(arr)
-    for i in xrange(len(arr)-sublen):
-      j = i + sublen - 1
+  for gap in xrange(2,len(arr)+1):  # need +1 to make gap = len(arr)
+    for i in xrange(len(arr)-gap):
+      j = i + gap - 1
       if arr[i] == arr[j]:
         tab[i][j] = tab[i+1][j-1]
       else:
         tab[i][j] = min(tab[i][j-1], tab[i+1][j]) + 1
   return tab[0][len(arr)-1]
 
-def palindromMincut(s, offset):
-  ''' partition s into sets of palindrom substrings, with min # of cuts 
-      mincut[offset] = 1 + min(mincut[k] for k in [offset+1..n] where s[offset:k] is palindrom)
-  '''
-  mincut = INT_MAX
-  for i in xrange(offset+1, len(s)):
-    if isPalindrom(s, offset, i):
-      partial = palindromMincut(s, i)   # recursion, aggregate on top.
-      mincut = min(partial + 1, mincut)
-  return mincut
 
+''' convert recursion Fn call to DP tab. F[i] is min cut of S[i:n], solve leaf, aggregate at top.
+    F[i] = min(F[k] for k in i..n). To aggregate at F[i], we need to recursive to leaf F[i+1].
+    For DP tabular lookup, we need to start from the end, which is minimal case, and expand
+    to the begining filling table from n -> 0.
+'''
 def palindromMincut(s):
-  ''' convert recursion Fn call to DP tab. F[i] is min cut of S[i:n], solve leaf, aggregate at top.
-      F[i] = min(F[k] for k in i..n). To aggregate at F[i], we need to recursive to leaf F[i+1].
-      For DP tabular lookup, we need to start from the end, which is minimal case, and expand
-      to the begining filling table from n -> 0.
-  '''
   n = len(s)
   tab[n-1] = 1  # one char is palindrom
   for i in xrange(n-2, 0, -1):  # start from end that is minimal case, expand to full.
@@ -5564,11 +5579,11 @@ def palindromMincut(s):
   # by the end, expand to full string.
   return tab[0]
 
-def palindromMincut(s):
-  ''' another way to build tab from 0 -> n. F[i] = min(F[i-k] for k in i->0 where s[k,i] is palin)
+''' another way to build tab from 0 -> n. F[i] = min(F[i-k] for k in i->0 where s[k,i] is palin)
       To aggregate fill F[i], we need know moving k, f[k], and s[k,i] is palin.
       For DP tabular lookup, we can start from the begin, the minimal case, and expand to entire string.
-  '''
+'''
+def palindromMincut(s):
   n = len(s)
   tab[1] = 1  # tab[i], the mincut of string s[0:i]
   for i in xrange(n):
@@ -5609,7 +5624,7 @@ def nextPalindrom(v):
       arr[mr] = str(int(arr[mr])+1)
   return int(''.join(arr))
 
-""" palindrom pair, concat(prepend or append) the two words forms a palindrom
+""" palindrom pair, suffix, reverse. concat(prepend or append) the two words forms a palindrom
 for each word, list all prefix, reverse suffix.
 https://leetcode.com/problems/palindrome-pairs/discuss/79209/Accepted-Python-Solution-With-Explanation
 """
@@ -5792,6 +5807,43 @@ def minLeft(arr, k):
     tab[lo][hi] = ret
     return ret
 
+""" tab[i][j] whether a[0:i] is interleave b[0:j]; tab[i,j] = tab[i-1,j], etc"""
+def isInterleave(a, b, c):
+  tab = [[[0]*(len(b)+1) for i in xrange(len(a)+1)]]
+  for i in xrange(len(s1)+1):
+    for j in xrange(len(s2)+1):
+      if i == 0 and j == 0:
+        tab[i][j] = True
+      elif i == 0 and b[j-1] == c[j-1]:
+        tab[i][j] = tab[i][j-1]
+      elif j == 0 and a[i-1] == c[i-1]:
+        tab[i][j] = tab[i-1][j]
+      elif c[i+j-1] == a[i-1]:
+        tab[i][j] = tab[i-1][j]
+      elif c[i+j-1] == b[j-1]::
+        tab[i][j] = tab[i][j-1]
+  return tab[len(a)][len(b)]
+
+""" 2 string, lenth,ia,ib; 3 dim, in each len, test sublen k/len-k. tab[0..k][ia][ib];
+normally, one dim ary with each tab[lenth,i], j=i+len,
+here, vary all 3; tab[len,i,j], break lenth in sublen, and i,j with sublen.
+tab[l,i,j] = 1 iff (tab[k,i,j] and tab[l-k,i+k,j+k]
+"""
+def isScramble(a, b):
+  tab = [[[0]*len(a) for i in xrange(len(b))] for j in xrange(len(a))]
+  for length in xrange(len(a)):
+    for ia in xrange(len(a)-length):
+      for ib in xrange(len(b)-length):
+        if length == 0:
+          tab[length][ia][ib] = a[ia] == b[ib]
+        for k in xrange(length):
+          if tab[k][ia][ib] and tab[length-k][ia+k][ib+k]:
+            tab[length][ia][ib] = True
+          elif tab[k][ia][ib+length-k] and tab[length-k][ia+k][ib]:
+            tab[length][i][j] = True
+  return tab[len(a)-1][0][0]
+
+
 ''' sub regioin [l..r], iterate m between l..r, think m as the LAST to burst. Matrix Production.
 matrix product tab[l,r] = tab[l,k] + tab[k+1,r] + p[l-1]*p[m]*p[r].
 tab[l,r] = max(tab[l,k]+tab[k+1,r]+arr[l]*arr[k]*arr[r])
@@ -5824,13 +5876,15 @@ print burstBalloon([3, 1, 5, 8])
 
 # Remove boxes max points. 
 # https://leetcode.com/problems/remove-boxes/discuss/101310/Java-top-down-and-bottom-up-DP-solutions
-# T(i, j, k) the maximum points possible by removing the boxes of subarray boxes[i, j] with k boxes on the left of the same color as boxes[i].
-# T(i, i, k) = (k + 1) * (k + 1);  
+# T(i, j, k) the maximum points possible by removing the boxes of subarray boxes[i, j] 
+# with k boxes on the left of the same color as boxes[i].
+# T(i, i, k) = (k + 1) * (k + 1);  // boundary, 
 # T(i, i - 1, k) = 0
 # Recur each boundary i: two choices, remove it first along with k left, or merge it with some m in i..j.
 # remove it with k left, then recur.  (k + 1) * (k + 1) + T(i + 1, j, 0)
 # OR attach boxes[i] to some other box of the same color, say m, in between i and j. Note
 # max(T(i + 1, m - 1, 0) + T(m, j, k + 1)) where i < m <= j && boxes[i] == boxes[m]. 
+# tab[i][j][k] = for m in i..j: max(tab[i + 1][m - 1][0] + tab[m][j][k + 1])
 #
 static int removeBox(int[] boxes) {
     int sz = boxes.length;
