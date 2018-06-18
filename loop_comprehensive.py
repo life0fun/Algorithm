@@ -552,15 +552,155 @@ static int[] merge(int[] arra, int[] arrb) {
 }
 print merge([9,8,3], [6,5])
 
-# prefixSum(P) - prefixSum(N) = target
+# https://leetcode.com/problems/target-sum/discuss/97334/Java-(15-ms)-C++-(3-ms)-O(ns)-iterative-DP-solution-using-subset-sum-with-explanation
+# find positive subset P, and negative subset N. prefixSum(P) - prefixSum(N) = target. P + N = all.
 # prefixSum(P) + prefixSum(N) + prefixSum(P) - prefixSum(N) = target + prefixSum(P) + prefixSum(N)
-# 2 * prefixSum(P) = target + prefixSum(nums)
+# 2 * prefixSum(P) = target + prefixSum(all)
+# convert to find subsetSum(arr) = (tot+t)/2
 int findTargetSumWays(int[] nums, int s) {
     int sum = 0;
     for (int n : nums) sum += n;
-    return sum < s || (s + sum) % 2 > 0 ? 0 : subsetSum(nums, (s + sum) >>> 1); 
+    return sum < s || (s + sum) % 2 > 0 ? 0 : subsetSum(nums, (s + sum) >> 1); 
+}
+# this is dup allowed, not correct. here we do not allow dup. Need two arry i-1, i;
+static int subsetSum(int[] arr, int target) {
+  int sz = arr.length;
+  int[] dp = new int[target+1];
+  dp[0] = 1;
+  for (int i=0;i<sz;i++) {
+    for (int s=arr[i];s<=target;s++) {
+      dp[s] += dp[s-arr[i]];
+    }
+  }
+}
+# dp[i][v] = dp[i-1][v-vi] + dp[i-1][v+vi]
+int findTargetSumWays(vector<int>& nums, int S) {
+    int sum = accumulate(nums.begin(),nums.end(),0);
+    if(S>sum || S<-sum) return 0;
+    vector<int> cur(2*sum+1), nxt(2*sum+1), *p_cur = &cur, *p_nxt = &nxt;
+    cur[sum] = 1;
+    for(int i=0;i<nums.size();i++) {
+        for(int j=0;j<=2*sum;j++) 
+            if(p_cur->at(j)) {
+                p_nxt->at(j+nums[i]) += p_cur->at(j);
+                p_nxt->at(j-nums[i]) += p_cur->at(j);
+            }
+        swap(p_cur,p_nxt);
+        p_nxt->assign(2*sum+1,0);
+    }
+    return p_cur->at(S+sum);
 }
 
+
+""" Maximum Sum of 3 Non-Overlapping Subarrays
+https://leetcode.com/problems/maximum-sum-of-3-non-overlapping-subarrays/discuss/108231/C++Java-DP-with-explanation-O(n)
+idea is, suppose we find the middle subary from [i,i+k] then we cal left and rite.
+dp[i] is middle subary is i..i+k, max left subary 0..i, max rite subary i+k..n.
+just enum all i as middle ary, max left and max rite is easy to find.
+"""
+static int maxSumSubary(int[] arr, int step) {
+    int sz = arr.length;
+    int[] dp = new int[sz];
+    int[] psum = new int[sz];
+    int[] leftMax = new int[sz];
+    int[] riteMax = new int[sz];
+    int leftmaxsofar = 0, ritemaxsofar = 0, allmax = 0;
+    psum[0] = arr[0];
+    for (int i=1;i<sz;i++) {
+        psum[i] += psum[i-1] + arr[i];
+    }
+
+    leftmaxsofar = psum[step-1];
+    leftMax[step-1] = leftmaxsofar;
+    for (int i=step;i<sz;i++) {
+        int thisdiff = psum[i] - psum[i-step];
+        leftmaxsofar = Math.max(leftmaxsofar, thisdiff);
+        leftMax[i] = leftmaxsofar;
+    }
+
+    // when mov from rite to left i, to include i, need i-1.
+    ritemaxsofar = psum[sz-1] - psum[sz-1-step];
+    riteMax[sz-step] = ritemaxsofar;
+    for (int i=sz-1-step;i>=step;i--) {
+        int thisdiff = psum[i+step-1] - psum[i-1];  // to include i, need i-1
+        ritemaxsofar = Math.max(ritemaxsofar, thisdiff);
+        riteMax[i] = ritemaxsofar;
+    }
+
+    for (int i=step;i<sz-step;i++) {
+        // to include i, need i-1
+        dp[i] = Math.max(dp[i], leftMax[i-1] + (psum[i+step-1] - psum[i-1]) + riteMax[i+step]);
+        allmax = Math.max(allmax, dp[i]);
+    }
+    System.out.println("allmax " + allmax + " leftmax " + Arrays.toString(leftMax));
+    return allmax;
+}
+maxSumSubary(new int[]{1,2,1,2,6,7,5,1}, 2);   // 23, [1, 2], [2, 6], [7, 5], no greedy [6,7]
+
+#
+# dp[i, m] = min(max(dp[k,m-1], arr[k..i]))
+static int splitAry(int[] arr, int cuts) {
+  int sz = arr.length;
+  int[] prefixsum = new int[sz];
+  int[] dp = new int[sz];
+  for (int c=0;c<cuts;c++) {
+    for (int i=0;i<sz;i++) {
+      dp[i] = Integer.MAX_VALUE;
+      for (int k=0;k<i;k++) {
+        int mx = Math.max(dp[k], prefixsum[i]-prefixsum[k]);
+        if (mx < dp[i]) {
+          dp[i] = mx;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+  return dp[sz-1];
+}
+
+# https://leetcode.com/problems/largest-sum-of-averages/discuss/122739/C++JavaPython-Easy-Understood-Solution-with-Explanation
+# divide into k conti subary, find the cut that yields max sum of avg of each subary
+# dp[i][k] = max(dp[j][k-1] + avg(j..k))
+static int maxKgrpAvgSum(int[] arr, int k) {
+    int sz = arr.length;
+    int[] psum = new int[sz];
+    psum[0] = arr[0];
+    for (int i=1;i<sz;i++) {
+        psum[i] = psum[i-1] + arr[i];
+    }
+
+    int[][] dp = new int[sz][k+1];
+    // 1 grp
+    for (int i=0;i<sz;i++) {
+        dp[i][1] = psum[i]/(i+1);
+    }
+    // 
+    for (int grp=2;grp<=k;grp++) {
+        for (int i=0;i<sz;i++) {
+            for (int j=0;j<i;j++) {
+                // dp[j] + [j+1..i]
+                dp[i][grp] = Math.max(dp[i][grp], dp[j][grp-1] + (psum[i]-psum[j])/(i-j));
+            }
+        }
+    }
+    System.out.println("max k subary avg is " + dp[sz-1][k]);
+    return dp[sz-1][k];
+}
+maxKgrpAvgSum(new int[]{9,1,2,3,9}, 3);
+
+""" Subarray Sum Equals K, simple than range sum. traverse and map store. """
+int subarraySum(int[] nums, int k) {
+    int sum = 0, result = 0;
+    Map<Integer, Integer> preSum = new HashMap<>();
+    preSum.put(0, 1);
+    for (int i = 0; i < nums.length; i++) {
+        sum += nums[i];
+        if (preSum.containsKey(sum - k)) { result += preSum.get(sum - k); }
+        preSum.put(sum, preSum.getOrDefault(sum, 0) + 1);
+    }
+    return result;
+}
 
 """ 
 https://leetcode.com/problems/count-of-range-sum/discuss/77990/Share-my-solution
