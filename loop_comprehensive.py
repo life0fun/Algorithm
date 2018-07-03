@@ -5,7 +5,13 @@ import sys
 # Jianchao's Blog
 # www.cnblogs.com/jcliBlogger/
 
-Strategy is recur with smaller problem. bottom up.
+Some problem, not require simulation, but calculate the target state and 
+
+1. DP recur with smaller problem with d[i-1][j-1], bottom up.
+2. Search DFS/BFS/Permutation, start with init, each run gen with new state or new offset with visited map and memoize path.
+Enum constant values. e.g, ages, sum values, etc.
+
+DP : recur with smaller problem. bottom up.
 1. divide to left rite, recur, memoize, and merge.
 2. reucr left when rite is defined, e.g., add 1 more row to result set, 
 3. recur both left rite when rite is not defined, 
@@ -15,7 +21,7 @@ Strategy is recur with smaller problem. bottom up.
   2. recur stop check and boundary; dp[0] = 1
   3. Edge cases / Recur stop.
 
-Search:  Permutation, backtracking, or DP sub Layer by layer zoom in.
+Search:  Recur with new state or offset. Permutation, backtracking, or DP sub Layer by layer zoom in.
   1. BFS with PQ
   2. DFS spread out and recur with backtrack and prune.
   3. Permutation, each offset as head, add hd to path, recur.
@@ -33,6 +39,7 @@ prepre, pre, cur, next
 
 dp[i], two loops, outer add more slots/problem set. inner enum all possible values.
 dp[i,j], 3 loops, enum k or coin value between i..j.
+dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
 
 1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
 dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
@@ -75,7 +82,7 @@ bfs / dfs search carrying context/partial result. bfs track left length.
 5. dp[i][j][val] = dp[i-1][j-1][val=0..v]
 6. BFS with priorityqueue, topsort
 
-First, BFS/DFS recur search, permutation swap to get N^2. K-group, K-similar, etc.
+BFS/DFS recur search, permutation swap to get N^2. K-group, K-similar, etc.
 Reduce to N or lgN, break into two segs, recur in each seg.
 1. use bucket sort / bucket merge.
 2. merge sort, partition, divide and constant merge.
@@ -119,9 +126,10 @@ https://leetcode.com/problems/student-attendance-record-ii/discuss/101643/Share-
 """
 
 """ intervals, TreeMap, 
+Sort by start, use stk to filter overlap. Greedy can work.
 Interval Array, add/remove range all needs consolidate new range.
-TreeMap to record each st/ed, st, val+=1, ed, val-=1. sum. find max overlap.
-Interval Tree, find all overlapping intervals.
+TreeMap to record each st/ed, slide in start, val+=1, slide out end, val-=1. sum. find max overlap.
+Interval Tree, find all overlapping intervals. floorKey/ceilingKey/submap/remove on add and delete.
 """
 
 """ Graph, Edge, Use DFS/BFS + PQ<int[]>. Edge = LinkedList<Set<Node>>
@@ -357,6 +365,26 @@ def insertCircle(l, val):
             minnode = pre
             return
     return minnode
+
+public List<List<Integer>> threeSum(int[] num) {
+    Arrays.sort(num);
+    List<List<Integer>> res = new LinkedList<>(); 
+    for (int i = 0; i < num.length-2; i++) {
+        if (i == 0 || (i > 0 && num[i] != num[i-1])) {
+            int lo = i+1, hi = num.length-1, sum = 0 - num[i];
+            while (lo < hi) {
+                if (num[lo] + num[hi] == sum) {
+                    res.add(Arrays.asList(num[i], num[lo], num[hi]));
+                    while (lo < hi && num[lo] == num[lo+1]) lo++;
+                    while (lo < hi && num[hi] == num[hi-1]) hi--;
+                    lo++; hi--;
+                } else if (num[lo] + num[hi] < sum) lo++;
+                else hi--;
+           }
+        }
+    }
+    return res;
+}
 
 """ the max num can be formed from k digits from a, preserve the order in ary.
 key point is drop digits along the way."""
@@ -925,26 +953,26 @@ static int countPairsDistLessThan(int[] arr, int d) {
   }
   return totPairs;
 }
-static int kthPair(int[] arr, int k) {
-  int n = a.length;
-  Arrays.sort(a);
+# guess a distnace value (1/2 of max diff), find N pairs dist less than it. If n < k, mid is big, reduce.
+# at each distance value, loop l, r to find total.
+int smallestDistancePair(int[] nums, int k) {
+    Arrays.sort(nums);
 
-  // Minimum absolute difference
-  int low = a[1] - a[0];
-  for (int i = 1; i < n - 1; i++)
-      low = Math.min(low, a[i + 1] - a[i]);
-
-  // Maximum absolute difference
-  int high = a[n - 1] - a[0];
-  // Do binary search for k-th absolute difference
-  while (low < high) {
-      int mid = low + (high - low) / 2;
-      if (countPairs(a, mid) < k) low = mid + 1;
-      else high = mid;
-  }
-  return low;
+    int lo = 0;
+    int hi = nums[nums.length - 1] - nums[0];   // largest dist
+    while (lo < hi) {
+        int mi = (lo + hi) / 2;
+        int count = 0, left = 0;
+        for (int right = 0; right < nums.length; ++right) {
+            while (nums[right] - nums[left] > mi) left++;
+            count += right - left;
+        }
+        //count = number of pairs with distance <= mi
+        if (count >= k) hi = mi;
+        else lo = mi + 1;
+    }
+    return lo;
 }
-
 
 """ 
   selection algorithm, find the kth largest element with worst case O(n)
@@ -3494,6 +3522,38 @@ static int longestWiggleSubSequence(int[] arr) {
   return Math.max(up[sz-1], down[sz-1]);
 }
 
+# in place wiggle sort
+# findKth to find median
+# parittion to swap widx with first and last
+void wiggleSort(vector<int>& nums) {
+		if (nums.empty()) {
+			return;
+		}    
+		int n = nums.size();
+		
+		// Step 1: Find the median    		
+		vector<int>::iterator nth = next(nums.begin(), n / 2);
+		nth_element(nums.begin(), nth, nums.end());
+		int median = *nth;
+
+		// Step 2: Tripartie partition within O(n)-time & O(1)-space.    		
+		auto m = [n](int idx) { return (2 * idx + 1) % (n | 1); };    		
+		int first = 0, mid = 0, last = n - 1;
+		while (mid <= last) {
+			if (nums[m(mid)] > median) {
+				swap(nums[m(first)], nums[m(mid)]);
+				++first;
+				++mid;
+			}
+			else if (nums[m(mid)] < median) {
+				swap(nums[m(mid)], nums[m(last)]);
+				--last;
+			}				
+			else {
+				++mid;
+			}
+		}
+	}    
 
 """ no same char next to each other """
 from collections import defaultdict
@@ -4782,6 +4842,36 @@ def minjp(arr):
   return tab[len(arr)-1]
 assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 
+# stones[i] value is idx that has a stone
+boolean canCross(int[] stones) {
+    if (stones.length == 0) { return true;}
+    
+    HashMap<Integer, HashSet<Integer>> map = new HashMap<Integer, HashSet<Integer>>(stones.length);
+    map.put(0, new HashSet<Integer>());
+    map.get(0).add(1);
+    for (int i = 1; i < stones.length; i++) {
+      map.put(stones[i], new HashSet<Integer>() );
+    }
+    
+    for (int i = 0; i < stones.length - 1; i++) {
+      int stone = stones[i];
+      for (int step : map.get(stone)) {
+        int reach = step + stone;
+        if (reach == stones[stones.length - 1]) {
+          return true;
+        }
+        HashSet<Integer> set = map.get(reach);  // jmp to reach idx by step. so reach can jmp step+1
+        if (set != null) {
+            set.add(step);
+            if (step - 1 > 0) set.add(step - 1);
+            set.add(step + 1);
+        }
+      }
+    }
+    
+    return false;
+} 
+
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
 def minpath(G, src, dst, cost, tab):
   mincost = cost[src][dst]
@@ -5604,25 +5694,27 @@ def editDistance(a, b):
         dp[i][j] = 1 + min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1])
     return dp[len(a)][len(b)]
 
-// mutate, branch out with head.
+// Recur with new state. branch out with head.
 int kSimilarity(String A, String B) {
     if (A.equals(B)) return 0;
-    Set<String> vis= new HashSet<>();
+    Set<String> seen= new HashSet<>();
     Queue<String> q= new LinkedList<>();
-    q.add(A);
-    vis.add(A);
+    q.add(A);   // start with init state.
+    seen.add(A);
     int res=0;
     while(!q.isEmpty()){
         res++;
         for (int sz=q.size(); sz>0; sz--){
             String s= q.poll();
             int i=0;
-            while (s.charAt(i)==B.charAt(i)) i++;
-            for (int j=i+1; j<s.length(); j++){
-                if (s.charAt(j)==B.charAt(j) || s.charAt(i)!=B.charAt(j) ) continue;
+            while (s.charAt(i)==B.charAt(i)) i++;  // lseek to first not equal.
+            for (int j=i; j<s.length(); j++){
+                if (s.charAt(j)==B.charAt(j) || s.charAt(i)!=B.charAt(j) ) continue; // lseek
                 String temp= swap(s, i, j);
                 if (temp.equals(B)) return res;
-                if (vis.add(temp)) q.add(temp);
+                if (seen.add(temp)) {
+                  q.add(temp);    // new state, recur.
+                }
             }
         }
     }
@@ -5652,15 +5744,12 @@ def distinctSeq(s,t):
   for i in xrange(len(s)):     # bottom up, add more slot
     for j in xrange(len(t)):   # at each slot, enum all values
       if i == 0:
-        if s[0] == t[j]:
-          dp[0][j] = 1
+        if s[0] == t[j]:  dp[0][j] = 1
         continue
       dp[i][j] = dp[i-1][j]   # not using s[i], so use dp[i-1]
-      if t[j] == s[i]:   # use s[i] only when equals
-        if j == 0:  # s[i]==t[0], match scan start from s[i]
-          dp[i][0] = dp[i-1][0] + 1
-        else:
-          dp[i][j] += dp[i-1][j-1]  # reduce one j to j-1
+      if s[i] == t[j]:   # use s[i] only when equals
+        if j == 0:  dp[i][0] = dp[i-1][0] + 1  # s[i]==t[0], match scan start from s[i]
+        else:       dp[i][j] += dp[i-1][j-1]  # reduce one j to j-1
   return dp[len(s)-1][len(t)-1]
 print distinctSeq("aeb", "be")
 print distinctSeq("abbbc", "bc")
