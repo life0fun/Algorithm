@@ -4756,8 +4756,9 @@ boolean canCross(int[] stones) {
 // From src -> dst, min path  dp[src][1111111]   bitmask as path.
 //  1. dfs(child, path); start root, for each child, if child is dst, result.append(path)
 //  2. BFS(PQ); seed PQ(sort by weight) with root, poll PQ head, for each child of hd, relax. offer child.
-//  3. DP[src,dst] = { DP[src,k] + DP[k, dst] } In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
-//        DP(src, dst), dp[i, j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
+//  3. DP[src,dst] = DP[src,k] + DP[k, dst]; In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
+//        dp[i, j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
+//        dp[i,j] = min(dp[i,j-1], dp[i-1,j]) + G[i,j];
 //  4. topsort(G, src, stk), start from any, carry stk.
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
@@ -4769,6 +4770,25 @@ def minpathDFS(G, src, dst, cost, tab):
       mincost = min(mincost, minpathDFS(G,src,v) + minpathDFS(G,v,dst))
       tab[src][dst] = mincost
   return tab[src][dst]
+
+// Matrix min path from 0,0 -> rows,cols
+int minPathSum(G) {
+  int rows = G.size();
+  int cols = G[0].size();
+  int[] dp = new dp[cols];  // dp table ary width is cols.
+  // boundary cols, setup cols.
+  for (int i=1;i<cols;i++) {
+    dp[i] = dp[i-1] + G[0][i];
+  }
+  for (int i=0;i<rows;i++) {
+    dp[0] += G[i][0];
+    for (int j=0;j<cols;j++) {
+      dp[i] = Math.min(dp[i-1], dp[i]) + G[i][j];
+    }
+  }
+  return dp[cols-1];
+}
+
 
 ''' minjp, can not use prepre, pre, cur '''
 def minpath(G, src, dst):
