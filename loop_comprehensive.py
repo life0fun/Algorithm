@@ -37,7 +37,7 @@ Two types of Recursion Track.
 prepre, pre, cur, next
 
 dp[i], two loops, outer add more slots/problem set. inner enum all possible values.
-dp[i,j], 3 loops, enum k or coin value between i..j.
+dp[i,j], 3 loops, loop gap, loop i, and loop k or coin value between i..j.
 dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
 
 1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
@@ -45,7 +45,7 @@ dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
 
 1. Total number of ways, dp[i] += dp[i-1][v]
 2. Expand. dp[i][j] = 1 + dp[i+1][j-1]
-after adding more item, rite seg is defined, need to recur on left seg.
+after adding more item, rite seg is fixed, need to recur on left seg.
   dp[i] = max( dp[k] for k in 1..i-1,)
   for i in 1..slot:
     for v in 1..i  or for v in 1..V
@@ -60,11 +60,15 @@ for gap len in i..n, for i in 1..n.
     dp[i][j] = min( dp[i][j-1] + dp[i+1][j] )
     
     dp[i][j] = min(dp[i][j], dp[i][k] + dp[k+1][j] + arr[i]*arr[k]*arr[j])
-    
     dp[i][j][k] = for m in i..j: max(dp[i + 1][m - 1][0] + dp[m][j][k + 1]) when a[i]=a[m]
     
     #dp[i,j,k] = max profit of arr[i..j] with k trans.
     dp[i,j,k] = max(dp[i+m, j, k-1]+(arr[i+m]-arr[i]))
+
+4. RecurDFS(offset, path) VS. DP[i,j]. two ways of thinkings.
+  a. at each offset, branch out partial value in path. recurDFS(offset+1, path).
+     we do not need incl/excl, so recur dfs at head good, like forEach child, dfs(child)
+  b. DP[i,j], divide to dp[i,k] + dp[k,j]; 3 loops, gap, i, and k.
 
 4. Permutation BFS / DFS, model connected neighbors with edges. Connected Routes, Buses.
 Permutation DFS/BFS carries path, for each row, set col, recur row+1;
@@ -4127,7 +4131,6 @@ int[] nextGreater(int[] arr) {
   int[] res = new int[sz];
   int sz = arr.length, i = 0;
   for(int i=sz-1;i>=0;i--) {
-    if (stk.isEmpty()) { stk.offerLast(i); continue;}
     while (!stk.isEmpty() && arr[i] >= stk.peekLast()) {
       stk.pollLast();
     }
@@ -4750,9 +4753,13 @@ boolean canCross(int[] stones) {
 }
 
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
-// min path  dp[src][1111111]   bitmask as path.
+// From src -> dst, min path  dp[src][1111111]   bitmask as path.
+//  1. dfs(child, path); start root, for each child, if child is dst, result.append(path)
+//  2. BFS(PQ); seed PQ(sort by weight) with root, poll PQ head, for each child of hd, relax. offer child.
+//  3. DP[src,dst] = { DP[src,k] + DP[k, dst] } In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
+//        DP(src, dst), dp[i, j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
+//  4. topsort(G, src, stk), start from any, carry stk.
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
-
 ''' For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]'''
 def minpathDFS(G, src, dst, cost, tab):
   mincost = cost[src][dst]
@@ -4770,7 +4777,7 @@ def minpath(G, src, dst):
   for i in xrange(n):
     for j in xrange(n):
       if i != j:
-        dp[i] = min(dp[j]+cost[i][j], dp[i])
+        dp[i] = min(dp[j]+G[i][j], dp[i])
   return dp[n-1]
 
 ''' mobile pad k edge, BFS search each direction and track min with dp[src][dst][k] '''
@@ -4803,12 +4810,10 @@ def minpath(G, src, dst):
     return stk
 
   toplist = topsort(G,src,stk)
-  for i in g.vertices():
-    tab[i] = sys.maxint
+  for i in g.vertices(): tab[i] = sys.maxint
   # after topsort, leave at the end of the list.
   dp[d] = 0   // dp[i] = dist 
-  for nb in d.neighbor():
-    dp[nb] = cost[nb][d]
+  for nb in d.neighbor():   dp[nb] = cost[nb][d]
   for i in xrange(len(toplist)-1,-1,-1):
     for j in i.neighbor():
       dp[j] = min(dp[i]+cost[i][j], dp[j])
@@ -4845,7 +4850,6 @@ def backpack(arr, W):
     pre = row[:]
   return row[W]
 print backpack([2, 3, 5, 7], 11)
-
 
 # comb can exam head, branch at header incl and excl
 def combination(arr, path, remain, pos, result):
@@ -5386,6 +5390,7 @@ def addOperator(arr, target):
   # [l..k..r] both left seg and rite seg needs recur.
   for i in xrange(len(arr)):
     if i >= 2 and arr[i] == 0: continue
+    # At top root level, branch out at each position. Forest VS. Tree.
     recur(arr[i:], arr[:i+1], target, 0, int(arr[:i+1]), True)
 
 
@@ -5393,7 +5398,7 @@ def addOperator(arr, target):
 1. divide half, recur, memoize, and merge.
 2. calculate dp[l,r,v] directly with gap, i, i+gap.
 """
-def addOperator(arr, l, r, target):
+def addOperator(arr, l, r, target):   # when recur, need fix left/rite edges
   '''recursion with divide to half, must use memoize dp'''
   def recur(arr, l, r):
     if not dp[l][r]:      dp[l][r] = defaultdict(list)
@@ -5404,8 +5409,8 @@ def addOperator(arr, l, r, target):
     # arr[l:r] as one num, no divide
     out.append([int(''.join(map(str,arr[l:r+1]))),  "{}".format(''.join(map(str,arr[l:r+1])))])
     
-    for i in xrange(l,r):      // divide each k in between
-      L = recur(arr, l, i)     // like merge sort, divide and merge
+    for i in xrange(l,r):      // divide into left / rite partition
+      L = recur(arr, l, i)     // merge sort, divide and merge
       R = recur(arr, i+1, r)
       # merge Left / Rite results to produce new results.
       for lv, lexp in L:
@@ -5425,8 +5430,7 @@ def addOperator(arr, l, r, target):
 print addOperator([1,2,3],0,2,6)
 print addOperator([1,0,5],0,2,5)
 
-""" this problem is, both left/rite segment not defined. recur carrying dp for diff gaps.
-dp[l,r,v] = for k in l..r, recur dp[l,k,v] + dp[k,r,v]
+""" DP[l,r] = dp[l,k] + dp[k,r]; standard 3 loop, gap=1..n, i=1..n-gap, k=l..r
 """
 def addOperator(arr, l, r):
   for gap in xrange(r-l):
@@ -5442,9 +5446,7 @@ def addOperator(arr, l, r):
     dp[i][j] = out
   return dp[l][r]
 
-''' bottom up, enum pos row up, [[wd1,wd2,...], [wd3,wd4],...]
-tab[i]=arr[0:i] is break. tab[i] = tab[k] and arr[k:i] in dict
-plusBetween is one leve complicated when enum values '''
+''' bottom up, loop i=1..n,  dp[i] = dp[j] + a[j..i] '''
 def wordbreak(word, dict):
   dp = [None]*len(word)
   for i in xrange(len(word)):
@@ -5504,7 +5506,7 @@ int minDistance(String word1, String word2) {
               dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);    # max
         }
     }
-    int val =  dp[word1.length()][word2.length()];
+    int val = dp[word1.length()][word2.length()];
     return word1.length() - val + word2.length() - val;
 }
 
@@ -5675,7 +5677,7 @@ def nways(steps, n):
   ways[i] = steps[i]
   for i in xrange(steps[1], n):
     for step in steps:
-      ways[i] += ways[i-step]
+      ways[i] += ways[i-step]    # ways inheritated from prev round
   return ways[n-1]
 
 static int decodeWays(int[] arr) {
@@ -5705,8 +5707,8 @@ int ways(int ch) {
     return 1;
 }
 int ways(char ch1, char ch2) {
-    String str = "" + ch1 + "" + ch2;
-    if(ch1 != '*' && ch2 != '*') { if(Integer.parseInt(str) >= 10 && Integer.parseInt(str) <= 26) return 1;} 
+    String key = "" + ch1 + "" + ch2;
+    if(ch1 != '*' && ch2 != '*') { if (Integer.parseInt(key) >= 10 && Integer.parseInt(key) <= 26) return 1;} 
     else if (ch1 == '*' && ch2 == '*') { return 15; }
     else if (ch1 == '*') {
         if (Integer.parseInt(""+ch2) >= 0 && Integer.parseInt(""+ch2) <= 6) return 2;
@@ -5717,7 +5719,7 @@ int ways(char ch1, char ch2) {
     }
     return 0;
 }
-
+# dp[i] = dp[i-2] + dp[i]; 
 static int decodeWays(String s) {
     long[] dp = new long[2];
     dp[0] = ways(s.charAt(0));
@@ -5725,7 +5727,7 @@ static int decodeWays(String s) {
     // dp[1] is nways from [0,1]
     dp[1] = dp[0] * ways(s.charAt(1)) + ways(s.charAt(0), s.charAt(1));
     // DP tab bottom up from string of 2 chars to N chars.
-    for(int j = 2; j < s.length(); j++) {
+    for(int j = 2; j < s.length(); j++) {  # start from j=2
         long temp = dp[1];
         dp[1] = (dp[1] * ways(s.charAt(j)) + dp[0] * ways(s.charAt(j-1), s.charAt(j))) % 1000000007;
         dp[0] = temp;
