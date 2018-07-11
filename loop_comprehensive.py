@@ -207,8 +207,8 @@ WHERE E.DepartmentId = D.id
 
 SELECT dep.Name as Department, emp.Name as Employee, emp.Salary 
 from Department dep, Employee emp 
-where emp.DepartmentId=dep.Id 
-and emp.Salary=(Select max(Salary) from Employee e2 where e2.DepartmentId=dep.Id)
+where emp.DepartmentId = dep.Id 
+and emp.Salary=(Select max(Salary) from Employee e2 where e2.DepartmentId = dep.Id)
 
 SELECT D.Name as Department, E.Name as Employee, E.Salary 
    FROM Department D, Employee E, Employee E2  
@@ -217,20 +217,12 @@ SELECT D.Name as Department, E.Name as Employee, E.Salary
    group by D.ID,E.Name having count(distinct E2.Salary) = 1
    order by D.Name desc
 
-# left join
+# left join, group by 
 select d.name, count(e.id)
 from Department d
 left join Employee e on e.dept_id = d.id
 group by d.name
 order by count(e.id) DESC, d.name ASC
-
-
-''' recursive, one line print int value bin string'''
-int2bin = lambda n: n>0 and int2bin(n>>1)+str(n&1) or ''
-bin2int = lambda x: int(x,2)
-twopower = lambda x: x & x-1
-
-bstr_nonneg = lambda n: n>0 and bstr_nonneg(n>>1).lstrip('0')+str(n&1) or '0'
 
 # hash a string is a reduce procedure, supply seed/initval to be 1
 # provide an init val, reduce on top of this init value.
@@ -504,17 +496,19 @@ int[] sortColor(int[] arr) {
     int l = 0, r = arr.length-1;
     int stidx = 0;
     for (int i=0; i<=r; i++) {
-        if (arr[i] == 0 && i > stidx) {
+        if (arr[i] == 0) {
             swap(arr, stidx, i);
             stidx += 1;
         }
     }
     int edidx = r;    # from end
-    for (int i=0; i<=r; i++) {
-        if (arr[i] == 2 && i < edidx) {
-            swap(arr, edidx, i);
-            edidx -= 1;
-        }
+    i = stdix;
+    while (i < edix) {
+      if (arr[i] == 2) {
+          swap(arr, edidx, i);
+          edidx -= 1;
+      }
+      i++;
     }
     System.out.println(Arrays.toString(arr));
     return arr;
@@ -527,13 +521,13 @@ print sortColor([1,2,1,0,1,2,0,1,2,0,1])
 # parittion to swap widx with first and last
 void wiggesort(int[] arr) {
   int median = nth_element(arr);
-  // tri partition
+  # tri partition
   int beg = 0, i = 0, end = n - 1;
   while (i <= end) {
-      if (A(i) > median)
-          swap(A(i++), A(beg++));
-      else if (A(i) < median)
-          swap(A(i), A(end--));
+      if (arr[i] > median)
+          swap(arr, i++, beg++);
+      else if (arr[i] < median)
+          swap(arr, i, end--);
       else
           i++;
   }
@@ -552,7 +546,7 @@ def binarySearch(arr, k):
 ''' bisect needs to check head / tail first. the index returned, a[index-1] < t, a[index] >= t '''
 static int ceiling(int[] arr, int t) {
     int l = 0, r = arr.length -1;
-    if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }
+    if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }  # boundary check up front
     while (l < r) {
         int m = (l+r) / 2;
         if (arr[m] <= t) {  # <=, lift l even when eqs.
@@ -568,6 +562,31 @@ print floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 2)
 print floorceil([1, 2, 8, 10, 10, 12, 19], 28)
 
+'''
+Given a huge sorted integer array A, and there are huge duplicates in the
+array. Given an integer T, inert T to the array, if T already exisit, insert
+it at the end of duplicates. return the insertion point.
+    A[15] = {2,5,7,8,8,8,8,8,8,8,8,8,8,8,9}
+    If T == 6, return 2;
+    If T == 8' return 14
+'''
+def findInsertionPosition(l, val):
+  beg = 0
+  end = len(l) - 1
+  ''' when l=r can enter loop, need to ensure index out of bound when m-1 and m+1 '''
+  if val < l[0] or val > l[-1]:   return 0, len(l)
+  while beg <= end:      # after checking boundary.
+      mid = (beg+end)/2  # mid is Math.floor
+      if l[mid] > val:      end = mid - 1   # if mid=beg, end=mid-1 < beg, loop breaks
+      elif l[mid] <= val:   beg = mid + 1   # in less or equal case, we want to append to end, so recur with mid+1
+  # now begin contains insertion point
+  print 'insertion point is : ', beg
+  return beg
+def testFindInsertionPosition():
+  l = [2,5,7,8,8,8,8,8,8,8,8,8,8,8,9]
+  findInsertionPosition(l, 6)
+  findInsertionPosition(l, 8)
+
 # find peak who a[i-1] < a[i] > a[i+1]
 int findPeak(int[] arr, int lo, int hi) {
   if(low == high) return low;
@@ -578,13 +597,16 @@ int findPeak(int[] arr, int lo, int hi) {
     else
         return recur(arr, lo, mid);      // down, hi = mid1
   }
+  return lo;
 }
 
 """ ret insertion pos, the first pos t <= a[idx]. a[idx-1] < t <= a[idx]. even with dups.
 when find high end, idx-1 is the first ele smaller than searching val."""
 static int bsect(int[] arr, int v) {
     int l = 0, r = arr.length-1;
+    # bsect, check the out condition first.
     if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }
+    
     while (l < r) {
         int m = (l+r)/2;
         if (arr[m] <= V) { # when using =, insert pos is to the end.
@@ -615,7 +637,7 @@ static int bsearchRotate(int[] arr, int v) {
                 r = m;
             }
         } else {
-            l += 1;    // dup
+            l += 1;    // this is a dup. advance l.
         }
     }
     if (arr[l] == v) {
@@ -629,12 +651,11 @@ print binarySearchRotated([3], 2)
 int rotatedMin(int[] arr) {
   int lo = 0, hi = arr.length;
   while (lo < hi) {
+    while(l < r && arr[l] == arr[l+1]) l += 1;
+    while(l < r && arr[r] == arr[r-1]) r -= 1;
     int m = (lo+hi)/2;
-    if (arr[m] < arr[hi]) {
-      hi = m;
-    } else {
-      lo = m+1;
-    }
+    if (arr[m] < arr[hi]) {  hi = m;   }
+    else {                   lo = m+1; }
   }
   return lo;
 }
@@ -668,7 +689,7 @@ print rotatedMin([5,6,6,7,0,1,3])
 print rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
 
 
-""" find the max in a ^ ary, check m and m+1"""
+""" find the max in a ^ ary,  m < m+1 """
 static int findMax(int[] arr) {
     int l = 0;
     int r = arr.length-1;
@@ -1103,7 +1124,7 @@ class MedianOfStream {
 # widx start from 1. compare against widx-1 and widx. Allow at most 2.
 static void removeDup(int[] arr) {
     int l = 2;       # loop start from 3rd, widx as allows 2
-    int widx = l-1;  # widx 1 less than loop start
+    int widx = 1;    # widx 1 less than loop start
     for (int i=l;i<arr.length;i++) {
         if (arr[i] == arr[widx] && arr[i] == arr[widx-1]) {
             continue;  # skip current item when it is a dup
@@ -1742,33 +1763,6 @@ def pairNode(root, target):
         lstop = False
   return lcur,rcur
 
-def match(s,p):
-  if p[0] == "*":
-    while p[0] == "*":
-      p += 1
-    while not match(s,p[1:]):
-      s += 1
-    if not s:
-      return False
-    else:
-      return True
-  else:
-    if s[0] == p[0]:
-      return match(s[1:], p[1:])
-    else:
-      return False
-
-""" check p+1 is wild match. If we need look ahead,  """
-def regMatch(s, p):
-  if p.len == 0: return s.len == 0;
-  if p[1] == "*":
-    while s and (s[0] == p[0] or p[0] == "."):
-      # wildcard can match 1+, so recursively check one by one
-      if regMatch(s,p+2):  return True
-      s += 1    # prev s not good, try next s by s+1
-    return regMatch(s,p+2)
-  else:
-    return (s[0] == p[0] or p[0] == ".") and regMatch(s+1,p+1)
 
 1, If p.charAt(j) == s.charAt(i) :  dp[i][j] = dp[i-1][j-1];
 2, If p.charAt(j) == '.' : dp[i][j] = dp[i-1][j-1];
@@ -1778,6 +1772,7 @@ def regMatch(s, p):
                 dp[i][j] = dp[i-1][j]    //in this case, a* counts as multiple a 
               or dp[i][j] = dp[i][j-1]   // in this case, a* counts as single a
               or dp[i][j] = dp[i][j-2]   // in this case, a* counts as empty
+
 """ reg match . *. recursion, loop try 0,1,2...times for *. """
 def regMatch(T, P, offset):  # check pattern exhausted
   if P is None:        return T is None
@@ -1970,11 +1965,11 @@ static int findMinArrowBurstBallon(int[][] points) {
     if (points == null || points.length == 0)   return 0;
     Arrays.sort(points, (a, b) -> a[0] - b[0]);   # sort intv start, track minimal End of all intervals
     int minEnd = Integer.MAX_VALUE, count = 0;
-    // minEnd record the min end of previous intervals
+    # minEnd record the min end of previous intervals
     for (int i = 0; i < points.length; ++i) {
         # whenever current balloon's start is bigger than minEnd, 
         # no overlap, that means we need an arrow to clear all previous balloons
-        if (minEnd < points[i][0]) {        # cur ballon not overlap      
+        if (minEnd < points[i][0]) {        # cur ballon start is bigger, not overlap      
             count++;  # one more arrow to clear prev all.
             minEnd = points[i][1];
         } else {      # overlap, if cur.rite less, update to minR.
@@ -1988,7 +1983,7 @@ static int findMinArrowBurstBallon(int[][] points) {
 int eraseOverlapIntervals(Interval[] intervals) {
     if (intervals.length == 0)  return 0;
 
-    Arrays.sort(intervals, (a, b) -> a[1] - b[1]);
+    Arrays.sort(intervals, (a, b) -> a[1] - b[1]);   # sort by finish
     int end = intervals[0].end;
     int count = 1;        
 
@@ -2019,290 +2014,6 @@ int leastBricks(List<List<Integer>> wall) {
     return wall.size() - count;
 }
 
-""" bst with lo as the bst search key, augment max to the max of ed of all nodes under root.
-    recursive dfs with insert and search. carry parent down during recursvie.
-"""
-class IntervalTree(object):  TreeMap key is start, and use floorKey and ceilingKey.
-  def __init__(self, lo=None, hi=None):
-    self.lo = lo
-    self.hi = hi
-    self.max = max(lo, hi)
-    self.left = self.rite = None
-  def overlap(self, intv):
-    [lo,hi] = intv
-    return lo > self.hi or hi < self.lo ? False : True
-  def toString(self):
-    val = "[ " + str(self.lo) + ":" + str(self.hi) + ":" + str(self.max)
-    if self.left:     val += " / :" + self.left.toString()
-    if self.rite:     val += " \ :" + self.rite.toString()
-    val += " ] "
-    return val
-  def insert(self, intv):  # lo as BST key
-    [lo,hi] = intv
-    if not self.lo:  # cur tree, self node is empty, add.
-      self.lo = lo
-      self.hi = hi
-      self.max = max(self.lo, self.hi)
-      self.left = self.rite = None
-      return self
-    #update new max along the path
-    if self.max < hi:
-      self.max = hi
-    if lo < self.lo:
-      if not self.left:
-        self.left = IntervalTree(lo, hi)
-      else:
-        self.left = self.left.insert(intv)
-      return self.left
-    else:
-      if not self.rite:
-        self.rite = IntervalTree(lo, hi)
-      else:
-        self.rite = self.rite.insert(intv)
-      return self.rite
-  def search(self, intv):
-    [lo,hi] = intv
-    if self.overlap(intv):
-      return self
-    if self.left and lo <= self.left.max:
-      return self.left.search(intv)
-    elif self.rite:
-      return self.rite.search(intv)
-    else:
-      return None   
-  def riteMin(self):  # ret the min from self's rite, either rite, or leftmost of rite.
-    if not self.rite:
-      return self
-    node = self.rite
-    while node.left:
-      node = node.left
-    return node
-  # branch out left/rite to find all nodes that overlap with the intv.
-  def dfs(self, intv, result):
-    [lo,hi] = intv
-    if self.overlap(intv):
-      result.add(self)   # update result upon base condition.
-    if self.left and lo < self.left.max:
-      self.left.dfs(intv, result)
-    if self.rite and lo > self.lo or hi > self.riteMin().lo:
-      self.rite.dfs(intv, result)
-    return result
-  def delete(self, intv):
-    [lo,hi] = intv
-    if lo == self.lo and hi == self.hi:
-      if not self.left:
-        return self.rite
-      elif not self.rite:
-        return self.left
-      else:
-        # find in order successor, leftmost of rite branch.
-        node = self.rite
-        while node.left:
-            node = node.left
-        self.lo = node.lo
-        self.hi = node.hi
-        # recursive delete in order successor
-        self.rite = self.rite.delete([node.lo, node.hi])
-        self.max = max(self.lo, self.hi, self.left.max)
-        if self.rite:
-            self.max = max(self.max, self.rite.max)
-        return self
-    if lo <= self.lo:
-        self.left = self.left.delete(intv)
-    else:
-        self.rite = self.rite.delete(intv)
-    # update max after deletion
-    self.max = max(self.lo, self.hi)
-    if self.left:
-        self.max = max(self.left.max, self.max)
-    if self.rite:
-        self.max = max(self.rite.max, self.max)
-    return self
-  def inorder(self):
-    result = set()
-    pre, cur = None, self
-    if not cur:
-      return cur
-    while cur:
-      if not cur.left:
-        result.add(cur)
-        pre,cur = cur, cur.rite
-      else:
-        node = cur.left
-        while node.rite and node.rite != cur:
-          node = node.rite
-        if not node.rite:
-          node.rite = cur
-          cur = cur.left    # descend to left, recur
-        else:
-          result.add(cur)
-          pre,cur = cur, cur.rite
-          node.rite = None
-    return result
-
-def test():
-    intvtree = IntervalTree()
-    intvtree.insert([17,19])
-    intvtree.insert([5,8])
-    intvtree.insert([21,24])
-    intvtree.insert([4,8])
-    intvtree.insert([15,18])
-    intvtree.insert([7,10])
-    intvtree.insert([16,22])
-    print intvtree.search([21,23]).toString()
-    result = set()
-    intvtree.dfs([16,22], result)
-    for e in result:
-        print e.toString()
-
-    intvtree = intvtree.delete([17,19])
-    print intvtree.lo, intvtree.hi, intvtree.max
-    result = set()
-    intvtree.dfs([9,24], result)
-    for e in result:
-        print e.toString()
-
-''' sort start, loop check stk.top, '''
-def maxOverlappingIntervals(arr):
-    edarr = sorted(arr, key=lambda x:x[1])
-    root = IntervalTree(edarr[0])
-    mx = edarr[0][2]
-    for i in xrange(1, len(arr)):
-        out = []
-        root.search(edarr[i], out)
-        s = 0
-        for oi in xrange(len(out)):
-            s += out[oi][2]
-        s += edarr[i][2]
-        mx = max(mx,s)
-        root.insert(edarr[i])
-    return mx
-print maxIntervals([[1, 6, 100],[2, 3, 200],[5, 7, 400]])
-
-""" merge or toggle interval """
-class IntervalArray(object):
-  def __init__(self):
-      self.arr = []
-      self.size = 0
-  # bisect ret i as insertion point. arr[i-1] < val <= arr[i]
-  # when find high end, idx-1 is the first ele smaller than searching val.
-  def bisect(self, arr, val):
-    lo,hi = 0, len(self.arr)-1
-    if val > arr[-1]:      return False, len(arr)
-    while lo != hi:
-      md = (lo+hi)/2
-      if arr[md] < val:    lo = md + 1 # lift lo only when absolutely big
-      else:                hi = md   # drag down hi to mid when equal to find begining.
-    if arr[lo] == val:     return True, lo
-    else:                  return False, lo
-  def overlap(self, st1, ed1, st2, ed2):
-    return st2 > ed1 or ed2 < st1 ? False : True
-  # which slot in the arr this new interval shall be inserted
-  def findStartSlot(self, st, ed):
-    """ pre-ed < start < next-ed, bisect insert pos is next """
-    endvals = map(lambda x: x[1], self.arr)
-    found, idx = self.bisect(endvals, st)  # insert position
-    return idx
-  # the last slot in the arr that this new interval may overlap
-  def findEndSlot(self, st, ed):
-    """ pre-start < ed < next-start, bisect ret insert pos, pre-start +1, so left shift"""
-    startvals = map(lambda x: x[0], self.arr)
-    found, idx = self.bisect(startvals, ed)        
-    return idx-1  # bisect ret i arr[i] >= ed. ret i-1
-  def merge(self, st1, ed1, st2, ed2):
-    return [min(st1,st2), max(ed1,ed2)]
-  def insertMerge(self, sted):
-    [st,ed] = sted
-    if len(self.arr) == 0:
-      self.arr.append([st,ed])
-      return 0
-    stslot = self.findStartSlot(st,ed)
-    edslot = self.findEndSlot(st,ed)
-    print "insert ", sted, stslot, edslot
-    if stslot >= len(self.arr):
-      self.arr.insert(stslot, [st, ed])
-    elif stslot > edslot:  # find ed slot is ed slot-1
-      self.arr.insert(stslot, [st, ed])
-    else:
-      minst = min(self.arr[stslot][0], st)
-      maxed = max(self.arr[edslot][1], ed)
-      for i in xrange(stslot+1, edslot+1):
-          del self.arr[stslot+1]
-      self.arr[stslot][0] = minst
-      self.arr[stslot][1] = maxed
-    return stslot
-  def insertToggle(self, sted):
-    [st,ed] = sted
-    if len(self.arr) == 0:
-      self.arr.append([st,ed])
-      return 0
-    stslot = self.findStartSlot(st,ed)
-    edslot = self.findEndSlot(st,ed)
-    if stslot >= len(self.arr):
-      self.arr.append([st,ed])
-    elif stslot > edslot:
-      self.arr.insert(stslot, [st,ed])
-    else:
-      output = []
-      for i in xrange(0, stslot):
-        output.append(self.arr[i])
-      output.append([min(st, self.arr[stslot][0]), max(st, self.arr[stslot][0])])
-      # toggle to create [ed->st]
-      for i in xrange(stslot+1, edslot+1):
-        output.append([self.arr[i-1][1], self.arr[i][0]])
-      output.append([min(ed, self.arr[edslot][1]), max(ed, self.arr[edslot][1])])
-      for i in xrange(edslot+1, len(self.arr)):
-        output.append(self.arr[i])
-      self.arr = output
-  def insertToggleIter(self, sted):
-    [st,ed] = sted
-    output = []
-    if len(self.arr) == 0:
-      self.arr.append(sted)
-      return 0
-    if ed < self.arr[0][0]:
-      self.arr.insert(0, sted)
-      return 0
-    if st > self.arr[len(self.arr)-1][1]:
-      self.arr.append(sted)
-      return len(self.arr)-1
-    for i in xrange(len(self.arr)):
-      if not self.overlap(self.arr[i][0], self.arr[i][1], st, ed):
-          output.append(self.arr[i])
-          continue
-      if self.arr[i][0] < st:
-          output.append([self.arr[i][0], st])
-      if self.arr[i][0] > st:
-          prest = st
-          if i > 0:
-              prest = max(prest, self.arr[i-1][1])
-          output.append([prest, self.arr[i][0]])
-      if self.arr[i][0] < ed and self.arr[i][1] > ed:
-          output.append([ed, self.arr[i][1]])
-      if i < len(self.arr) - 1 and self.arr[i][1] < ed and self.arr[i+1][0] > ed:
-          output.append([self.arr[i][1], ed])
-    self.arr = output
-    return i
-  def dump(self):
-    for i in xrange(len(self.arr)):
-        print self.arr[i][0], " -> ", self.arr[i][1]
-
-def testInterval():
-    intv = Interval()
-    intv.insertMerge([4,6])
-    intv.insertMerge([7,9])
-    intv.insertMerge([12,14])
-    intv.insertMerge([1,2])
-    intv.insertMerge([3,17])
-    intv.dump()
-    
-    intv = Interval()
-    intv.insertToggle([4,6])
-    intv.insertToggle([8,10])
-    intv.insertToggle([12, 14])
-    intv.insertToggle([5, 15])
-    intv.dump()
-
 # Range is Interval Array, TreeMap<StartIdx, EndIdx> represents intervals. on overlap intervals exist in the map.
 class RangeModule {
     TreeMap<Integer, Integer> map;  // key is start, val is end.
@@ -2312,7 +2023,7 @@ class RangeModule {
     public void addRange(int left, int rite) {
         if (rite <= left) return;
         Integer startKey = map.floorKey(left);
-        Integer endKey = map.floorKey(rite);  // floorKey of the rite edge. (greatest key that <= rite, might eqs startkey
+        Integer endKey = map.floorKey(rite);  # floorKey of the rite edge. (greatest key that <= rite, might eqs startkey
         if (startKey == null && endKey == null) {    map.put(left, rite); }
         else if (startKey != null && map.get(startKey) >= left) {   # end > left, startkey overlap new range, merge with max endkey[0] and rite
             map.put(startKey, Math.max(map.get(endKey), Math.max(map.get(startKey), rite)));
@@ -2340,77 +2051,12 @@ class RangeModule {
     	  if (startKey != null && map.get(startKey) > left) {
           map.put(startKey, left);
     	  }
-        // clean up intermediate intervals
+        # clean up intermediate intervals
         Map<Integer, Integer> subMap = map.subMap(left, true, rite, false);
         Set<Integer> set = new HashSet(subMap.keySet());
         map.keySet().removeAll(set); 
     }
 }
-
-""" Binary Indexed Tree(BIT, or Fenwick), Each node in BI[] stores sum of a range.
-the key is idx in BI, its parent is by removing the last set bit. 
-idx = idx - (idx & (-idx)), (n&-n),ritemost set bit. n&n-1, clr ritemost set bit.
-http://www.geeksforgeeks.org/binary-indexed-tree-or-fenwick-tree-2/
-* Example: given an array a[0]...a[7], we use a array BIT[9] to
-* represent a tree, where index [2] is the parent of [1] and [3], [6]
-* is the parent of [5] and [7], [4] is the parent of [2] and [6], and
-* [8] is the parent of [4]. I.e.,
-* 
-* BIT[] as a binary tree:
-*            ______________*
-*            ______*
-*            __*     __*
-*            *   *   *   *
-* indices: 0 1 2 3 4 5 6 7 8
-* BIT[i] = ([i] is a left child) ? the partial sum from its left most
-* descendant to itself : the partial sum from its parent (exclusive) to
-* itself. (check the range of "__").
-* 
-* Eg. BIT[1]=a[0], BIT[2]=a[1]+BIT[1]=a[1]+a[0], BIT[3]=a[2],
-* BIT[4]=a[3]+BIT[3]+BIT[2]=a[3]+a[2]+a[1]+a[0],
-* BIT[6]=a[5]+BIT[5]=a[5]+a[4],
-* BIT[8]=a[7]+BIT[7]+BIT[6]+BIT[4]=a[7]+a[6]+...+a[0], ...
-* 
-* Thus, to update a[1]=BIT[2], we shall update BIT[2], BIT[4], BIT[8],
-* i.e., for current [i], the next update [j] is j=i+(i&-i) //double the
-* last 1-bit from [i].
-* Similarly, to get the partial sum up to a[6]=BIT[7], we shall get the
-* sum of BIT[7], BIT[6], BIT[4], i.e., for current [i], the next
-* summand [j] is j=i-(i&-i) // delete the last 1-bit from [i].
-* To obtain the original value of a[7] (corresponding to index [8] of
-* BIT), we have to subtract BIT[7], BIT[6], BIT[4] from BIT[8], i.e.,
-* starting from [idx-1], for current [i], the next subtrahend [j] is
-* j=i-(i&-i), up to j==idx-(idx&-idx) exclusive. (However, a quicker
-* way but using extra space is to store the original array.)
-* 
-"""
-class BITree:
-    def __init__(self, arr):
-        self.arr = arr
-        self.bi = [0]*len(arr)
-    def parentIdx(self, idx):
-        return idx - (idx & (-idx))
-    def childidx(self, idx):
-        return idx + (idx & (-idx)) 
-    # ret the sum of arr from 0..idx
-    def getSum(self, idx):
-        s = 0
-        idx += 1 # idx in BITree[] is 1 more than the idx in arr[]
-        # traverse along parent to root and sum up all values
-        while idx > 0:
-            s += self.bi[idx]
-            idx = self.parentIdx(idx)
-        return s
-    ''' after update bi tree node at idx, traverse along parents to root '''
-    def update(self, idx, val):
-        idx += 1
-        while idx < len(self.arr):
-            self.bi[idx] += val   # cumulate
-            idx = self.childIdx(idx)
-    def build(self):
-        for i in xrange(len(self.arr)):
-            self.update(i, self.arr[i])
-
 
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
 // From src -> dst, min path  dp[src][1111111]   bitmask as path.
@@ -2535,9 +2181,9 @@ int cheapestPriceWithKStops(int[][] flights, int src, int dst, int k) {
         # f[0] = src, f[1] = dst, f[2] = price
         pricesGraph.computeIfAbsent(f[0], new HashMap<>()).put(f[1], f[2]);
     }
-    // pq order by price, e[0], entry is ary of [price, src, stops].
+    # pq order by price, e[0], entry is ary of [price, src, stops].
     Queue<int[/* price, src, stop */]> pq = new PriorityQueue<>((a,b) -> Integer.compare(a[0], b[0]));
-    pq.add(new int[]{0, src, k+1});   // seed PQ with start and k steps
+    pq.add(new int[]{0, src, k+1});   # seed PQ with start and k steps
     while (!pq.isEmpty()) {
         int[] hd = pq.remove();
         int price = hd[0], city = hd[1], stops = hd[2];
@@ -2545,7 +2191,7 @@ int cheapestPriceWithKStops(int[][] flights, int src, int dst, int k) {
         if (stops > 0) {  # when still within k stops, enum all hd's neighbor
             Map<Integer, Integer> adj = pricesGraph.getOrDefault(city, new HashMap<>());
             for (int nb : adj.keySet()) {     # we do not filter unseen neighbors ?
-                pq.add(new int[]{price + adj.get(nb), nb, stops-1});   // reduce stop when adding.
+                pq.add(new int[]{price + adj.get(nb), nb, stops-1});   # reduce stop when adding.
             }
         }
     }
@@ -2561,7 +2207,7 @@ int networkDelayTime(int[][] times, int N, int K) {
     Map<Integer, Integer> dist = new HashMap();
 
     PriorityQueue<int[]> heap = new PriorityQueue<int[]>((info1, info2) -> info1[0] - info2[0]);    
-    heap.offer(new int[]{0, K});    // seed pq with src
+    heap.offer(new int[]{0, K});    # seed pq with src
     while (!heap.isEmpty()) {
         int[] info = heap.poll();
         int d = info[0], node = info[1];
@@ -2647,10 +2293,11 @@ class RMQ(object):  # RMQ has heap ary and tree. Tree repr by root Node.
       self.minval = minval      # range minimal, can be range sum
       self.minvalidx = minvalidx  # idx in origin val arr
       self.left = self.rite = None  # Node childeren are Node
+  
   def __init__(self, arr=[]):
     self.arr = arr  # original arr
     self.size = len(self.arr)
-    # heap repr by ary.
+    # heap repr by ary. Node inside heap.
     self.heap = [None]*pow(2, 2*int(math.log(self.size, 2))+1)
     # seg tree repr by root Node with segidx 0, left segidx 1, rite segidx 2
     self.root = self.build(0, self.size-1, 0)[0]
@@ -2737,168 +2384,10 @@ def test():
     print r.rangeMin(r.root,0,5)
     print r.queryRangeMinIdx(0,0,5)
 
-
-""" 2d tree, key=[x,y] """
-class KdTree(object):
-  def __init__(self, xy, level=0):
-      self.xy = xy
-      self.level = level  # each node at a level.
-      self.left = self.rite = None
-  def __repr__(self):
-      return "[" + str(self.xy) + "] L" + str(self.level)
-  def leaf(self):
-      if self.left or self.rite:
-          return False
-      return True
-  def find(self,xy):
-      keyidx = self.level % 2
-      if self.xy[keyidx] == xy[keyidx]:
-          return True, self
-      elif xy[keyidx] < self.xy[keyidx]:
-          if self.left:
-              return self.left.find(xy)
-      else:
-          if self.rite:
-              return self.rite.find(xy)
-      return False, self
-  def insert(self, xy):
-      found, parent = self.find(xy)
-      keyidx = parent.level % 2
-      if xy[keyidx] > parent.xy[keyidx]:
-          parent.rite = KdTree(xy, parent.level+1)
-          return parent.rite
-      else:
-          parent.left = KdTree(xy, parent.level+1)
-          return parent.left
-  # root.search(q,null,sys.maxint)
-  def search(self, q, p, w):
-    if self.left:
-      if distance(q,self.xy) < w:
-        return self.xy
-      else:
-        return p
-    else:
-      keyidx = self.level % 2
-      if w == sys.maxint:   # w is infinity
-        if q[keyidx] < self.xy[keyidx]:
-          p = self.left.search(q,p,w)
-          w = distance(p,q)
-          if q[keyidx] + w > self.xy[keyidx]:
-            p = self.rite.search(q, p, w)
-        else:
-          p = self.rite.search(q,p,w)
-          w = distance(p,q)
-          if q[keyidx] + w > self.xy[keyidx]:
-            p = self.left.search(q, p, w)
-      else:  # w is not infinity
-        if q[keyidx] - w < self.xy[keyidx]:
-          p = self.left.search(q, p, w)
-          w = distance(p,q);
-          if q[keyidx] + w > self.xy[keyidx]:
-            p = self.rite.search(q, p, w)
-      return p            
-def test():
-    kd = KdTree([35, 90])
-    kd.insert([70, 80])
-    kd.insert([10, 75])
-    kd.insert([80, 40])
-    kd.insert([50, 90])
-    kd.insert([70, 30])
-    kd.insert([90, 60])
-    kd.insert([50, 25])
-    kd.insert([25, 10])
-    kd.insert([20, 50])
-    kd.insert([60, 10])
-
-    print kd, kd.rite, kd.left
-    print kd.find([80,40])[1].left
-
-""" 
-node contains only 3 pointers, left < eq < rite, always descend down along eq pointer.
-Trie of Suffix Wrapped Words, #apple', 'e#apple', 'le#apple', 'ple#apple', 'pple#apple, apple#apple
-"""
-class Trie:
-  def __init__(self, val):
-    self.val = val
-    self.next = defaultdict(TernaryTree)  // new HashMap<String>();
-    self.leaf = False
-''' Ternary tree is repr-ed by its root, recurisve at root for ops '''
-class TernaryTree(object):
-  def __init__(self, key=None):
-    self.key = key
-    self.cnt = 1  # when leaf is true, the cnt, freq of the node
-    self.leaf = False
-    self.left = self.rite = self.eq = None
-  ''' recursive down to subtree root and new word header '''
-  def insert(self, word):
-    hd = word[0]
-    if not self.key:  # at first, root does not have key.
-      self.key = hd
-    if hd == self.key:
-      if len(word) == 1: self.leaf = True  return self
-      else:  # more keys, advance and descend
-        if not self.eq:  # new eq point to new node 
-          self.eq = TernaryTree(word[1])  # eq point to next char.
-        self.eq.insert(word[1:])
-    elif hd < self.key:
-      if not self.left:
-        self.left = TernaryTree(hd)  # left tree root is hd
-      self.left.insert(word)
-    else:
-      if not self.rite:
-        self.rite = TernaryTree(hd)  # rite tree root is hd
-      self.rite.insert(word)
-  def search(self, word):   # return parent where eq originated
-    if not len(word):
-      return False, self
-    hd = word[0]
-    if hd == self.key:
-      if len(word) == 1:  return True, self # when leaf flag is set
-      elif self.eq:       return self.eq.search(word[1:])
-      else:               return False, self
-    elif hd < self.key:
-      if self.left:       return self.left.search(word)
-      else:               return False, self
-    elif hd > self.key:
-      if self.rite:       return self.rite.search(word)
-      else:               return False, self
-  def all(self, prefix):
-    result = set()
-    found, node = self.search(prefix)
-    if not found:        return result
-    if node.leaf:        result.add(prefix)
-    if node.eq:          node.eq.dfs(prefix, result)
-    return result
-  def dfs(self, prefix, result):
-    if self.leaf:       result.add(prefix + self.key)
-    if self.left:       self.left.dfs(prefix, result)
-    if self.eq:         self.eq.dfs(prefix+self.key, result)
-    if self.rite:       self.rite.dfs(prefix, result)
-    return result
-
-def test():
-  t = TernaryTree()
-  t.insert("af")
-  t.insert("ab")
-  t.insert("abd")
-  t.insert("abe")
-  t.insert("standford")
-  t.insert("stace")
-  t.insert("cpq")
-  t.insert("cpq")
-  found, node = t.search("b") 
-  print found, node.key
-  print t.all("abc")
-  print t.all("ab")
-  print t.all("af")
-  print t.all("sta")
-  print t.all("c")
-
-
 # TrieNode. The root TrieNode only has childrens. The leaf has the word.
 class TrieNode {
-    TrieNode[] children;    // children[i] => new TrieNode
-    String word;            // leaf word
+    TrieNode[] children;    # children[i] => new TrieNode
+    String word;            # leaf word
     TrieNode() {  children = new TrieNode[26]; }
 }
 String replaceWords(List<Strinf> roots, String sentence) {
@@ -2906,7 +2395,7 @@ String replaceWords(List<Strinf> roots, String sentence) {
   for (String root: roots) {
       TrieNode cur = trieRoot;
       for (char letter: root.toCharArray()) {
-          if (cur.children[letter - 'a'] == null) { cur.children[letter - 'a'] = new TrieNode(); }  // create child branch
+          if (cur.children[letter - 'a'] == null) { cur.children[letter - 'a'] = new TrieNode(); }  # create child branch
           cur = cur.children[letter - 'a'];
       }
       cur.word = root;     // word set at leaf level;
@@ -2939,7 +2428,7 @@ String replaceWords(List<String> roots, String sentence) {
         cur.word = root;
     }
     StringBuilder ans = new StringBuilder();
-    // for each word, for each letter, find trieNode.
+    # for each word, for each letter, find trieNode.
     for (String word: sentence.split("\\s+")) {
         if (ans.length() > 0)  ans.append(" ");
         TrieNode cur = trieRoot;
@@ -2953,7 +2442,7 @@ String replaceWords(List<String> roots, String sentence) {
     return ans.toString();
 }
 
-""" map sum, a map backed by Trie """
+""" map sum, a map backed by Trie, dfs to collect aggregations of all children """
 class MapSum {
   TrieNode insert(TriNode root, String word) {
     TrieNode cur = root;
@@ -3152,30 +2641,6 @@ def toBST(l):
     root.next = toBST(l[mid:])
     return root
 
-'''
-Given a huge sorted integer array A, and there are huge duplicates in the
-array. Given an integer T, inert T to the array, if T already exisit, insert
-it at the end of duplicates. return the insertion point.
-    A[15] = {2,5,7,8,8,8,8,8,8,8,8,8,8,8,9}
-    If T == 6, return 2;
-    If T == 8' return 14
-'''
-def findInsertionPosition(l, val):
-  beg = 0
-  end = len(l) - 1
-  ''' when l=r can enter loop, need to ensure index out of bound when m-1 and m+1 '''
-  if val < l[0] or val > l[-1]:   return 0, len(l)
-  while beg <= end:
-      mid = (beg+end)/2  # mid is Math.floor
-      if l[mid] > val:      end = mid - 1   # if mid=beg, end=mid-1 < beg, loop breaks
-      elif l[mid] <= val:   beg = mid + 1   # in less or equal case, we want to append to end, so recur with mid+1
-  # now begin contains insertion point
-  print 'insertion point is : ', beg
-  return beg
-def testFindInsertionPosition():
-  l = [2,5,7,8,8,8,8,8,8,8,8,8,8,8,9]
-  findInsertionPosition(l, 6)
-  findInsertionPosition(l, 8)
 
 ''' find the # of increasing subseq of size k, just like powerset, recur i+1 with the new path '''
 def numOfIncrSeq(l, start, cursol, k):
@@ -3280,41 +2745,6 @@ def testKthMaxSum():
     q = [110, 20, 5, 3, 2]
     KthMaxSum(p, q, 7)
 
-
-'''
-Huffman coding: sort freq into min heap, take two min, insert a new node with freq = sum(n1, n2) into heap.
-http://en.nerdaholyc.com/huffman-coding-on-a-string/
-'''
-class HuffmanCode(object):
-    def __init__(self):
-        self.minfreqheap = MinHeap()
-        self.minheap = {}
-
-    def initValue(self):
-        self.minheap.insert('b', 3, None, None)
-        self.minheap.insert('e', 4, None, None)
-        self.minheap.insert('p', 2, None, None)
-        self.minheap.insert('s', 2, None, None)
-        self.minheap.insert('o', 2, None, None)
-        self.minheap.insert('r', 1, None, None)
-        self.minheap.insert('!', 1, None, None)
-
-        self.minheap.heapify()
-
-        self.minheap.toString()
-
-    def encode(self):
-        self.initValue()
-        while len(self.minheap.Q) >= 2:
-            left = self.minheap.extract()
-            right = self.minheap.extract()
-            left.toString()
-            right.toString()
-            self.minheap.insert('x', left.val+right.val, left, right)
-
-        print ' huffman code ...'
-        self.minheap.Q[0].inorder()
-
 # recursive this fn. iterate within the body.
 def popNext(root):
   nexthd, nextpre = None,None
@@ -3332,142 +2762,6 @@ def popNext(root):
   # recur on nexthd, or you can another while to avoid recur.
   popNext(nexthd)
 
-'''
-skip list, a probabilistic alternative to balanced tree
-https://kunigami.wordpress.com/2012/09/25/skip-lists-in-python/
-skiplist can be a replacement for heap. heap is lgn insert and o1 delete.
-however, you can not locate an item in heap, you can only extract min/max.
-with skiplist, list is sorted, insert is lgn, min/max is o1, del is lgn.
-'''
-class SkipNode:
-    def __init__(self, height=0, elem=None):   # [ele, next[ [l1], [l2], ... ]
-        '''each node has an ele, and a list of next pointers'''
-        self.elem = elem             
-        self.next = [None] * height  # next is a list of header at each level pts to next node
-
-class SkipList:
-    def __init__(self):
-        self.head = SkipNode()  # list is a head node with n next ptrs
-    def nextNodeAtEachLevel(self, ele):   # find list of express stop node at each level whose greatest value smaller than ele
-        """ find q, we begin from the top-most level, go thru the list down, until find node with largest ele le q
-        then go level below, begin search from the node found at prev level, and search again for node with largest ele le q
-        when found, go down again, repeat until to the bottom.
-        keep the node found at each level right before go down the level.
-        """
-        levelNextNode = [None]*len(self.head.next)
-        levelhd = self.head
-        #  for each level top down, list travel/while until stop on boundary.
-        for level in reversed(xrange(len(self.head.next))):  # for each level down: park next node just before node >= ele.(insertion ponit).
-            while levelhd.next[level] != None and levelhd.next[level].ele < ele:  # advance skipNode till to node whose next[level] >= ele, then down level
-                levelhd = levelhd.next[level]  # store skip node(ele, next[...])
-            # when stop at this level, record stop pos. hd < cur < next.
-            levelNextNode[level] = levelhd
-        return levelNextNode
-    def find(self, ele):
-        nextNode = nextNodeAtEachLevel(self, ele)
-        if len(nextNode) > 0:
-            candidate = nextNode[0].next[0]  # the final bottom level.
-            if candidate != None and candidate.ele == ele:
-                return candidate
-        return None
-    ''' insert always done at bottom level, flip coin which other lists should be in, 1/2, 1/4, 1/8
-    '''
-    def insert(self, ele):
-        node = SkipNode(self.randomHeight(), ele)
-        # first, populate head next all level with None
-        while len(self.head.next) < len(node.next):
-            self.head.next.append(None)
-        nextList = self.nextNodeAtEachLevel(ele)
-        if self.find(ele, nextList) == None :
-            # did not find ele, start insert
-            for level in range(len(node.next)):
-                node.next[level] = nextList[level].next[level]
-                nextList[level].next[level] = node
-    ''' lookup for ith ele, for every link, store the width(span)(the no of bottom layer links) of the link.
-    '''
-    def findIthEle(self, i):
-        node = self.head
-        for level in reversed(xrange(len(self.head.next))):
-            while i >= node.width[level]:
-                i -= node.width[level]
-                node = node.next[level]
-        return node.value
-
-
-""" hash map entry is linked list. entry value is list of [v,ts] tuple.
-"""
-from collections import defaultdict
-class HashTimeTable:
-  class Entry:   # Map.Entry is a list of [v,ts] sorted by ts
-    def __init__(self, k, v, ts):
-        self.key = k
-        self.next = None
-        # value list is a sorted list with entry as tuple of [v,ts]
-        self.valueList = [[v,ts]]   # volatile
-    def bisect(self, arr, ts=None):
-        if not ts:
-            return True, len(arr)-1
-        if ts > arr[-1][1]:
-            return False, len(arr)
-        l,r = 0, len(arr)-1
-        while l != r:   # fix beg / end before traverse 
-            m = l + (r-l)/2
-            if ts > arr[m][1]:
-                l = m+1
-            else:
-                r = m
-        if arr[l][1] == ts:
-            return True, l
-        else:
-            return False, l
-    def getValue(self,k, ts=None):
-        found, idx = self.bisect(self.valueList, ts)
-        if found:
-            return self.valueList[idx][0]
-        return False
-    def insert(self, k, v, ts):
-        lock()   // single writer.
-        found, idx = self.bisect(self.valueList, ts)
-        if found:
-            self.valueList[idx][0] = v
-        else:
-            self.valueList.insert(idx, [v,ts])
-                  
-  def __init__(self, size):
-      self.size = size
-      self.bucket = [None]*size
-  def search(self, k, ts=None):
-      h = hash(k) % self.size
-      entry = self.bucket[h]
-      while entry:
-          if entry.key == k:
-              return entry, entry.getValue(k,ts)
-          entry = entry.next
-      return None, None
-  def insert(self, k, v, ts):
-      h = hash(k) % self.size
-      if not self.bucket[h]:
-          self.bucket[h] = HashTimeTable.Entry(k,v,ts)
-          return self.bucket[h]
-      else:
-          entry,value = self.search(k,ts)
-          if entry:
-              return entry.insert(k,v,ts)
-          else:
-              entry = HashTimeTable.Entry(k,v,ts)
-              entry.next = self.bucket[h]
-              self.bucket[h] = entry
-              return entry
-    
-htab = HashTimeTable(1)
-htab.insert("a", "va1", 1)
-htab.insert("a", "va2", 2)
-htab.insert("b", "vb1", 1)
-htab.insert("b", "vb2", 2)
-htab.insert("b", "vb3", 3)
-print htab.search("a")
-print htab.search("a", 1)
-print htab.search("b", 3)
 
 """ 
 list scan comprehension compute sub seq min/max, upbeat global min/max for each next item.
@@ -3611,11 +2905,11 @@ int maxEnveLopes(int[][] envelopes) {
   });
     
   int lislen = 0;  # init to 0. when sect ret lo = lislen, that's the end. will lislen++;
-  int[] dp = new int[envelopes.length];
+  int[] lis = new int[envelopes.length];
   for (int[] e : envelopes) {
-    int idx = Arrays.binarySearch(dp, 0, lislen, e[1]);
+    int idx = Arrays.binarySearch(lis, 0, lislen, e[1]);
     if (idx < 0) {   idx = -(idx+1); } # binary search return insertion pos
-    dp[idx] = e[1];    // update with smaller value.
+    lis[idx] = e[1];    // update with smaller value.
     if (idx == lislen) { lislen++;  }
   }
   return lislen;
@@ -3643,7 +2937,7 @@ if stk.top().end > curIntv.end: stk.top().end = curInterv.end;
 int longestMountainSequence(int[] A) {
     int N = A.length, res = 0;
     int[] up = new int[N], down = new int[N];
-    for (int i = N - 2; i >= 0; --i) {    // calculate down first from end
+    for (int i = N-2; i >= 0; --i) {    # calculate down first from end
       if (A[i] > A[i + 1]) {   down[i] = down[i + 1] + 1; }
     }
     for (int i = 0; i < N; ++i) {       
@@ -3683,7 +2977,6 @@ static int longestWiggleSubSequence(int[] arr) {
   }
   return Math.max(up[sz-1], down[sz-1]);
 }
-
 
 # idea is, there are 2 options, swap / notswap, need to use two state to track them.
 # swap[i] = min( swap[i-1], notswap[i-1]+1), etc
@@ -3876,17 +3169,17 @@ static int maxWinMzero(int[] arr, int m) {
     int zcnts = 0;
     int maxwinsize = 0;
     for (int r=0; r<sz; r++) {
-        if (arr[r] == 1) {    // always updates maxwinsize
+        if (arr[r] == 1) {    # always updates maxwinsize
             if (zcnts == m) { maxwinsize = Math.max(maxwinsize, r-l+1); }
             continue;
         } else {
-            zcnts += 1;       // slide in, cnt++
-            if (zcnts == m+1) {
+            zcnts += 1;          # slide in, cnt++
+            if (zcnts == m+1) {  # 
                 maxwinsize = Math.max(maxwinsize, r-l);
                 while (arr[l] != 0) { l += 1; }
                 l += 1;
-                zcnts -= 1;  // slide out, cnt--
-            } 
+                zcnts -= 1;  # slide out, cnt--
+            }
         }
     }
     System.out.println("szie -> " + maxwinsize);
@@ -4037,7 +3330,8 @@ static int scheduleWithCoolingInterval(char[] tasks, int coolInterval) {
 # can use bucket[cnt] = [] to merge.
 List<String> topKFrequent(String[] words, int k) {
     Map<String, Integer> wordCount = new HashMap();
-    for (String word: words) { wordCount.put(word, wordCount.getOrDefault(word, 0) + 1); }
+    for (String word: words) {    # wd, and its counts
+      wordCount.put(word, wordCount.getOrDefault(word, 0) + 1); }
     PriorityQueue<String> heap = new PriorityQueue<String>(
         (w1, w2) -> wordCount.get(w1).equals(wordCount.get(w2)) ?
         w2.compareTo(w1) : wordCount.get(w1) - wordCount.get(w2) );
@@ -4103,7 +3397,7 @@ print triplet([5,4,3,6,2,7])
 # Longest Consecutive Sequence. unsorted array find the length of the longest consecutive elements sequence.
 # bucket, union to merge. use the index of num as index to 
 public int longestConsecutive(int[] nums) {
-    UF uf = new UF(nums.length);
+    UnionFind uf = new UnionFind(nums.length);
     Map<Integer,Integer> map = new HashMap<Integer,Integer>(); // <value,index>
     for(int i=0; i<nums.length; i++) {
         if(map.containsKey(nums[i])){ continue; }
@@ -4114,10 +3408,10 @@ public int longestConsecutive(int[] nums) {
     }
     return uf.maxUnion();
 }
-// each item in UF has parents.
-class UF {
+// each item in UnionFind has parents.
+class UnionFind {
     private int[] parent;   // value is the parent of arr[i]. idx is the same as original ary.
-    public UF(int n) {
+    public UnionFind(int n) {
         parent = new int[n];
         for(int i=0; i<n; i++) { parent[i] = i; }
     }
@@ -4273,8 +3567,8 @@ int maxProduct(int A[], int n) {
   // store the result that is the max we have found so far
   int r = A[0];
 
-  // imax/imin stores the max/min product of
-  // subarray that ends with the current number A[i]
+  # imax/imin stores the max/min product of
+  # subarray that ends with the current number A[i]
   for (int i = 1, imax = r, imin = r; i < n; i++) {
       // multiplied by a negative makes big number smaller, small number bigger
       // so we redefine the extremums by swapping them
@@ -4301,7 +3595,7 @@ int[] nextGreater(int[] arr) {
   Deque<Integer> stk = new ArrayDequeu<>();
   int[] res = new int[sz];
   int sz = arr.length, i = 0;
-  for(int i=sz-1; i>=0; i--) {
+  for(int i=sz-1; i>=0; i--) {   # from rite -> left.
     while (!stk.isEmpty() && arr[i] >= stk.peekLast()) {  # clean up stk when its top < arr[i]
       stk.pollLast();
     }
@@ -4528,7 +3822,7 @@ def firstMissing(L):
         else:         # L[v] >= 0: when dup, entry was set to 0, we still can swap to it.
           L[i],L[v] = L[v],L[i]  # swap and mark the flag as already done.
           L[v] = -1
-      # natureally in correct pos, not even inot while loop, turn to -1
+      # natureally ordered, not even inot while loop, turn to -1
       if L[i] == i+1:
         L[i] = -1
   bucketsort(L)
@@ -5767,12 +5061,12 @@ int[] robSub(TreeNode root) {
 """ keep track of 2 values for each ele, max of exclude this ele, and the
 max of no care of whether incl or excl cur ele. """
 def calPack(arr):
-  maxsofar,excl=arr[0], 0
+  maxsofar, excl= arr[0], 0     # maxsofar set to include head
   for i in xrange(1,len(arr)):  # start from 1
     inclcur = excl + arr[i]   // use pre excl
     excl = maxsofar   / / exclude current, use maxsofar, excl become excl pre in another round.
-    # update max so far for current item before leaving
-    maxsofar = max(inclcur,excl)
+    # when out, update max so far for current item before leaving
+    maxsofar = max(inclcur, excl)
   return max(maxsofar,exclPre)
 
 # enum of all values, if value is in num, exam include v, means exclude v-1 when v-1 is also in the ary.
@@ -5960,7 +5254,7 @@ static int subsetSum(int[] arr, int target) {
     for (int i=0; i<sz; i++) {
         int iv = arr[i];
         int[] cur = new int[target+1];
-        // start from 0, not iv, to carry prev result that less than iv
+        # start from 0, not iv, to carry prev result that less than iv
         for (int v=0; v<=target; v++) {  // as we have two rows, pre / cur, cp pre to cur from 0..n
             // tot is sum of incl/excl cur item.
             cur[v] = pre[v];      // inherite from pre, exclude cur item
