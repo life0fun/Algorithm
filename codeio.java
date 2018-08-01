@@ -1,172 +1,171 @@
-"""
-# www.cnblogs.com/jcliBlogger/
+// # www.cnblogs.com/jcliBlogger/
 
-Some problem, not require simulation, but calculate the target state and 
+// Some problem, not require simulation, but calculate the target state and 
 
-1. DP recur with smaller problem with d[i-1][j-1], bottom up.
-2. Search DFS/BFS/Permutation, start with init, each run gen with new state or new offset with visited map and memoize path.
-Enum constant values. e.g, ages, sum values, etc.
+// 1. DP recur with smaller problem with d[i-1][j-1], bottom up.
+// 2. Search DFS/BFS/Permutation, start with init, each run gen with new state or new offset with visited map and memoize path.
+// Enum constant values. e.g, ages, sum values, etc.
 
-DP : recur with smaller problem. bottom up. dp[i,j] = Math.min( dp[i-1,j-1] )
-1. divide to left rite, recur, memoize, and merge.
-2. reucr left when rite is defined, e.g., add 1 more row to result set, 
-3. recur both left rite when rite is not defined, 
-2. calculate dp[l,r,v] directly with gap, i, i+gap.
+// DP : recur with smaller problem. bottom up. dp[i,j] = Math.min( dp[i-1,j-1] )
+// 1. divide to left rite, recur, memoize, and merge.
+// 2. reucr left when rite is defined, e.g., add 1 more row to result set, 
+// 3. recur both left rite when rite is not defined, 
+// 2. calculate dp[l,r,v] directly with gap, i, i+gap.
 
-  1. Math model, dp[i] deps on dp[i-1]/rite defined, or on all Ks between k..i ? incr gap=1..n if l..r;
-  2. recur stop check and boundary; dp[0] = 1
-  3. Edge cases / Recur stop.
+//   1. Math model, dp[i] deps on dp[i-1]/rite defined, or on all Ks between k..i ? incr gap=1..n if l..r;
+//   2. recur stop check and boundary; dp[0] = 1
+//   3. Edge cases / Recur stop.
 
-Search:  Recur with new state or offset. Permutation, backtracking, or DP sub Layer by layer zoom in.
-  1. BFS with PQ sort by price, dist.
-  2. DFS spread out from header and recur with backtrack and prune.
-  3. Permutation, each offset as head, add hd to path, recur with new offset
-  4. DP for each sub len/Layer, merge left / right.
-  5. Memoize intermediate result.
+// Search:  Recur with new state or offset. Permutation, backtracking, or DP sub Layer by layer zoom in.
+//   1. BFS with PQ sort by price, dist.
+//   2. DFS spread out from header and recur with backtrack and prune.
+//   3. Permutation, each offset as head, add hd to path, recur with new offset
+//   4. DP for each sub len/Layer, merge left / right.
+//   5. Memoize intermediate result.
 
-If next state always constant or offset+1, i.e, 8 directions, 26 char, that's perm recur DFS.
-If next state deps on prev state, dp[i] = dp[i-1], that's DP.
+// If next state always constant or offset+1, i.e, 8 directions, 26 char, that's perm recur DFS.
+// If next state deps on prev state, dp[i] = dp[i-1], that's DP.
 
-Two types of Recursion Track.
-1. add rows to right segment, rite is defined, [...] at each row, enum all values. dp[i][v] = dp[i-1][v-vi]
-2. add rows to right segment, at each row, left of moving, dp[i][v] = max(dp[k][v]  l<k<i)
-3. recur both left and rite segment, gap from 1..n. recur(left), recur(rite)
+// Two types of Recursion Track.
+// 1. add rows to right segment, rite is defined, [...] at each row, enum all values. dp[i][v] = dp[i-1][v-vi]
+// 2. add rows to right segment, at each row, left of moving, dp[i][v] = max(dp[k][v]  l<k<i)
+// 3. recur both left and rite segment, gap from 1..n. recur(left), recur(rite)
 
- ... [i-1] [i]        # only recur [0..i-1] seg, [i-1, i] is definite.
- ... [j] - [k] - [i]  # recur both segments, [j..k] and [k..i].
- ... [i] [i+1] - [k] - [j-1] [j]
-prepre, pre, cur, next
+//  ... [i-1] [i]        # only recur [0..i-1] seg, [i-1, i] is definite.
+//  ... [j] - [k] - [i]  # recur both segments, [j..k] and [k..i].
+//  ... [i] [i+1] - [k] - [j-1] [j]
+// prepre, pre, cur, next
 
-dp[i,j] = dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]
-reuse row i, use temp store [j-1], set to pre after each j; 
-  temp = dp[j]; dp[j] += dp[j-1] + pre; pre = temp;
+// dp[i,j] = dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]
+// reuse row i, use temp store [j-1], set to pre after each j; 
+//   temp = dp[j]; dp[j] += dp[j-1] + pre; pre = temp;
 
-dp[i], two loops, outer add more slots/problem set. i->n, inner enum all possible values, j->i, or v->V;
-dp[i,j], 3 loops, loop gap, loop i, and loop k or coin value between i..j.
-dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
+// dp[i], two loops, outer add more slots/problem set. i->n, inner enum all possible values, j->i, or v->V;
+// dp[i,j], 3 loops, loop gap, loop i, and loop k or coin value between i..j.
+// dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
 
-1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
-dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
+// 1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
+// dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
 
-1. Total number of ways, dp[i] += dp[i-1][v]
-2. Expand. dp[i][j] = 1 + dp[i+1][j-1]
-after adding more item, rite seg is fixed, need to recur on left seg.
-  dp[i] = max( dp[j] for j in 1..i-1,)
-  for i in 1..slot:
-    for v in 1..i  or for v in 1..V
-      dp[i] += dp[i-v]  enum all possible v at slot i
-      // or max min
-      dp[i] = min(dp[j+1] + 1, dp[i])
-      dp(i) = ( dp(i-1) * ways(i) ) + ( dp(i-2) *ways(i-1, i) )
-      tot = max(prepre + cur, pre)
+// 1. Total number of ways, dp[i] += dp[i-1][v]
+// 2. Expand. dp[i][j] = 1 + dp[i+1][j-1]
+// after adding more item, rite seg is fixed, need to recur on left seg.
+//   dp[i] = max( dp[j] for j in 1..i-1,)
+//   for i in 1..slot:
+//     for v in 1..i  or for v in 1..V
+//       dp[i] += dp[i-v]  enum all possible v at slot i
+//       // or max min
+//       dp[i] = min(dp[j+1] + 1, dp[i])
+//       dp(i) = ( dp(i-1) * ways(i) ) + ( dp(i-2) *ways(i-1, i) )
+//       tot = max(prepre + cur, pre)
 
-3. when left and rite segments both need to recur.  i->k, k->j, enum all 2 segs. 
-each segs recur divide to 2 segs. 
-  for gap len in i..n, for i in 1..n. 
-    dp[i][j] = min( dp[i][j-1] + dp[i+1][j] )
+// 3. when left and rite segments both need to recur.  i->k, k->j, enum all 2 segs. 
+// each segs recur divide to 2 segs. 
+//   for gap len in i..n, for i in 1..n. 
+//     dp[i][j] = min( dp[i][j-1] + dp[i+1][j] )
     
-    dp[i][j] = min(dp[i][j], dp[i][k] + dp[k+1][j] + arr[i]*arr[k]*arr[j])
-    dp[i][j][k] = for m in i..j: max(dp[i + 1][m - 1][0] + dp[m][j][k + 1]) when a[i]=a[m]
+//     dp[i][j] = min(dp[i][j], dp[i][k] + dp[k+1][j] + arr[i]*arr[k]*arr[j])
+//     dp[i][j][k] = for m in i..j: max(dp[i + 1][m - 1][0] + dp[m][j][k + 1]) when a[i]=a[m]
     
-    #dp[i,j,k] = max profit of arr[i..j] with k trans.
-    dp[i,j,k] = max(dp[i+m, j, k-1]+(arr[i+m]-arr[i]))
+//     #dp[i,j,k] = max profit of arr[i..j] with k trans.
+//     dp[i,j,k] = max(dp[i+m, j, k-1]+(arr[i+m]-arr[i]))
 
-4. RecurDFS(offset, path) VS. DP[i,j]. two ways of thinkings.
-  a. at each offset, branch out partial value in path. recurDFS(offset+1, path).
-     we do not need incl/excl, so recur dfs at head good, like forEach child, dfs(child)
-  b. DP[i,j], divide to dp[i,k] + dp[k,j]; 3 loops, gap, i, and k.
+// 4. RecurDFS(offset, path) VS. DP[i,j]. two ways of thinkings.
+//   a. at each offset, branch out partial value in path. recurDFS(offset+1, path).
+//      we do not need incl/excl, so recur dfs at head good, like forEach child, dfs(child)
+//   b. DP[i,j], divide to dp[i,k] + dp[k,j]; 3 loops, gap, i, and k.
 
-4. Permutation BFS / DFS, model connected neighbors with edges. Connected Routes, Buses.
-Permutation DFS/BFS carries path, for each row, set col, recur row+1;
-However, dp[i,j] path is in dp[i-1,j-1].
-Use Perm DFS/BFS search when backtracing.
+// 4. Permutation BFS / DFS, model connected neighbors with edges. Connected Routes, Buses.
+// Permutation DFS/BFS carries path, for each row, set col, recur row+1;
+// However, dp[i,j] path is in dp[i-1,j-1].
+// Use Perm DFS/BFS search when backtracing.
 
-Permutation Recur, at each slot, include/exclude. so there are 2 for loops.
-  for (i=offset, i<N; i++) { 
-    for (int j=i+1;j<N; j++) { 
-      recur(offset+1, path+a[j]);   // recur with incl/excl j at offset i.
+// Permutation Recur, at each slot, include/exclude. so there are 2 for loops.
+//   for (i=offset, i<N; i++) { 
+//     for (int j=i+1;j<N; j++) { 
+//       recur(offset+1, path+a[j]);   // recur with incl/excl j at offset i.
 
-When do not need to consider incl/excl, DFS head, mutate, and recur directly. restore. 1 for loop.
-  hd = a[offset];
-  for( grp : groups) {
-    grp + hd;
-      if (recur(offset+1) == true) { res.add(found); }
-    grp - hd;
-  }
+// When do not need to consider incl/excl, DFS head, mutate, and recur directly. restore. 1 for loop.
+//   hd = a[offset];
+//   for( grp : groups) {
+//     grp + hd;
+//       if (recur(offset+1) == true) { res.add(found); }
+//     grp - hd;
+//   }
 
-DFS recur forest Trie, start with all root level nodes, within each node, DFS recur children/neighbors.
-DFS recur single array, Memoize(hd) = DFS(path +/- cur, offset+1), and Memoize(hd).
+// DFS recur forest Trie, start with all root level nodes, within each node, DFS recur children/neighbors.
+// DFS recur single array, Memoize(hd) = DFS(path +/- cur, offset+1), and Memoize(hd).
 
-bfs / dfs search carrying context/partial result. bfs track left length.
-  dfs(arr, l, r, partialResult) -> dfs(arr, l+i, r, pResult)
+// bfs / dfs search carrying context/partial result. bfs track left length.
+//   dfs(arr, l, r, partialResult) -> dfs(arr, l+i, r, pResult)
 
-1. for tree, recur with context, or iterate with root and stk.
-2. for ary, loop recur on each element.
-3. search, dfs or bfs.
-4. loop gap=1,2.., start = i, end = i+gap.
-5. dp[i][j][val] = dp[i-1][j-1][val=0..v]
-6. BFS with priorityqueue, topsort
+// 1. for tree, recur with context, or iterate with root and stk.
+// 2. for ary, loop recur on each element.
+// 3. search, dfs or bfs.
+// 4. loop gap=1,2.., start = i, end = i+gap.
+// 5. dp[i][j][val] = dp[i-1][j-1][val=0..v]
+// 6. BFS with priorityqueue, topsort
 
-BFS/DFS recur search, permutation swap to get N^2. K-group, K-similar, etc.
-Reduce to N or lgN, break into two segs, recur in each seg.
-0. MAP to track a[i] where, how many, aggregates, counts, prefix sum, radix rank, position/index. pos[a[i]] = i;
-1. Bucket sort / bucket merge.
-2. Merge sort, partition, divide and constant merge.
-3. Union set to merge list in a bucket
-4. Stack push / pop when bigger than top. mono inc/desc.    
-     Deque<Integer> stack = new ArrayDeque<Integer>();
-     stack.isEmpty(), peekLast(), offerFirst(e), offerLast(e), pollFirst(), pollLast()
-   Stk can store current workset map, or index of ary. refer to origin ary for value a[i]
-   Stack<Map<String,Integer>> stack= new Stack<>();   // workset map, index of ary, value
-5. Ary divide into two parts, up[i]/down[i], wiggly sort, or longest ^ mountain.
-5. BFS heap / priorityqueue
-1. sort and hash, binary search.
-2. prefix sum.
-3. RMQ  
-4. Formalize the problem into DP recursion. when two input array.
-  for (work set value i = 0 .. n)
-    for (candidate j 0..i )
-      dp[i] = (dp[i-k]+1, dp[i])
-  DP is layer by layer zoom in, first, 1 layer/gap/grp/sublen, then 2, 3, K layer, etc.
-  At each layer, you can re-use k-1 layer at k, reduce DP[i,k] to DP[i]
+// BFS/DFS recur search, permutation swap to get N^2. K-group, K-similar, etc.
+// Reduce to N or lgN, break into two segs, recur in each seg.
+// 0. MAP to track a[i] where, how many, aggregates, counts, prefix sum, radix rank, position/index. pos[a[i]] = i;
+// 1. Bucket sort / bucket merge.
+// 2. Merge sort, partition, divide and constant merge.
+// 3. Union set to merge list in a bucket
+// 4. Stack push / pop when bigger than top. mono inc/desc.    
+//      Deque<Integer> stack = new ArrayDeque<Integer>();
+//      stack.isEmpty(), peekLast(), offerFirst(e), offerLast(e), pollFirst(), pollLast()
+//    Stk can store current workset map, or index of ary. refer to origin ary for value a[i]
+//    Stack<Map<String,Integer>> stack= new Stack<>();   // workset map, index of ary, value
+// 5. Ary divide into two parts, up[i]/down[i], wiggly sort, or longest ^ mountain.
+// 5. BFS heap / priorityqueue
+// 1. sort and hash, binary search.
+// 2. prefix sum.
+// 3. RMQ  
+// 4. Formalize the problem into DP recursion. when two input array.
+//   for (work set value i = 0 .. n)
+//     for (candidate j 0..i )
+//       dp[i] = (dp[i-k]+1, dp[i])
+//   DP is layer by layer zoom in, first, 1 layer/gap/grp/sublen, then 2, 3, K layer, etc.
+//   At each layer, you can re-use k-1 layer at k, reduce DP[i,k] to DP[i]
 
-9. prepre, pre, cur to track
-  max win two chars, i, i-1, prepre, pre.
-  decodeWays, look ahead. dp[1] = prepre + pre. dp[1] * ways(s.charAt(j)) + dp[0] * ways(s.charAt(j-1), s.charAt(j))
-  regMatch, look ahead and after. Recur within while loop.
-10. left rite edge to squeeze. sliding window. track top / second in the window and switch
-11. sliding window, record last index of occur, expand current right edge based on last occur.
-12. Partition to find Kth, with single value, or with pair.
-"""
+// 9. prepre, pre, cur to track
+//   max win two chars, i, i-1, prepre, pre.
+//   decodeWays, look ahead. dp[1] = prepre + pre. dp[1] * ways(s.charAt(j)) + dp[0] * ways(s.charAt(j-1), s.charAt(j))
+//   regMatch, look ahead and after. Recur within while loop.
+// 10. left rite edge to squeeze. sliding window. track top / second in the window and switch
+// 11. sliding window, record last index of occur, expand current right edge based on last occur.
+// 12. Partition to find Kth, with single value, or with pair.
+// """
 
-"""
-track ? loop, update (+ contrib, - lose )? do math of props ? match, maxmin.
-track with map, value can be idx, list, or another map.
-sum: subset sum dup not allowed, combination sum dup allowed, split ary, dup allowed, etc.
-count sort.
-consecutive subary, chunk, etc, use bucket, UF, etc
-Bucket sort, Union merge. For l in 1..n.
-Sliding window + Map count, track win size, and update upon each R mov. track first/second, switch. 
-  max win two chars, i, i-1, prepre, pre. top second char.
-  while loop to squeeze left edges.
+// """
+// track ? loop, update (+ contrib, - lose )? do math of props ? match, maxmin.
+// track with map, value can be idx, list, or another map.
+// sum: subset sum dup not allowed, combination sum dup allowed, split ary, dup allowed, etc.
+// count sort.
+// consecutive subary, chunk, etc, use bucket, UF, etc
+// Bucket sort, Union merge. For l in 1..n.
+// Sliding window + Map count, track win size, and update upon each R mov. track first/second, switch. 
+//   max win two chars, i, i-1, prepre, pre. top second char.
+//   while loop to squeeze left edges.
 
-https://leetcode.com/problems/student-attendance-record-ii/discuss/101643/Share-my-O(n)-C++-DP-solution-with-thinking-process-and-explanation
-"""
+// https://leetcode.com/problems/student-attendance-record-ii/discuss/101643/Share-my-O(n)-C++-DP-solution-with-thinking-process-and-explanation
+// """
 
-""" Intervals scheduling, TreeMap, Segment(st,ed) is interval.
-Sort by start, use stk to filter overlap. Greedy can work.
-sort by finish(start is less than finish). no stk needed. just one end/minRite var to track end. if iv.start > end, end = iv.end.
-Interval Array, add/remove range all needs consolidate new range.
-TreeMap to record each st/ed, slide in start, val+=1, slide out end, val-=1. sum. find max overlap.
-Interval Tree, find all overlapping intervals. floorKey/ceilingKey/submap/remove on add and delete.
+// """ Intervals scheduling, TreeMap, Segment(st,ed) is interval.
+// Sort by start, use stk to filter overlap. Greedy can work.
+// sort by finish(start is less than finish). no stk needed. just one end/minRite var to track end. if iv.start > end, end = iv.end.
+// Interval Array, add/remove range all needs consolidate new range.
+// TreeMap to record each st/ed, slide in start, val+=1, slide out end, val-=1. sum. find max overlap.
+// Interval Tree, find all overlapping intervals. floorKey/ceilingKey/submap/remove on add and delete.
 
-Trie and Suffix. https://leetcode.com/articles/short-encoding-of-words/
-ExamRoom: PQ compare segment size. poll largest segment. Break into 2, recur.
-"""
+// Trie and Suffix. https://leetcode.com/articles/short-encoding-of-words/
+// ExamRoom: PQ compare segment size. poll largest segment. Break into 2, recur.
+// """
 
-""" Graph of Nodes, Edges. DFS/BFS + PQ<int[]>. Edge = LinkedList<Set<Node>>
-Start Seed(root ? each in Forest), End condition. For each direction/neight, recur DFS(new state, path)
-  DFS(state, l,r, path) { cache[l][r] = min(for each nb (dfs(l+1,r+1)))
+// """ Graph of Nodes, Edges. DFS/BFS + PQ<int[]>. Edge = LinkedList<Set<Node>>
+// Start Seed(root ? each in Forest), End condition. For each direction/neight, recur DFS(new state, path)
+//   DFS(state, l,r, path) { cache[l][r] = min(for each nb (dfs(l+1,r+1)))
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
 // From src -> dst, min path  dp[src][1111111]   bitmask as path.
 //  1. dfs(child, path); start root, for each child, if child is dst, result.append(path)
@@ -178,76 +177,179 @@ Start Seed(root ? each in Forest), End condition. For each direction/neight, rec
 //  5. dfs(state) try each not visited child state, if (dfs(child) == true) ret true. DFS ALL DONE no found, ret false;
 //  6. node in path repr as a bit. END path is (111). Now enum all path values, and check from each head, the min.
 // - - - - -
-"""
 
-"""
-Merge sort and AVL tree, riteSmaller, Stack.push(TreeMap for sort String, index, ) 
-Recursive, pass in the parent node and fill null inside recur. left = insert(left, val);
-https://leetcode.com/problems/reverse-pairs/discuss/97268/General-principles-behind-problems-similar-to-%22Reverse-Pairs%22
-"""
 
-"""
-The hard problems are ones with aggregations. e.g., total pairs, counts. min/max
-To group a list of emails, numbers in one bucket, use UNION-FIND
-dp[i][j] = max(dp[i][j], dp[i-1][j-1]+a[i,j])
-"""
 
-"""  Game Permutation/backtracking search. DFS on ary must carry boundary(l, r)
-1. 24 game, pick 2, eval, recur with new value from 2.
-2. zuma game. needed = 3-(j-i), avail -= needed, dp[i] = min(recurDFS(newState, offset)), avail += needed.
-3. can I win: used[i]=1, {for each not used, if(dfs(new state, path)==true) win; } ret false.
-"""
+// Merge sort and AVL tree, riteSmaller, Stack.push(TreeMap for sort String, index, ) 
+// Recursive, pass in the parent node and fill null inside recur. left = insert(left, val);
+// https://leetcode.com/problems/reverse-pairs/discuss/97268/General-principles-behind-problems-similar-to-%22Reverse-Pairs%22
 
-# dept max salary, join subquery aggregate max salary to tmp salary col.
-SELECT D.Name AS Department ,E.Name AS Employee, E.Salary 
-from Employee E, Department D 
-WHERE E.DepartmentId = D.id 
-  AND (DepartmentId, Salary) in 
-  (SELECT DepartmentId, max(Salary) as max FROM Employee GROUP BY DepartmentId)
 
-SELECT dep.Name as Department, emp.Name as Employee, emp.Salary 
-from Department dep, Employee emp 
-where emp.DepartmentId = dep.Id 
-and emp.Salary=(Select max(Salary) from Employee e2 where e2.DepartmentId = dep.Id)
+// The hard problems are ones with aggregations. e.g., total pairs, counts. min/max
+// To group a list of emails, numbers in one bucket, use UNION-FIND
+// dp[i][j] = max(dp[i][j], dp[i-1][j-1]+a[i,j])
 
+// """  Game Permutation/backtracking search. DFS on ary must carry boundary(l, r)
+// 1. 24 game, pick 2, eval, recur with new value from 2.
+// 2. zuma game. needed = 3-(j-i), avail -= needed, dp[i] = min(recurDFS(newState, offset)), avail += needed.
+// 3. can I win: used[i]=1, {for each not used, if(dfs(new state, path)==true) win; } ret false.
+// """
+
+
+
+// System : User Tweet, Timeline/Feed, Graph Search, Index. Query Pattern.
+// Social Entities: User/Tweet/Places/,  Connections(Follow, like), Actitity=(sub Conn obj)
+// fan-out, aggregation, classify, score, Rank, Prune. Merge. Rollup.
+1. Partition(user, tweet, Time/Temporal), Indexing(invert indexing, term->docId, Aggregation), Replication.
+2. PreCalculation. Real-time must in Memory. Disk for write. 
+3. MailBox in K-V store. Push / Pull / Hybrid.
+  https://www.slideshare.net/nkallen/q-con-3770885
+4. NewSql: share nothing, POD base, In memory.
+
+1. https://github.com/checkcheckzz/system-design-interview
+2. Graph Search, index ranking, typeAhead, table both forward/reverse relation. Vertical Aggregator.
+  https://www.facebook.com/notes/facebook-engineering/under-the-hood-building-out-the-infrastructure-for-graph-search/10151347573598920
+  https://www.facebook.com/notes/facebook-engineering/under-the-hood-indexing-and-ranking-in-graph-search/10151361720763920
+3. Feed Generation, MailBox and Cron.
+  https://www.slideshare.net/danmckinley/etsy-activity-feeds-architecture/
+
+
+Storage and Cache for scalable.
+1. User Metadata, Video Metadata, User like Video. User follow User.
+2. CDN, long tail.
+
+Partition, Secondary Index, Replica, Rebalance.
+1. user - tweet association is partition by primary key
+2. either local secondary index for each partition, or a global secondary partition across all partitions.
+3. Global secondary index itself is partitioned. and multiple index partition updates when new doc is added.
+4. Partition big data, for each record, replica(Partition lead/follower) within partition.
+5. 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+  
+// dept max salary, left outer join null bigger than your e.id. No group by.
+SELECT D.Name AS Department , E.Name AS Employee, E.Salary 
+from Department D, Employee E LEFT OUTER JOIN Employee e2 on (e2.departmentid = E.departmentid and E.salary < e2.salary) 
+where e2.id IS NULL and E.DepartmentId = D.id;
+  
+// Top 3 salary, dup not allowed.
 SELECT D.Name as Department, E.Name as Employee, E.Salary 
-   FROM Department D, Employee E, Employee E2  
-   WHERE D.ID = E.DepartmentId and E.DepartmentId = E2.DepartmentId and 
-   E.Salary < E2.Salary
-   group by D.ID,E.Name having count(distinct E2.Salary) = 1
-   order by D.Name desc
+  FROM Department D, Employee E, Employee E2  
+  WHERE D.ID = E.DepartmentId and E.DepartmentId = E2.DepartmentId and 
+  E.Salary <= E2.Salary     // there only will have at most 3 row from joined E2 that has salary higher than me.
+  group by D.ID, E.Name 
+  having count(distinct E2.Salary) <= 3   // count(*)
+  order by D.Name, E.Salary desc
+GO
 
-// left join, group by 
-select d.name, count(e.id)
-from Department d
-left join Employee e on e.dept_id = d.id
-group by d.name
-order by count(e.id) DESC, d.name ASC
+// top 2 per dept, left outer join.
+SELECT D.Name AS Department, E.Name AS Employee, E.Salary 
+from Department D, Employee E LEFT OUTER JOIN Employee e2 
+on (e2.departmentid = E.departmentid and E.salary <= e2.salary) 
+where E.DepartmentId = D.id 
+group by e.name 
+having count(*) <=2 
+GO
 
-def bin2hex(x):
-    size = len(x)
-    hex = '0123456789ABCDEF'
-    res = ""
-    for i in xrange(size-4, -1, -4):
-        sub = x[i:i+4]
-        print x, sub
-        sum = int(sub[3]) + 2*int(sub[2]) + 4*int(sub[1]) + 8*int(sub[0])
-        res = hex[sum] + res
-    print res
+// greatest-n-per-group query using left outer join. as only 1 records has null bigger, no group needed.
+SELECT t1.*
+FROM transactions t1 LEFT OUTER JOIN transactions t2 ON (t1.acct_id = t2.acct_id AND t1.trans_date < t2.trans_date)
+WHERE t2.acct_id IS NULL;
 
-def int2hex(x, width=16):
-    hex = '0123456789ABCDEF'
-    l = []
-    res = ""
-    while x > 0:
-        res = hex[x%16] + res
-        x = x/16
-    print res
+SELECT t1.*
+FROM `Table` AS t1 LEFT OUTER JOIN `Table` AS t2 ON ( t1.GroupId = t2.GroupId AND 
+    (t1.OrderField < t2.OrderField OR (t1.OrderField = t2.OrderField AND t1.Id < t2.Id))
+WHERE t2.GroupId IS NUL
 
-def bin2int(binstr):
-    for i in xrange(len(binstr)):
-        sum += sum*2+binstr[len(binstr)-1-i]
-    return sum
+// group by has dedup.
+select count(*)
+from insurance i1 inner join (select tiv_2011 from insurance group by tiv_2011 having count(*) > 1) i2 on i1.tiv_2011 = i2.tiv_2011
+
+select count(distinct i1.pid)
+from insurance i1 inner join insurance i2 on (i1.tiv_2011 = i2.tiv_2011 and i1.pid != i2.pid)
+
+// salary count be 0, so select null.
+SELECT Salary FROM Employee GROUP BY Salary 
+UNION ALL 
+(SELECT null AS Salary)
+ORDER BY Salary DESC LIMIT 1 OFFSET 1
+
+// id +/- 1
+SELECT s1.* FROM stadium AS s1, stadium AS s2, stadium as s3
+WHERE  ((s1.id + 1 = s2.id AND s1.id + 2 = s3.id) OR (s1.id - 1 = s2.id AND s1.id + 1 = s3.id) OR (s1.id - 2 = s2.id AND s1.id - 1 = s3.id)
+AND s1.people>=100 
+AND s2.people>=100
+AND s3.people>=100
+GROUP BY s1.id
+
+// TOP N in group. use <=, itself 1, <= another one.
+SELECT a.person, a.group, a.age, count(*)
+FROM person a LEFT OUTER JOIN person b on (a.group = b.group and a.age <= b.age)
+  #where b.age is NULL   // with a.age < b.age, so max entry has null which is greater than it.
+group by a.person 
+having count(*) <= 2
+ORDER BY a.group ASC, a.age DESC
+GO
+
+select t.Request_at Day, round(sum(case when t.Status like 'cancelled_%' then 1 else 0 end)/count(*),2) Rate
+from Trips t inner join Users u on t.Client_Id = u.Users_Id and u.Banned='No'
+where t.Request_at between '2013-10-01' and '2013-10-03'
+group by t.Request_at
+  
+SELECT Score, (SELECT count(distinct Score) FROM Scores WHERE Score >= s.Score) Rank
+FROM Scores s
+ORDER BY Score desc
+
+SELECT Score, (SELECT count(*) FROM (SELECT distinct Score s FROM Scores) tmp WHERE s >= Score) Rank
+FROM Scores
+ORDER BY Score desc
+
+select if(id < (select count(*) from seat), if(id mod 2=0, id-1, id+1), if(id mod 2=0, id-1, id)) as id, student
+from seat
+order by id asc;
+
+select id,
+case 
+    when id%2 = 0 then (select student from seat where id = (i.id-1) )  
+    when id%2 != 0 and id<(select count(student) from seat) then (select student from seat where id = (i.id+1) )  
+    else student
+end as student
+from seat i 
+
+select d.name, sum(case when s.dept_id is null then 0 else 1 end) cnt
+from department d left outer join student s on d.id = s.dept_id
+group by d.id, d.name
+order by cnt desc, d.name;
+
+select id, case
+    when p_id is null then 'ROOT'
+    when id not in (select p_id
+                    from tree
+                    where p_id is not null) then 'LEAF'
+    else 'INNER'
+end
+from tree
+order by id;
+
+// subquery to create a table to join.
+SELECT salesperson_id, Salesperson.Name, Number AS OrderNumber, Amount
+FROM Orders JOIN Salesperson ON Salesperson.ID = Orders.salesperson_id
+JOIN (SELECT salesperson_id, MAX( Amount ) AS MaxOrder 
+      FROM Orders
+      GROUP BY salesperson_id
+) AS TopOrderAmountsPerSalesperson
+USING ( salesperson_id ) 
+WHERE Amount = MaxOrder
+GROUP BY salesperson_id, Amount
+
+select cast(sum(i1.tiv_2012) as decimal(10, 2))
+from insurance i1 inner join (select tiv_2011 from insurance group by tiv_2011 having count(*) > 1) i2
+on i1.tiv_2011 = i2.tiv_2011
+inner join (select lat, lon
+    from insurance
+    group by lat, lon
+    having count(*) = 1) i3
+on i1.lat = i3.lat and i1.lon = i3.lon;
 
 // pascal triangle, 
 // http://www.cforcoding.com/2012/01/interview-programming-problems-done.html
@@ -277,7 +379,7 @@ def sqrt(n, prec=2):
     xn = n * pow(10, prec) * pow(10,prec)   // expand to 100^2
     beg = 2
     end = xn-1
-    while beg <= end:
+    while beg <= end:     // bi-sect
       mid = (beg+end)/2
       if mid*mid < xn:
         beg = mid+1
@@ -311,7 +413,7 @@ def insertCircle(l, val):
         if prev < val < cur:
             prev.next = val
             return
-        # at the end, val is max or min
+        // at the end, val is max or min
         elif prev > cur and val > pre or val < cur:   
             prev.next = val
             minnode = pre
@@ -369,23 +471,25 @@ int[] sortColor(int[] arr) {
 sortColor([2,0,1])
 sortColor([1,2,1,0,1,2,0,1,2,0,1])
 
-// in place wiggle sort
-// findKth to find median
-// parittion to swap widx with first and last
-void wiggesort(int[] arr) {
-  int median = nth_element(arr);
-  // tri partition
-  int beg = 0, i = 0, end = n - 1;
-  while (i <= end) {
-      if (arr[i] > median)
-          swap(arr, i++, beg++);
-      else if (arr[i] < median)
-          swap(arr, i, end--);
-      else
-          i++;
+public void rainbowSort(int[] colors, int left, int rite, int startColor, int endColor) {
+  if (colorFrom == colorTo) { return; }
+  if (left >= right) { return; }
+  int colorMid = (colorFrom + colorTo) / 2;
+  int l = left, r = right;
+  while (l <= r) {
+    while (l <= r && colors[l] <= colorMid) { l++;  }
+    while (l <= r && colors[r] > colorMid) { r--;  }
+    if (l <= r) {
+      int temp = colors[l];
+      colors[l] = colors[r];
+      colors[r] = temp;
+      l++;
+      r--;
+    }
   }
+  rainbowSort(colors, left, r,     colorFrom,    colorMid);
+  rainbowSort(colors, l,    right, colorMid + 1, colorTo);
 }
-
 
 // Given a huge sorted integer array A, and there are huge duplicates in the
 // array. Given an integer T, inert T to the array, if T already exisit, insert
@@ -393,34 +497,32 @@ void wiggesort(int[] arr) {
 //     A[15] = {2,5,7,8,8,8,8,8,8,8,8,8,8,8,9}
 //     If T == 6, return 2;
 //     If T == 8' return 14
-def findInsertionPosition(l, val):
-  beg = 0
-  end = len(l) - 1
-  ''' when l=r can enter loop, need to ensure index out of bound when m-1 and m+1 '''
-  if val < l[0] or val > l[-1]:   return 0, len(l)
-  while beg <= end:      # after checking boundary.
-      mid = (beg+end)/2  # mid is Math.floor
-      if l[mid] > val:      end = mid - 1   # if mid=beg, end=mid-1 < beg, loop breaks
-      elif l[mid] <= val:   beg = mid + 1   # in less or equal case, we want to append to end, so recur with mid+1
-  # now begin contains insertion point
-  print 'insertion point is : ', beg
-  return beg
-def testFindInsertionPosition():
-  l = [2,5,7,8,8,8,8,8,8,8,8,8,8,8,9]
-  findInsertionPosition(l, 6)
-  findInsertionPosition(l, 8)
+static int findInsertPosition(int[] arr, int val) {
+  int sz = arr.length;
+  int l=0,r=sz-1;
+  if (val < arr[l]) {  return 0; }
+  if (arr[r] <= val) { return r; }
+  while (l < r) {
+    int m = (l+r)/2;
+    if (val < arr[m]) { r = m;}
+    else if (arr[m] <= val) { l = m+1;}
+  }
+  System.out.println("insert point is " + l);
+  return l;
+}
+findInsertPosition(new int[]{2,5,7,8,8,8,8,9}, 8);
 
 
 """ ret insertion pos, the first pos t <= a[idx]. a[idx-1] < t <= a[idx]. even with dups.
 when find high end, idx-1 is the first ele smaller than searching val."""
 static int bsect(int[] arr, int v) {
     int l = 0, r = arr.length-1;
-    # bsect, check the out condition first.
+    // bsect, check the out condition first.
     if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }
     
     while (l < r) {
         int m = (l+r)/2;
-        if (arr[m] <= V) { # when using =, insert pos is to the end.
+        if (arr[m] < V) {  // when using =, insert pos is to the end.
             l = m+1;
         } else {
             r = m;
@@ -433,7 +535,7 @@ print bisect([1,1,3,5,7])
 // bisect needs to check head / tail first. the index returned, a[index-1] < t, a[index] >= t
 static int ceiling(int[] arr, int t) {
     int l = 0, r = arr.length -1;
-    if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }  # boundary check up front
+    if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }  // boundary check up front
     while (l < r) {
         int m = (l+r) / 2;
         if (arr[m] <= t) {  // <=, lift l even when eqs.
@@ -449,15 +551,15 @@ floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 floorceil([1, 2, 8, 10, 10, 12, 19], 2)
 floorceil([1, 2, 8, 10, 10, 12, 19], 28)
     
-// find peak who a[i-1] < a[i] > a[i+1]
+// a[i-1] < a[i] > a[i+1], binary search mid > mid+1;
 int findPeak(int[] arr, int lo, int hi) {
   if(low == high) return low;
   while (lo < hi) {
     int mid = (low+high)/2;
     if(arr[mid] < arr[mid+1])            // still climbing, mov lo+1
-        return recur(arr, mid+1, high);  // lo = mid+1
+        lo = mid+1;                      // lo = mid+1
     else
-        return recur(arr, lo, mid);      // down, hi = mid1
+        hi = mid;      // down, hi = mid1
   }
   return lo;
 }
@@ -467,8 +569,9 @@ static int bsearchRotate(int[] arr, int v) {
     int l = 0, r = arr.length-1;
     while (l < r) {
         int m = (l+r)/2;
-        if (arr[l] < arr[m]) {   # left segment is not rotated
-            if (arr[l] <= v && v < arr[m]) {  // <= v  // v falls into this segment
+        if (arr[m] == v) return m;   // avoid dup
+        if (arr[l] < arr[m]) {   // left segment is not rotated
+            if (arr[l] <= v && v <= arr[m]) {  // <= v  // v falls into this segment
                 r = m;
             } else {
                 l = m+1;
@@ -479,7 +582,7 @@ static int bsearchRotate(int[] arr, int v) {
             } else {
                 r = m;
             }
-        } else {
+        } else {       // arr[l] == arr[m], lift l;
             l += 1;    // this is a dup. advance l.
         }
     }
@@ -491,17 +594,6 @@ static int bsearchRotate(int[] arr, int v) {
 print binarySearchRotated([3, 4, 5, 1, 2], 2)
 print binarySearchRotated([3], 2)
 
-int rotatedMin(int[] arr) {
-  int lo = 0, hi = arr.length;
-  while (lo < hi) {
-    while(l < r && arr[l] == arr[l+1]) l += 1;
-    while(l < r && arr[r] == arr[r-1]) r -= 1;
-    int m = (lo+hi)/2;
-    if (arr[m] < arr[hi]) {  hi = m;   }
-    else {                   lo = m+1; }
-  }
-  return lo;
-}
 
 """ find min in rotated. / / with dup, advance mid, and check on each mov """
 static int rotateMin(int[] arr) {
@@ -513,9 +605,9 @@ static int rotateMin(int[] arr) {
         int m = (l+r)/2;
         if (arr[m] > arr[m+1]) {   // inverse, m > m+1
             return arr[m];
-        }  # l and m in the same segment.
+        }  // l and m in the same segment.
         if (arr[l] < arr[m] && m < r) {
-            l = m+1;
+            l = m+1;     // m must less than r.
         } else {
             r = m;
         }
@@ -572,6 +664,57 @@ public List<List<Integer>> threeSum(int[] num) {
     return res;
 }
 
+
+""" merge two sorted arry """
+static int[] merge(int[] arra, int[] arrb) {
+    int ar = arra.length-1, br = arrb.length-1;
+    int al = 0, bl = 0;
+    int[] out = new int[ar+1+br+1];
+    int outidx = 0;
+    while (al < arra.length && bl < arrb.length) {
+        if (arra[al] < arrb[bl]) { out[outidx++] = arra[al++]; }
+        else {                     out[outidx++] = arrb[bl++]; }
+    }
+    if (al < arra.length) { System.arraycopy(arra, al, out, outidx, arra.length-al); }
+    if (bl < arrb.length) { System.arraycopy(arrb, bl, out, outidx, arrb.length-bl); }
+    System.out.println(Arrays.toString(out));
+    return out;
+}
+print merge([9,8,3], [6,5])
+
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
+// linear
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
+def kadane_maxSubAry(A):
+    # M[i] = max(M[i-1] + A.i, A.i)
+    max_ending_here = max_so_far = 0
+    for x in A:
+        max_ending_here = max(0, max_ending_here + x)
+        max_so_far = max(max_so_far, max_ending_here)
+    return max_so_far
+
+// for each i, either belong to prev seq, or starts its own.
+// s[i] = max(s[i-1]+A.i, A.i), either expand sum, or start new win from cur '''
+// arr = [-1, 40, -14, 7, 6, 5, -4, -1]
+def maxSumWrap(arr):
+    maxsum = kadan(arr)
+    for i in xrange(len(arr)):
+        wrapsum += arr[i]
+        arr[i] = -arr[i]
+    maxWrap = wrapsum - kadan(arr)
+    return max(maxsum, maxWrap)
+
+// Number of Subarrays with Bounded Maximum, when a[i] > R, i restart a new subary. else, subary include a[i]
+int numSubarrayBoundedMax(int arr[], int L, int R) {
+    int result=0, left=-1, right=-1;
+    for (int i=0; i<A.size(); i++) {
+        if (A[i] > R)  left = i;     // i restart a new subary
+        if (A[i] >= L) right = i;   #
+        result += right-left;
+    }
+    return result;
+}
+
 """ the max num can be formed from k digits from a, preserve the order in ary.
 key point is drop digits along the way."""
 static int maxkbits(int[] arr, int k ) {
@@ -579,7 +722,7 @@ static int maxkbits(int[] arr, int k ) {
     int left = sz - k; 
     Stack<Integer> stk = new Stack<Integer>();
     stk.add(arr[0]);
-    for (int i = 1;i<arr.length;i++) {
+    for (int i = 1; i<arr.length;i++) {
         while (stk.size() > 0 && stk.peek() < arr[i] && left > 0) {
             stk.pop();
             left -= 1;
@@ -610,67 +753,42 @@ def maxNum(a,b,k):
 print maxNum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)
 
 
-""" merge two sorted arry """
-static int[] merge(int[] arra, int[] arrb) {
-    int ar = arra.length-1, br = arrb.length-1;
-    int al = 0, bl = 0;
-    int[] out = new int[ar+1+br+1];
-    int outidx = 0;
-    while (al < arra.length && bl < arrb.length) {
-        if (arra[al] < arrb[bl]) { out[outidx++] = arra[al++]; }
-        else {                     out[outidx++] = arrb[bl++]; }
-    }
-    if (al < arra.length) { System.arraycopy(arra, al, out, outidx, arra.length-al); }
-    if (bl < arrb.length) { System.arraycopy(arrb, bl, out, outidx, arrb.length-bl); }
-    System.out.println(Arrays.toString(out));
-    return out;
-}
-print merge([9,8,3], [6,5])
-
-// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
-// linear
-// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
-def kadane_maxSubAry(A):
-    # M[i] = max(M[i-1] + A.i, A.i)
-    max_ending_here = max_so_far = 0
-    for x in A:
-        max_ending_here = max(0, max_ending_here + x)  # incl x 
-        max_so_far = max(max_so_far, max_ending_here)
-    return max_so_far
-
-// for each i, either belong to prev seq, or starts its own.
-// s[i] = max(s[i-1]+A.i, A.i), either expand sum, or start new win from cur '''
-// arr = [-1, 40, -14, 7, 6, 5, -4, -1]
-def maxSumWrap(arr):
-    maxsum = kadan(arr)
-    for i in xrange(len(arr)):
-        wrapsum += arr[i]
-        arr[i] = -arr[i]
-    maxWrap = wrapsum - kadan(arr)
-    return max(maxsum, maxWrap)
-
-// Number of Subarrays with Bounded Maximum, when a[i] > R, i restart a new subary. else, subary include a[i]
-int numSubarrayBoundedMax(int arr[], int L, int R) {
-    int result=0, left=-1, right=-1;
-    for (int i=0; i<A.size(); i++) {
-        if (A[i] > R) left = i;     // i restart a new subary
-        if (A[i] >= L) right = i;   #
-        result += right-left;
-    }
-    return result;
-}
-
 // remove dup letter, result shall be the smallest in lexicographical order among all possible results.
-// find out the last appeared position for each letter;
-// https://leetcode.com/problems/remove-duplicate-letters/discuss/76766/Easy-to-understand-iterative-Java-solution
+// 用stack 来后悔。from left -> rite, if stk top > a[i] and count[stk.top] > 0, pop stk.top as still have chance to add stk.top later.
+static String removeDupLetters(String s) {
+  Set<Character> inStk = new HashSet<>();
+  Map<Character, Integer> counts = new HashMap<>();
+  Stack<Character> stk = new Stack<>();
+
+  for (int i=0;i<s.length();i++) {
+    char c = s.charAt(i);
+    counts.put(c, counts.getOrDefault(c, 0) + 1);
+  }
+  for (int i=0;i<s.length();i++) {
+    char c = s.charAt(i);
+    if (!inStk.contains(c)) {
+      while (!stk.empty() && stk.peek() > c && counts.get(stk.peek()) > 0 ) {
+        inStk.remove(stk.peek());
+        stk.pop();
+      }
+      stk.push(c);
+      inStk.add(c);
+      counts.put(c, counts.get(c)-1);
+    }
+  }
+  String res = "";
+  while(!stk.empty()) { res = stk.pop() + res; }
+  return res;
+}
+System.out.println(removeDupLetters("cbacdcbc"));
 
 // widx start from 1. compare against widx-1 and widx. Allow at most 2.
 static void removeDup(int[] arr) {
-    int l = 2;       # loop start from 3rd, widx as allows 2
-    int widx = 1;    # widx 1 less than loop start
-    for (int i=l;i<arr.length;i++) {
+    int l = 2;       // loop start from 3rd, widx as allows 2
+    int widx = 1;    // widx 1, allow two dups
+    for (int i=l; i<arr.length; i++) {
         if (arr[i] == arr[widx] && arr[i] == arr[widx-1]) {
-            continue;  # skip current item when it is a dup
+            continue;  // skip current item when it is a dup
         }
         widx += 1;
         arr[widx] = arr[i];
@@ -678,6 +796,44 @@ static void removeDup(int[] arr) {
     System.out.println(" " + Arrays.toString(arr));
 }
 removeDup(new int[]{1,3,3,3,3,5,5,5,7});
+
+
+public void stackSorting(Stack<Integer> stack) {
+  Stack<Integer> helpStack = new Stack<Integer>();
+  while (!stack.isEmpty()) {
+      int element = stack.pop();
+      while (!helpStack.isEmpty() && helpStack.peek() < element) {
+          stack.push(helpStack.pop());
+      }
+      helpStack.push(element);
+  }
+  while (!helpStack.isEmpty()) {
+      stack.push(helpStack.pop());
+  }
+}
+
+// longest non repeat substring. sliding window(locate left/rite). when match, need to mov l = pre+1.
+static String nonRepeat(String s) {
+  if (s == null || s.length() == 0) { return s;  }
+  int maxlen = 0, maxstart = 0, maxend = 0;
+  int l = 0;
+  Map<Character, Integer> pos = new HashMap<>();
+  for(int r=0;r<s.length();r++) {
+    char ch = s.charAt(r);
+    if (pos.containsKey(ch)) {
+      int ridx = pos.get(ch);
+      if (l <= ridx) { l = ridx + 1;}  // <= as we need to advance l even when equals.
+    }
+    pos.put(ch, r);
+    if (r - l + 1 > maxlen) {
+      maxstart = l;
+      maxend = r;
+      maxlen = r - l + 1;
+    }
+  }
+  System.out.println("non repeat substring - > " + s.substring(maxstart, maxend+1));
+  return s.substring(maxstart, maxend+1);
+}
 
 // recur with substring, or recur with soffset, poffset.
 static boolean regMatch(String s, String p) {
@@ -692,7 +848,7 @@ static boolean regMatch(String s, String p) {
         if (phd != '?' && shd != phd) { return false; }
         return regMatch(s.substring(1), p.substring(1));    # dfs recur
     }
-    # now phd is *, recur to match all 0..n substring, for loop or while loop ?
+    // now phd is *, recur to match all 0..n substring, for loop or while loop ?
     for (int i=0; i < s.length(); i++) {
         if (regMatch(s.substring(i), p.substring(1))) { return true; }
     }
@@ -712,7 +868,7 @@ System.out.println("matching "  + regMatch(s, p));
 boolean regMatch(String s, String p) {
     int ssz = s.length(), psz = p.length();
     int count = 0;
-    # quick check whether there is star.
+    // quick check whether there is star.
     for (int i = 0; i < psz; i++) { if (p.charAt(i) == '*') count++; }  # many wildcard as 1
     if (count==0 && ssz != psz) return false;
     else if (psz - count > ssz) return false;
@@ -720,7 +876,7 @@ boolean regMatch(String s, String p) {
     boolean[] match = new boolean[ssz+1];
     match[0] = true;
     for (int i = 0; i < ssz; i++) {    match[i+1] = false;   }
-    # iterate all pattern chars
+    // iterate all pattern chars
     for (int i = 0; i < psz; i++) {
         if (p.charAt(i) == '*') {
             for (int j = 0; j < ssz; j++) {
@@ -742,35 +898,69 @@ static boolean regmatch(char[] s, char[] p, int soff, int poff) {
     int ssz = s.length, psz = p.length;
     if (poff == psz) {       return soff == ssz;}
     if (p[poff+1] != '*') {  return (s[soff] == p[poff] || p[poff] == '.') && regmatch(s, p, soff+1, poff+1); }
-    # pattern is wildcard, try each recursive
+    // pattern is wildcard, try each recursive
     while (s[soff] == p[poff] || p[poff] == '.') {
         if (regmatch(s, p, soff, poff+2)) { return true; }
         soff += 1;
     }
 }
 
+public List<String> findRepeatedDnaSequences(String s) {
+  Set<Integer> words = new HashSet<>();
+  Set<Integer> doubleWords = new HashSet<>();
+  List<String> rv = new ArrayList<>();
+  char[] map = new char[26];
+  map['A' - 'A'] = 0;
+  map['C' - 'A'] = 1;
+  map['G' - 'A'] = 2;
+  map['T' - 'A'] = 3;
+
+  Set<Integer> temp = new HashSet<Integer>();
+	Set<Integer> added = new HashSet<Integer>();
+ 
+	int hash = 0;
+	for (int i = 0; i < len; i++) {
+		if (i < 9) {
+			//each ACGT fit 2 bits, so left shift 2
+			hash = (hash << 2) + map.get(s.charAt(i)); 
+		} else {
+			hash = (hash << 2) + map.get(s.charAt(i));
+			//make length of hash to be 20
+			hash = hash &  (1 << 20) - 1; 
+ 
+			if (temp.contains(hash) && !added.contains(hash)) {
+				result.add(s.substring(i - 9, i + 1));
+				added.add(hash); //track added
+			} else {
+				temp.add(hash);
+			}
+		}
+	}
+  return result;
+}
+
 // enhancement is use parent[] to track the parent for each node in the ary.
 int lengthOfLIS(int[] arr) {
     int[] dp = new int[arr.length];  // set dp[i] to max.
-    int mxlen = 0;
+    int lislen = 0;   // no one in
     for (int cur : arr) {
-        int lo = 0, hi = mxlen;     // mxlen is 0 for now.
+        int lo = 0, hi = lislen;     // lislen is 0 for now.
         while (lo != hi) {  
             int m = (lo + hi) / 2;
             if (dp[m] < cur)  lo = m + 1;
             else              hi = m;
         }
         dp[lo] = cur;   // will not outofbound as hi=m, and after binsearch, a[lo] bound to > than k
-        if (lo == mxlen) { ++mxlen; }  // lo will eq to sz when x is the biggest.
+        if (lo == lislen) { ++lislen; }  // lo will eq to sz when x is the biggest.
     }
-    return mxlen;
+    return lislen;
 }
 
-// max envelop lis. 1. Arrays.sort by width, 2. Arrays.binarySearch, 3. update DP[idx], 4. return lislen.
+// max Envelop [][] lis. 1. Arrays.sort by width, 2. Arrays.binarySearch, 3. update DP[idx], 4. return lislen.
 int maxEnveLopes(int[][] envelopes) {
   if (envelopes == null || envelopes.length == 0 || enveloes[0] == null ||  envelopes[0].length != 2) return 0;
  
-  Arrays.sort(envelopes, new comparator<int[]>((a,b) -> {
+  Arrays.sort(envelopes, new comparator<int[]>( (a,b) -> {
     if (a[0] == b[0]) return b[1] - a[1];
     else              return a[0] - b[0];
   });
@@ -779,30 +969,12 @@ int maxEnveLopes(int[][] envelopes) {
   int[] lis = new int[envelopes.length];
   for (int[] e : envelopes) {
     int idx = Arrays.binarySearch(lis, 0, lislen, e[1]);
-    if (idx < 0) {   idx = -(idx+1); } # binary search return insertion pos
+    if (idx < 0) {   idx = -(idx+1); } // binary search return insertion pos
     lis[idx] = e[1];    // update with smaller value.
     if (idx == lislen) { lislen++;  }
   }
   return lislen;
 }
-
-// # longest length of interval chain, sort interval by END time. interval scheduling.
-// # https://leetcode.com/problems/maximum-length-of-pair-chain/discuss/105631/Python-Straightforward-with-Explanation-(N-log-N)
-// #  dp[i] = the lowest END of the chain of length i
-static int longestIntervalChain(int[][] arr) {
-  Arrays.sort(arr, (a, b) -> a[1] - b[1]);
-  List<Integer> dp = new ArrayList<>();
-  for (int i=0;i<arr.length;i++) {
-    int st = arr[i][0], ed = arr[i][1];
-    int idx = Arrays.binarySearch(dp, st);
-    if (idx == dp.length) {       dp.add(ed); }     # append to the end
-    else if (ed < dp[idx]) {      dp.set(idx,ed);}  # update ix with current smaller value
-  }
-  return dp.size() - 1;
-}
-// The other way is stk, sort by start time, and stk thru it.
-if stk.top().end > curIntv.end: stk.top().end = curInterv.end;
-
 
 // longest mount, divide into 2 parts, up[i] and down[i], LMin and RMax. calc down first from end.
 int longestMountainSequence(int[] A) {
@@ -823,9 +995,9 @@ int longestMountainSequence(int[] A) {
 int longestMountainSubary(int[] arr) {
   int maxlen =0, up = 0, down = 0;
   for (int i=1;i<arr.length;i++) {
-    # down > 0, means we are in down phase, when switching to up phase, reset.
+    // down > 0, means we are in down phase, when switching to up phase, reset.
     if (down > 0 && arr[i-1] < arr[i] || arr[i-1] == arr[i]) {   // turning point. reset counters.
-      up = down = 0;
+      up = down = 0;    // reset when encouter turning point
     }
     if (arr[i-1] < arr[i]) up++;
     if (arr[i-1] > arr[i]) down++;
@@ -843,16 +1015,17 @@ static int longestWiggleSubSequence(int[] arr) {
   int[] down = new int[sz];
   for (int i=1;i<sz;i++) {
     if      (arr[i-1] < arr[i]) { up[i] = up[i-1] + 1;  down[i] = down[i-1]; }
-    else if (arr[i-1] > arr[i]) { down[i] = down[i-1];  up[i] = down[i-1] + 1; }
+    else if (arr[i-1] > arr[i]) { up[i] = down[i-1];    down[i] = down[i-1] + 1; }
     else {                        down[i] = down[i-1];  up[i] = down[i-1]; }
   }
   return Math.max(up[sz-1], down[sz-1]);
 }
 
+
 // # idea is, there are 2 options, swap / notswap, need to use two state to track them.
 // # swap[i] = min( swap[i-1], notswap[i-1]+1), etc
 int minSwap(int[] A, int[] B) {
-    # tracj=k notswap: notswap, s: swapped
+    // track j=k notswap: notswap, s: swapped
     int notswap1 = 0, swap1 = 1;
     for (int i = 1; i < A.length; ++i) {
         int notswap2 = Integer.MAX_VALUE, swap2 = Integer.MAX_VALUE;
@@ -895,7 +1068,7 @@ def noConsecutive(text):
       segidx += 1
   return out
 
-//  track all char cnts. ++/-- when sliding in and out. Upbeat top char cnt in the window
+// track all char cnts. ++/-- when sliding in and out. Upbeat top char cnt in the window
 static int maxLenKRepeat(char[] arr, int k) {
     int sz = arr.length;
     int l = 0; r = 0;
@@ -923,14 +1096,14 @@ static int[] slidingWinMax(int[] arr, int k) {
     int winsize = 0;
     int widx = 0;
     for(int i=0; i<sz; i++) {  // always while loop to move left.
-        while (!maxStk.isEmpty() > 0 && arr[i] > maxStk.peek()) { # cur > stk.peek(), no use to keep in stk, pop
+        while (!maxStk.isEmpty() > 0 && arr[i] > maxStk.peek()) {  // cur > stk.peek(), no use to keep in stk, pop
             maxStk.pop();
             maxIdxStk.pop();
         }
         maxStk.add(arr[i]);
         maxIdxStk.add(i);
         winsize += 1;
-        if (winsize >= k) {
+        if (winsize >= k) {  // adjust l
             maxarr[widx++] = maxStk.firstElement();
             if (maxIdxStk.firstElement() == l) {
                 maxStk.remove(0);
@@ -946,7 +1119,7 @@ static int[] slidingWinMax(int[] arr, int k) {
 print maxWin([5,3,4,6,9,7,2],2)
 print maxWin([5,3,4,6,9,7,2],3)
 
-// sliding window, outer loop mov rite edge, inner loop mov left edge 
+// sliding window, outer loop mov rite edge, inner loop mov left edge, cautious on r.
 // Always process rite edge first. You can check arr[i], or check win size.
 // park at m+1 to include extends non-zero elements.
 static int maxWinMzero(int[] arr, int m) {
@@ -955,16 +1128,16 @@ static int maxWinMzero(int[] arr, int m) {
     int zcnts = 0;
     int maxwinsize = 0;
     for (int r=0; r<sz; r++) {
-        if (arr[r] == 1) {    # always updates maxwinsize
+        if (arr[r] == 1) {    // always updates maxwinsize when moving r.
             if (zcnts == m) { maxwinsize = Math.max(maxwinsize, r-l+1); }
             continue;
         } else {
-            zcnts += 1;          # slide in, cnt++
-            if (zcnts == m+1) {  # 
+            zcnts += 1;          // slide in, cnt++
+            if (zcnts == m+1) {  
                 maxwinsize = Math.max(maxwinsize, r-l);
                 while (arr[l] != 0) { l += 1; }
                 l += 1;
-                zcnts -= 1;  # slide out, cnt--
+                zcnts -= 1;  // slide out, cnt--
             }
         }
     }
@@ -1004,6 +1177,47 @@ static int minWinString(String s, String t) {
 print minwin("azcaaxbb", "aab")
 print minwin("ADOBECODEBANC", "ABC")
 
+// slide in r,  ++matches, slide out l, if slide out l make not meet, --matches.
+static String anagram(String arr, String pattern) {
+  int winsz = pattern.length();
+  Map<Character, Integer> patternMap = new HashMap<>();
+  for(int i=0;i<winsz;i++) { patternMap.put(pattern.charAt(i), patternMap.getOrDefault(pattern.charAt(i), 0) + 1);}
+
+  Map<Character, Integer> winMap = new HashMap<>();
+  int matches = 0;   // winsz is need match
+  int l = 0, r = 0;
+  for (r=0;r<winsz;r++) {
+    char c = arr.charAt(r);
+    winMap.put(c, winMap.getOrDefault(c, 0) + 1);
+    if (patternMap.containsKey(c) && winMap.get(c) <= patternMap.get(c)) {
+      matches++;
+      if (matches == winsz) {
+        return arr.substring(l, r+1);
+      }
+    }
+  }
+  for(r=winsz;r<arr.length();r++) {
+    // slide out left edge first, as win size is fixed.
+    char lchar = arr.charAt(l);
+    winMap.put(lchar, winMap.get(lchar) - 1);
+    if (patternMap.containsKey(lchar) && winMap.get(lchar) < patternMap.get(lchar)) {
+      matches--;
+    }
+    l += 1;
+    char rchar = arr.charAt(r);
+    winMap.put(rchar, winMap.getOrDefault(rchar, 0) + 1);
+    if (patternMap.containsKey(rchar) && winMap.get(rchar) <= patternMap.get(rchar)) {
+      matches++;
+      if (matches == winsz) {
+        return arr.substring(l, r+1);
+      }
+    }
+  }
+  return null;
+}
+System.out.println(anagram("hello", "lol"));
+
+
 // min window with 3 letter words """
 def minwin(arr, words):
   found, expected = defaultdict(int), defaultdict(words)
@@ -1037,21 +1251,6 @@ def maxones(arr):
 print maxones([1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1])
 print maxones([1, 1, 1, 1, 0])
 
-// 1-d array, max length, like slideing wind, track l/r edge.
-def maxWinM(arr,m):
-  l,r,win,maxwinsize = 0,0,0,0
-  while r < len(arr):
-    if win <= m:
-      if arr[r] == 0:
-          win += 1
-      r += 1  # park r to next window rite edge
-    else:
-      if arr[l] == 0:
-          win -= 1
-      l += 1  # park l to next window left edge
-    maxwinsize = max(maxwinsize, r-l)  # dist is half include.
-  return maxwinsize
-print maxWinM([1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1], 2)
 
 // largest subary with equal 0s and 1s
 // change 0 to -1, reduce to largest subary sum to 0.
@@ -1114,23 +1313,23 @@ maxWinTwoChars(new int[]{2,1,3,1,1,2,2,1});
 // Map<Integer, Set<Integer>> and branch next jumps.
 boolean canCross(int[] stones) {
     if (stones.length == 0) { return true;}
-    // edges from this stone.
+    // each stone's idx, associate with a set of next jumps.
     HashMap<Integer, HashSet<Integer>> posJumps = new HashMap<Integer, HashSet<Integer>>(stones.length);
     posJumps.put(0, new HashSet<Integer>());
-    posJumps.get(0).add(1);
+    posJumps.get(0).add(1);  // first jmp to first pos
     for (int i = 1; i < stones.length; i++) {
-      posJumps.put(stones[i], new HashSet<Integer>() );   # hashset store how many prev jmps when reaching this stone.
+      posJumps.put(stones[i], new HashSet<Integer>() );   // hashset store how many prev jmps when reaching this stone.
     }
     
     for (int i = 0; i < stones.length - 1; i++) {
-      int stone = stones[i];
-      for (int step : posJump.get(stone)) {
-        int reach = step + stone;
-        if (reach == stones[stones.length - 1]) {  return true; }
-
-        HashSet<Integer> set = map.get(reach);  // jmp to reach idx by step. so reach can jmp step+1
+      int iStop = stones[i];
+      for (int step : posJump.get(iStop)) {
+        int nextReach = iStop + step;
+        if (nextReach == stones[stones.length - 1]) {  return true; }
+        // put pre jump into nextReach's next step set.
+        HashSet<Integer> set = posJumps.get(nextReach);  // 在 nextReach 上有一个 set.
         if (set != null) {
-            set.add(step);
+            set.add(step);   // add step into next reach's set, so we can jmp from there.
             if (step - 1 > 0) set.add(step - 1);
             set.add(step + 1);
         }
@@ -1139,21 +1338,47 @@ boolean canCross(int[] stones) {
     return false;
 }
 
+def minjp(arr):  // use single var to track, no need to have ary.
+  mjp = 1;
+  maxRightOfCurrentMinJP,nextMaxRite = 1, arr[0], arr[0]   // seed with value of first.
+  for i in xrange(1,n):
+    if i < maxRightOfCurrentMinJP:    
+      nextMaxRite = max(nextMaxRite, i+arr[i])
+    else:   // when approaching to current jp
+      mjp += 1
+      maxRightOfCurrentMinJP = nextMaxRite
+    if maxRightOfCurrentMinJP >= n:
+      return mjp
+
+// once need aggregation value, (max/min/tot), need dp[i] : min jp from 0->i, track farest of current jp, 
+import java.util.PriorityQueue;
+import java.util.concurrent.locks.StampedLock;
+import sys
+def minjp(arr):
+  dp = [sys.maxint]*len(arr)
+  dp[0] = 0
+  for i in xrange(1, len(arr)):  // bottom up, expand to top. 
+    for j in xrange(i):
+      if arr[j] + j >= i:  // can reach i
+        dp[i] = min(dp[i], dp[j] + 1)
+  return dp[len(arr)-1]
+assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
+
 // # task scheduling. BFS with PQ to sort task counts. poll PQ with cooling interval. 
 // # we want schedule largest task once cool constraint is satisfied.
 static int scheduleWithCoolingInterval(char[] tasks, int coolInterval) {
     int[] counts = new int[26];
     int sz = tasks.length;
     for (int i=0;i<sz;i++) { counts[tasks[i]-'A'] += 1; }
-    PriorityQueue<Integer> taskq = new PriorityQueue<Integer>(26, Collections.reverseOrder());
-    for (int i=0;i<26;i++) { if (counts[i] > 0) { taskq.offer(counts[i]); } } 
-    
     int timespan = 0;  // tot time for all intervals
+    PriorityQueue<Integer> taskq = new PriorityQueue<Integer>(26, Collections.reverseOrder());
+    // seed q with each tasks counts.
+    for (int i=0;i<26;i++) { if (counts[i] > 0) { taskq.offer(counts[i]); } } 
     while (!taskq.isEmpty()) {
         List<Integer> unfinishedTasks = new ArrayList<Integer>();
-        int intv = 0;               // now I need a counter to break while loop.
+        int intv = 0;                   // now I need a counter to break while loop.
         while (intv < coolInterval) {   // each cool interval
-            if (!queue.isEmpty()) {
+            if (!taskq.isEmpty()) {
                 int task = pq.poll();
                 if (task > 1) { unfinishedTasks.add(task-1); }  // scheduled, -1
             }
@@ -1169,11 +1394,11 @@ static int scheduleWithCoolingInterval(char[] tasks, int coolInterval) {
     return timespan;
 }
 
-// # A=5, B=5, C=4, cnt=5, there are both A,B. need to merge.
+// we need a heap to store and sort top k,
 // # can use bucket[cnt] = [] to merge.
 List<String> topKFrequent(String[] words, int k) {
     Map<String, Integer> wordCount = new HashMap();
-    for (String word: words) {    # wd, and its counts
+    for (String word: words) {    // wd, and its counts
       wordCount.put(word, wordCount.getOrDefault(word, 0) + 1); }
     PriorityQueue<String> heap = new PriorityQueue<String>(
         (w1, w2) -> wordCount.get(w1).equals(wordCount.get(w2)) ?
@@ -1181,7 +1406,7 @@ List<String> topKFrequent(String[] words, int k) {
 
     for (String word: wordCount.keySet()) {   // add all words to PQ
         heap.offer(word);
-        if (heap.size() > k) heap.poll();  // cap the heap size.
+        if (heap.size() > k) heap.poll();     // cap the heap size.
     }
     List<String> ans = new ArrayList();
     while (!heap.isEmpty())  {  ans.add(heap.poll()); }
@@ -1202,7 +1427,7 @@ static int maxDist(int[] arr) {
     int[] lmin = new int[sz];
     int[] rmax = new int[sz];
     int min = 999, max = 0;
-    for (int i=0;i<sz;i++) {
+    for (int i=0; i<sz; i++) {
         min = Math.min(min, arr[i]);
         lmin[i] = min;
         max = Math.max(max, arr[sz-1-i]);
@@ -1243,11 +1468,11 @@ public int longestConsecutive(int[] nums) {
     UnionFind uf = new UnionFind(nums.length);
     Map<Integer,Integer> map = new HashMap<Integer,Integer>(); // <value,index>
     for(int i=0; i<nums.length; i++) {
-        if(map.containsKey(nums[i])){ continue; }
-        map.put(nums[i], i); # <value, index>
+        if (map.containsKey(nums[i])){ continue; }
+        map.put(nums[i], i); // <value, index>
         // looking for its neighbors, union i and x into one bucket
-        if(map.containsKey(nums[i]+1)){ uf.union(i, map.get(nums[i]+1)); }  // union index i, and k
-        if(map.containsKey(nums[i]-1)){ uf.union(i, map.get(nums[i]-1)); }
+        if (map.containsKey(nums[i]+1)) { uf.union(i, map.get(nums[i]+1)); }  // union index i, and k
+        if (map.containsKey(nums[i]-1)) { uf.union(i, map.get(nums[i]-1)); }
     }
     return uf.maxUnion();
 }
@@ -1288,7 +1513,7 @@ static int longestConsecutive(int[] nums) {
 
     int longestStreak = 0;
     for (int num : num_set) {
-        if (!num_set.contains(num-1)) {  # only move forward from start node
+        if (!num_set.contains(num-1)) {  // only move forward from start node
             int currentNum = num;
             int currentStreak = 1;
             while (num_set.contains(currentNum+1)) {
@@ -1309,7 +1534,7 @@ def longestArithmathProgress(arr):
   //  boundary, dp[i][n] = 2, [arr[i], arr[n]] is an AP with len 2
   for i in xrange(len(arr)-2, -1, -1):   dp[i][len(arr)-1] = 2
   // i is the middle of the 3, 
-  for i in xrange(len(arr)-2, -1, -1): # start from n-2
+  for i in xrange(len(arr)-2, -1, -1): // start from n-2
     k = i-1, j = i+1
     while k >= 0 and j < len(arr):
       if 2*arr[i] == arr[k] + arr[j]:
@@ -1319,7 +1544,7 @@ def longestArithmathProgress(arr):
         k -= 1, j += 1
       elif 2*arr[i] > arr[k] + arr[j]:  j += 1
       else:                             k -= 1
-    if k >= 0:  # if k is out, then [i:j] as header 2.
+    if k >= 0:  // if k is out, then [i:j] as header 2.
       dp[k][i] = 2
       k -= 1
   return mx
@@ -1331,7 +1556,7 @@ def LAP(arr):
   dp = [[0]*len(arr) for i in xrange(len(arr))]
   for i in xrange(1,len(arr)):      dp[0][i] = 2
   for i in xrange(1,len(arr)-1):
-    k,j=i-1,i+1
+    k,j = i-1,i+1
     while k >= 0 and j <= len(arr)-1:
       if 2*arr[i] == arr[k]+arr[j]:
         dp[i][j] = dp[k][i] + 1
@@ -1390,20 +1615,6 @@ def productExcl(arr):
 mx[i] = max(mx[i-1]*v, mn[i-1]*v, v),
 at each idx, either it starts a new seq, or it join prev sum
 '''
-def maxProduct(a):
-  maxProd = cur_max = cur_min = a[0]  # first el as cur_max/min
-  cur_beg, cur_end, max_beg, max_end = 0,0,0,0
-  for cur in a[1:]:
-      new_min = cur_min*cur, new_max = cur_max*cur
-      # update max/min of cur after applying cur el
-      cur_min = min([cur, new_max, new_min])
-      cur_max = max([cur, new_max, new_min])
-      maxProd = max([maxProd, cur_max])
-      if maxProd is cur_max:
-          cur_end, max_end = i,i
-          #upbeat(max_beg, max_end)
-  return maxProd
-
 int maxProduct(int A[], int n) {
   // store the result that is the max we have found so far
   int r = A[0];
@@ -1417,7 +1628,7 @@ int maxProduct(int A[], int n) {
 
       // max/min product for the current number is either the current number itself
       // or the max/min by the previous number times the current one
-      imax = max(A[i], imax * A[i]);
+      imax = max(A[i], imax * A[i]);   // A[i]
       imin = min(A[i], imin * A[i]);
 
       // the newly computed max value is a candidate for our global result
@@ -1434,24 +1645,24 @@ to overcome circular, do 2 passes, as when second pass, stk has the greater rite
 """
 int[] nextGreater(int[] arr) {
   Deque<Integer> stk = new ArrayDequeu<>();
-  int[] res = new int[sz];
+  int[] nextGreater = new int[sz];
   int sz = arr.length, i = 0;
-  for(int i=sz-1; i>=0; i--) {   # from rite -> left.
-    while (!stk.isEmpty() && arr[i] >= stk.peekLast()) {  // clean up stk when its top < arr[i]
+  for(int i=sz-1; i>=0; i--) {   // from rite -> left.
+    while (!stk.isEmpty() && arr[i] >= stk.peekLast()) {  // clean up stk when stk top is no use.
       stk.pollLast();
     }
-    res[i] = stk.isEmpty() ? -1 : arr[stk.peekLast()];
+    nextGreater[i] = stk.isEmpty() ? -1 : arr[stk.peekLast()];
     stk.offerLast(i);
   }
   for(int i=sz-1;i>=0;i--) {
     while (!stk.isEmpty() && arr[i] >= stk.peekLast()) {
       stk.pollLast();
     }
-    res[i] = stk.isEmpty() ? -1 : arr[stk.peekLast()];
+    nextGreater[i] = stk.isEmpty() ? -1 : arr[stk.peekLast()];
   }
 }
 
-// build Lmin[], and use stack from rite to left, compare stk peek to lmin[r], not arr[r]
+// build Lmin[], and use stack from rite to left, ycompare stk peek to lmin[r], not arr[r]
 boolean oneThreetwoPattern(int[] arr) {
   int sz = arr.length;
   int[] lmin = new int[sz];
@@ -1459,15 +1670,55 @@ boolean oneThreetwoPattern(int[] arr) {
   Stack<Integer> stk = new Stack<>();
   for (int i=1;i<sz;i++) { lmin[i] = Math.min(lmin[i-1, arr[i]); }
   for (int r=sz-1;r>=0;r--) {
-    if (arr[r] > lmin[r])
+    if (arr[r] > lmin[r]) {  // only when 1 < 3, then find 2.
       while (!stk.isEmpty() && stk.peek() <= lmin[r]) {   // stk top < lmin.r, no use, pop.
         stk.pop();
       }
-      if (!stk.isEmpty() && stk.peek() < arr[r]) {
+      if (!stk.isEmpty() && stk.peek() < arr[r]) {   // after pop, if stk not empty, and its top < arr[r]
         return true;
       }
       stk.push(arr[r]);
+    }
   }
+}
+
+//
+// skyline problem
+class Event implements Comparable<Event> {
+  int id, x, ht, type;
+  @Override public int compareTo(Event other) { if (this.x == other.x) {return this.type * this.x - other.type* other.x; } return this.x - other.x;
+}
+class HeapEntry { int id, int ht, 
+  @Override public boolean equals(Object o){ 
+    if(o instanceof HeapEntry){
+      HeapEntry e = (HeapEntry)o;
+      return id == e.id && ht == e.ht;
+    }
+    return false;
+  }
+  @Override public int hashCode() {
+    int result = 17;
+    result = 31 * result + id^ht;
+    return result;
+  }
+}
+Class Skyline {
+  List<Event> events = new ArrayList<>();
+  for (int i=0;i<arr.length;i++) { events.add(new Event(arr[i].x, arr[i].ht, arr[i].type))}
+  Collections.sort(events);
+  PriorityQueue<int[]> maxHeap = new PriorityQueue<>(sz, (e1, e2) -> {e1.ht - e2.ht});
+  for (Event e : events) {
+    if (e.type == "entering") {
+      if (e.ht > maxheap.peek()) {
+        res.add(e.id, e.ht)
+      }
+      maxheap.add(new HeapEntry(e.id, e.ht);
+    } else if (e.type == "leaving") {
+      maxheap.remove(new HeapEntry(e.di, e.ht))
+      if (e.ht > maxheap.peek()) {
+        res.add(e.x, maxheap.max());
+      }
+    }
 }
 
 """ first missing pos int. bucket sort. L[0]=1, L[1]=2. value from 1..n
@@ -1503,12 +1754,12 @@ def maxrepeat(arr):
   for i in xrange(len(arr)):
     while arr[i] >= 0 and arr[i] != i and arr[i] != sys.maxint:
       v = arr[i]
-      if arr[v] > 0:  # first time swapped to.
+      if arr[v] > 0:  // first time swapped to.
         swap(arr, i, v)
         arr[v] = -1
-      else:           # target already swapped, it is repeat. incr repeat cnt.
+      else:           // target already swapped, it is repeat. incr repeat cnt.
         arr[v] -= 1
-        arr[i] = sys.maxint  # i is repeat node. mark it.
+        arr[i] = sys.maxint  // i is repeat node. mark it.
     if arr[i] == i:
       arr[i] = -1
   return arr
@@ -1521,8 +1772,8 @@ def repmiss(arr):
       v = arr[i]-1
       if arr[v] > 0:
         swap(arr, i, v)
-        arr[v] = -arr[v]  # flip to mark as present.
-      else:         # arr[v-1] < 0:
+        arr[v] = -arr[v]  // flip to mark as present.
+      else:               // arr[v-1] < 0:
         print "dup at ", i, arr
         break
   return arr
@@ -1534,13 +1785,13 @@ def bucketsort_count(arr):
   for i in xrange(len(arr)):
     while arr[i] != i+1 and arr[i] >= 0 and arr[i] != 999:  # skip DUP
       v = arr[i]
-      if arr[v] >= 0:    # swap and toggle!
+      if arr[v] >= 0:    // swap and toggle!
         swap(arr, i, v)
         arr[v] = -1
-      else:             # inc and sentinel
+      else:             // inc and sentinel
         arr[v] -= 1
-        arr[i] = 999    # set cur i to SENTI to indicate it is dup
-    if arr[i] == i+1:   # toggle to negate after position match.
+        arr[i] = 999    // set cur i to SENTI to indicate it is dup
+    if arr[i] == i+1:   // toggle to negate after position match.
       arr[i] = -1
   return arr
 print bucket([1, 2, 4, 3, 2])
@@ -1652,11 +1903,11 @@ int[] robSub(TreeNode root) {
 """ keep track of 2 values for each ele, max of exclude this ele, and the
 max of no care of whether incl or excl cur ele. """
 def calPack(arr):
-  maxsofar, excl= arr[0], 0     # maxsofar set to include head
-  for i in xrange(1,len(arr)):  # start from 1
+  maxsofar, excl= arr[0], 0     // maxsofar set to include head
+  for i in xrange(1,len(arr)):  // start from 1
     inclcur = excl + arr[i]   // use pre excl
-    excl = maxsofar   / / exclude current, use maxsofar, excl become excl pre in another round.
-    # when out, update max so far for current item before leaving
+    excl = maxsofar   // exclude current, use maxsofar, excl become excl pre in another round.
+    // when out, update max so far for current item before leaving
     maxsofar = max(inclcur, excl)
   return max(maxsofar,exclPre)
 
@@ -1734,44 +1985,17 @@ int ways(char ch1, char ch2) {
 static int decodeWays(String s) {
     long[] dp = new long[2];
     dp[0] = ways(s.charAt(0));
-    if(s.length() < 2) return (int)dp[0];
-    # dp[1] is nways from [0,1]
+    if (s.length() < 2) return (int)dp[0];
+    // dp[1] is nways from [0,1]
     dp[1] = dp[0] * ways(s.charAt(1)) + ways(s.charAt(0), s.charAt(1));
     // DP tab bottom up from string of 2 chars to N chars.
-    for(int j = 2; j < s.length(); j++) {  # start from j=2
+    for(int j = 2; j < s.length(); j++) {  // start from j=2
         long temp = dp[1];
         dp[1] = (dp[1] * ways(s.charAt(j)) + dp[0] * ways(s.charAt(j-1), s.charAt(j))) % 1000000007;
         dp[0] = temp;
     }
     return (int)dp[1];
 }
-
-"""
-find kth smallest ele in a union of two sorted list
-two index at A, B array, and inc smaller array's index each step for k steps.
-(lgm + lgn) solution: binary search. keep two index on A, B so that i+j=k-1.
-  i, j are the index that we can chop off from A[i]+B[j] = k, then we found k.
-  if Ai falls in B[j-1, j], found, as A[0..i-1] and B[0..j-1] is smaller.
-  otherwise, A[0..i] must less than B[j-1], chop off smaller A and larger B.
-  recur A[i+1..m], B[0..j]
-"""
-def findKth(A, m, B, n, k):   // the smaller ary always at the begining.
-  if m > n: return findKth(B,n,A,m,k)
-  if m == 0: return B[k-1]
-  if k == 1: return min(A[0],B[0])
-  ia = min(k/2, m)
-  ib = k-ia
-
-  if   A[ia-1] < B[ib-1]:    return findKth(A[ia:], m-ia, B, n, k-ia)
-  elif A[ia-1] > B[ib-1]:    return findKth(A, m, B[ib:], n-ib, k-ib)
-  else:                      return A[ia-1]
-def testFindKth():
-  A = [1, 5, 10, 15, 20, 25, 40]
-  B = [2, 4, 8, 17, 19, 30]
-  Z = sorted(A + B)
-  assert(Z[9] == findKth(A, len(A), B, len(B), 10))
-  assert(Z[0] == findKth(A, len(A), B, len(B), 1))
-  assert(Z[12] == findKth(A, len(A), B, len(B), 13))
 
 """ 
   selection algorithm, find the kth largest element with worst case O(n)
@@ -1793,10 +2017,60 @@ def selectKth(A, beg, end, k):
 
   while True:   # continue to loop 
     pivotidx = random.randint(l, r)
-    rank = partition(A, l, r, pivotidx)  # the start idx of items grter than pivot.
+    rank = partition(A, l, r, pivotidx)  // the start idx of items grter than pivot.
     if rank == k: return A.rank
-    if rank < k: return selectKth(A, l, rank, k-rank)
-    else: return selectKth(A, rank, r, k-rank)
+    if rank < k:  return selectKth(A, l, rank, k-rank)
+    else:         return selectKth(A, rank, r, k-rank)
+
+"""
+find kth smallest ele in a union of two sorted list
+"""
+static int kth(int[] arr, int[] brr, int k) {
+  int asz = arr.length, bsz = brr.length;
+  if (asz > bsz) { return kth(brr, arr, k); }
+  if (asz == 0) return brr[k-1];
+  if (k == 1) { return Math.min(arr[0], brr[0]); }
+  
+  int aidx = Math.min(asz, k/2);   // take half
+  int bidx = Math.min(bsz, k/2);    // a+b = k-1
+  // must -1, as we take half of 
+  if (arr[aidx-1] > brr[bidx-1]) {    // discard half every time.
+      int[] subb = Arrays.copyOfRange(brr, bidx, brr.length);
+      return kth(arr, subb, k-bidx);  
+  } else {
+      int[] suba = Arrays.copyOfRange(arr, aidx, arr.length);
+      return kth(suba, brr, k-aidx);
+  }
+}
+System.out.println(kth(new int[]{2, 3, 6, 7, 9}, new int[]{1, 4, 8, 10}, 4));
+
+// binary partition the shorter ary to left/rite, longer one partition by (m+n)/2 - partidx;
+static double medianOfTwoSorted(int[] A, int[] B) {
+  if (A.length > B.length) return medianOfTwoSorted(B, A);
+  int asz = A.length, bsz = B.length;
+  int lo = 0, hi = asz;   // not sz-1, but sz
+  while (lo <= hi) {
+    int px = (lo+hi)/2;
+    int py = (asz + bsz + 1)/2 - px;  // px+py = total_size/2;
+    int amaxleft = px == 0 ? -1 : A[px-1];
+    int aminrite = px == asz ? Integer.MAX_VALUE : A[px];
+    int bmaxleft = py == 0 ? -1 : A[px-1];
+    int bminrite = px == bsz ? Integer.MAX_VALUE : B[py];
+
+    if (amaxleft < bminrite && bmaxleft < aminrite) {
+      if ((asz+bsz) % 2 == 0) {
+        return (double)(Math.max(amaxleft, bmaxleft) + Math.max(aminrite, bminrite))/2;
+      } else {
+        return Math.max(amaxleft, bmaxleft);
+      }
+    } else if (amaxleft > bminrite) {
+      hi = px - 1;
+    } else {
+      lo = px + 1;
+    }
+  }
+  throw new IllegalArgumentException();
+}
 
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 // interval scheduling
@@ -1833,6 +2107,24 @@ class MyCalendar {
         return k;
     }
 }
+
+// # longest length of interval chain, sort interval by END time. interval scheduling.
+// # https://leetcode.com/problems/maximum-length-of-pair-chain/discuss/105631/Python-Straightforward-with-Explanation-(N-log-N)
+// #  dp[i] = the lowest END of the chain of length i
+static int longestIntervalChain(int[][] arr) {
+  Arrays.sort(arr, (a, b) -> a[1] - b[1]);   // sort by end time.
+  List<Integer> dp = new ArrayList<>();
+  for (int i=0; i<arr.length; i++) {
+    int st = arr[i][0], ed = arr[i][1];
+    int idx = Arrays.binarySearch(dp, st);
+    if (idx == dp.length) {       dp.add(ed); }     // append to the end
+    else if (ed < dp[idx]) {      dp.set(idx,ed);}  // update ix with current smaller value
+  }
+  return dp.size() - 1;
+}
+// The other way is stk, sort by end time, and stk thru it.
+if stk.top().end > curIntv.end: stk.top().end = curInterv.end;
+
 
 // interval overlap, when adding a new interval, track min END edge of all overlap intervals.
 // if curInterval.start < minEnd, means cur overlap. update minEnd with the smaller end minEnd = min(minEnd, curinterval.end), 
@@ -1878,10 +2170,10 @@ int leastBricks(List<List<Integer>> wall) {
     Map<Integer, Integer> map = new HashMap();
     int count = 0;
     for (List<Integer> row : wall) {
-        int rowWidth = 0;   # when start a new row, init counter
+        int rowWidth = 0;   // when start a new row, init counter
         for (int i = 0; i < row.size() - 1; i++) {   
             rowWidth += row.get(i);     // grow rowWidth for each brick in the row.
-            map.compute(rowWidth, (k, v) -> v += 1);
+            //map.compute(rowWidth, (k, v) -> v += 1);
             map.put(rowWidth, map.getOrDefault(rowWidth, 0) + 1);
             count = Math.max(count, map.get(rowWidth));
         }
@@ -1898,7 +2190,7 @@ class RangeModule {
     public void addRange(int left, int rite) {
         if (rite <= left) return;
         Integer startKey = map.floorKey(left);
-        Integer endKey = map.floorKey(rite);  // floorKey of the rite edge. (greatest key that <= rite, might eqs startkey
+        Integer endKey   = map.floorKey(rite);  // floorKey of the rite edge. (greatest key that <= rite, might eqs startkey
         if (startKey == null && endKey == null) {  map.put(left, rite); }
         else if (startKey != null && map.get(startKey) >= left) {   // end > left, startkey overlap new range, merge with max endkey[0] and rite
             map.put(startKey, Math.max(map.get(endKey), Math.max(map.get(startKey), rite)));
@@ -1974,7 +2266,7 @@ public List<Integer> preorderTraversal(TreeNode root) {
   List<Integer> result = new ArrayList<>();
   Deque<TreeNode> stack = new ArrayDeque<>();
   TreeNode cur = root;
-  while(!stack.isEmpty() || cur != null) {
+  while (!stack.isEmpty() || cur != null) {
       if(cur != null) {
           stack.push(cur);
           result.add(cur.val);  // Add before going to children
@@ -2043,17 +2335,17 @@ def popNext(root):
 
 // iterative in order, reduce k after visited a node(dfs return, or stk pop)
 int kthSmallest(TreeNode root, int k) {
-   Stack<TreeNode> stack = new Stack<>();
-   while(root != null || !stack.isEmpty()) {
-       if (root != null) {
-           stack.push(root);    
-           root = root.left;   
-       } else {
-        root = stack.pop();  
-        // after pop, done visiting the node, --k
-        if(--k == 0) break;
-        root = root.right;
-      }
+    Stack<TreeNode> stack = new Stack<>();
+    while(root != null || !stack.isEmpty()) {
+        if (root != null) {
+            stack.push(root);    
+            root = root.left;   
+        } else {
+            root = stack.pop();  
+            // after pop, done visiting the node, --k
+            if(--k == 0) break;
+            root = root.right;
+        }
    }
    return root.val;
 }
@@ -2138,7 +2430,7 @@ class MapSum {
     }
     return dfs(curr);
   }
-  private int dfs(TrieNode root) {
+  private int dfs(TrieNode root) {  // return sum.
     int sum = 0;
     for (char c : root.children.keySet()) {    # dfs all children
       sum += dfs(root.children.get(c));
@@ -2265,7 +2557,7 @@ static int maxSum3Subary(int[] arr, int subarylen) {
         leftMax[i] = leftmaxsofar;
     }
 
-    //  when mov from rite to left i, to include i, need i-1.
+    // when mov from rite to left i, to include i, need i-1.
     ritemaxsofar = psum[sz-1] - psum[sz-1-subarylen];
     riteMax[sz-subarylen] = ritemaxsofar;
     for (int i=sz-1-subarylen; i>=subarylen; i--) {
@@ -2316,7 +2608,7 @@ static int maxAvgSumKgroups(int[] arr, int k) {
     int[][] dp = new int[sz][k+1];
     // boundary case, just 1 grp
     for (int i=0;i<sz;i++) { dp[i][1] = psum[i]/(i+1); }
-    # expand to multiple grps
+    // expand to multiple grps
     for (int grp=2;grp<=k;grp++) {
         int[] nxtDp = new int[sz];
         for (int i=0; i<sz; i++) {
@@ -2396,7 +2688,7 @@ System.out.println("count of range sum is " + pairsCnt);
 // count total pairs. For each growing i, lseek j=i+1, 
 static int countPairsDistLessThan(int[] arr, int d) {
   int totPairs, j;
-  for (int i=0; i<arr.length; i++) {
+  for (int i=0; i < arr.length; i++) {
     j = i+1;
     while (j < arr.length && arr[j] - arr[i] <= d) j += 1; 
     totPairs += (j-i-1);
@@ -2672,14 +2964,14 @@ int search(Node root, long val) {
     else if (val < root.val) { return search(root.left, val); }
     else { return root.rank + search(root.rite, val);
 }
-# you can update rank upon entering during insertion, or after insert, update by getting children rank.
+// you can update rank upon entering during insertion, or after insert, update by getting children rank.
 private Node insert(Node root, int val) {
     if (root == null) { root = new Node(val); }
     else if (val == root.val) { root.rank++; }
     else if (val < root.val)  { root.rank++; root.left = insert(root.left, val); }
-    else {                                  root.rite = insert(root.right, val); }
-    # or post insertion update rank
-    # root.rank = root.left.rank + root.rite.rank + 1;
+    else {                                   root.rite = insert(root.right, val); }
+    // or post insertion update rank
+    // root.rank = root.left.rank + root.rite.rank + 1;
     return root;
 }
 
@@ -2716,11 +3008,12 @@ AVLTree(object):
       AVLTree pre = null;
       while (cur != null) {
           pre = cur;
-          if (cur.value > k) { cur = cur.left;} 
-          else { cur = cur.rite; }
+          if (cur.value > k) { cur = cur.left; } 
+          else               { cur = cur.rite; }
       }
+      // when out while, cur == null
       if (pre.value > k) { pre.left = new AVLTree(k); }
-      else { pre.rite = new AVLTree(k); }
+      else               { pre.rite = new AVLTree(k); }
   }
   int insert(int k) {
       if (k < value && left == null) { left = new AVLTree(k); }
@@ -2869,14 +3162,33 @@ def mergesort(arr, lo, hi):
 left[l] > rite[0..r-1], because we mov r when rite[r] < left[l].
 so rank[l]+= r.
 """
+static List<E> mergeSort(List<E> a, List<E> b) {
+  int al = a.size(), bl=b.size();
+  int aidx=0,bidx=0;
+  List<E> out = new ArrayList<>();
+  while (a.size() > 0 && b.size()) {
+    if (a.get(0) >= b.get(0)) {
+      out.add(a.remove(0));
+    } else {
+      out.add(b.remove(0));
+    }
+  }
+  if (a.size() > 0) {
+    out.addAll(a);
+  } else {
+    out.addAll(b);
+  }
+  return out;
+}
+
 def riteSmaller(arr):
   def merge(left, rite):
     ''' left rite ary is sorted and contains idx of ary '''
     out = []
     l,r = 0,0
     while l < len(left) and r < len(rite):
-      lidx,ridx = left[l],rite[r]
-      if arr[lidx] < arr[ridx]:  # mov l until could not. rank+=r
+      lidx,ridx = left[l], rite[r]
+      if arr[lidx] < arr[ridx]:  # left < rite, then rite side, [0..r] is inverse. no inverse, r=0;
         rank[lidx] += r
         out.append(lidx)
         l += 1
@@ -2968,20 +3280,34 @@ def dfsSerde(root, out):
   out.append("$")
 
 """ iterative with stk, stk top is parent of cur during deser"""
-# 1 [2 [4 $] $] [3 [5 $] $] $
-from collections import deque
-def deserTree(l):
-  stk = deque()
-  root = None
-  while nxt = l.readLine():
-    if nxt is not "$":
-      if len(stk) > 0:
-        p = stk.top()
-        p.children.append(nxt)  // children is an ary.
-      stk.append(nxt)
-    else:
-      root = stk.pop()
-  return root
+# 1 [2 [4 $] $] [3 [5 $] $] 
+static void deserTree(InputStream in, Stack<Node> stk) {
+  char hd;
+  input >> hd;
+  if (hd == "$") {
+    stk.pop();      // one recursion is done
+  } else {
+    Node cur = new Node(hd);
+    stk.peek().addChild(cur)
+    stk.push(cur);
+  }
+  deserTree(in, stk);
+}
+
+static void deserTree(InputStream in) {
+  Stack<Node> stk = new Stack<Node>();
+  while (!in.EOF) {
+    char hd = in.getChar();
+    if (hd == "$") {
+      root = stk.pop();
+    } else {
+      Node cur = new Node(hd);
+      stk.peek().addChild(cur)
+      stk.push(cur);
+    }
+  }
+  return root;
+} 
 
 """ use recursion, you know which children it is while recur."""
 static void serial(Node root, OutputStream out) {
@@ -2990,16 +3316,26 @@ static void serial(Node root, OutputStream out) {
   serial(root.left);
   serial(root.rite);
 }
-# recursive deserial, one recursion ends when $
+// recursive deserial, one recursion ends when $
 static Node deserial(InputStream stream) {
   char hd;
   stream >> hd;
   if (hd == "$") { return null; }
   Node subroot = new Node(hd);
-  # caller exactly knows which children it is serialing now. dfs ends upon $.
+  // caller exactly knows which children it is serialing now. dfs ends upon $.
   subroot.left = deserial(stream);
   subroot.rite = deserial(stream);
   return subroot;
+}
+
+static Stream<Map.Entry<K,V>> sortMap(int[] arr) {
+  Map<Integer, Integer> counts = new HashMap<>();
+  for (int i=0;i<arr.length;i++) {
+    counts.put(arr[i], counts.getOrDefault(arr[i], 0)+1);
+  }
+  Stream<Map.Entry<Integer,Integer>> stream = counts.entrySet().stream().sorted(Map.Entry.comparingByValue());
+  stream.forEach(e -> System.out.println(e.getValue()));
+  return stream;
 }
 
 """ no same char shall next to each other """
@@ -3027,9 +3363,9 @@ print noAdj("abacbcdc")
 print noAdj("aabbc")
 
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
-// From src -> dst, min path  dp[src][1111111]   bitmask as path.
+// From src -> dst, min path dp[src][1111111]   bitmask as path.
 //  1. dfs(child, path); start root, for each child, if child is dst, result.append(path)
-//  2. BFS(PQ); seed PQ(sort by weight) with root, poll PQ head, for each child of hd, relax. offer child.
+//  2. BFS(PQ); seed PQ(sort by weight) with root, poll PQ head, for each child of hd, relax by offering child.
 //  3. DP[src,dst] = DP[src,k] + DP[k, dst]; In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
 //        dp[i, j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
 //        dp[i,j] = min(dp[i,j-1], dp[i-1,j]) + G[i,j];
@@ -3040,7 +3376,7 @@ print noAdj("aabbc")
 // For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]
 def minpathDFS(G, src, dst, cost, tab):
   mincost = cost[src][dst]
-  # for each intermediate node
+  // for each intermediate node
   for v in G.vertices():
     if v != src and v != dst:
       mincost = min(mincost, minpathDFS(G,src,v) + minpathDFS(G,v,dst))
@@ -3052,7 +3388,7 @@ int minPathSum(G) {
   int rows = G.size();
   int cols = G[0].size();
   int[] dp = new dp[cols];  // dp table ary width is cols.
-  # boundary cols, add first row.
+  // boundary cols, add first row.
   for (int i=1;i<cols;i++) {
     dp[i] = dp[i-1] + G[0][i];
   }
@@ -3065,17 +3401,7 @@ int minPathSum(G) {
   return dp[cols-1];
 }
 
-''' minjp, can not use prepre, pre, cur '''
-def minpath(G, src, dst):
-  dp = [sys.maxint]*szie
-  dp[0] = 0
-  for i in xrange(n):
-    for j in xrange(n):
-      if i != j:
-        dp[i] = min(dp[j]+G[i][j], dp[i])
-  return dp[n-1]
-
-''' mobile pad k edge, BFS search each direction and track min with dp[src][dst][k] '''
+// mobile pad k edge, BFS search each direction and track min with dp[src][dst][k] '''
 def minpath(G, src, dst, k):
   for gap in xrange(k):
     for s in G.vertices():
@@ -3090,9 +3416,9 @@ def minpath(G, src, dst, k):
             dp[s][d][gap] = min(dp[k][d][gap-1]+G[src][k])
   return dp[src][dst][k]
 
-''' first step to use topology sort prune, tab[i] = min cost to reach dst from i'''
+// first step to use topology sort prune, tab[i] = min cost to reach dst from i'''
 def minpath(G, src, dst):
-  def topsort(G,src, stk):  # sort result in a stk
+  def topsort(G, src, stk):  # sort result in a stk
     def dfs(s,G,stk):
       for v in neighbor(G,s):
         if not visited[v]:
@@ -3104,9 +3430,9 @@ def minpath(G, src, dst):
         dfs(v,G,stk)
     return stk
 
-  toplist = topsort(G,src,stk)
+  toplist = topsort(G, src, stk)
   for i in g.vertices(): tab[i] = sys.maxint
-  # after topsort, leave at the end of the list.
+  // after topsort, leave at the end of the list.
   dp[d] = 0   // dp[i] = dist 
   for nb in d.neighbor():   dp[nb] = cost[nb][d]
   for i in xrange(len(toplist)-1,-1,-1):
@@ -3114,7 +3440,7 @@ def minpath(G, src, dst):
       dp[j] = min(dp[i]+cost[i][j], dp[j])
   return dp[src]
 
-# BFS PQ as heap. Poll, for each nb, update cost, then offer(nb)
+// BFS PQ as heap. Poll, for each nb, update cost, then offer(nb)
 int cutOffTree(List<List<Integer>> forest, int sr, int sc, int tr, int tc) {
     int R = forest.size(), C = forest.get(0).size();
     PriorityQueue<int[]> heap = new PriorityQueue<int[]>( (a, b) -> Integer.compare(a[0], b[0]));
@@ -3151,14 +3477,14 @@ int cheapestPriceWithKStops(int[][] flights, int src, int dst, int k) {
     }
     // pq order by price, e[0], entry is ary of [price, src, stops].
     Queue<int[/* price, src, stop */]> pq = new PriorityQueue<>((a,b) -> Integer.compare(a[0], b[0]));
-    pq.add(new int[]{0, src, k+1});   # seed PQ with start and k steps
+    pq.offer(new int[]{0, src, k+1});   // seed PQ with start and k steps, reduce it on each step.
     while (!pq.isEmpty()) {
-        int[] hd = pq.remove();
+        int[] hd = pq.poll();
         int price = hd[0], city = hd[1], stops = hd[2];
         if (hd[1] == dst) { return price; }
-        if (stops > 0) {  # when still within k stops, enum all hd's neighbor
+        if (stops > 0) {  // when still within k stops, enum all hd's neighbor
             Map<Integer, Integer> adj = pricesGraph.getOrDefault(city, new HashMap<>());
-            for (int nb : adj.keySet()) {     # we do not filter unseen neighbors ?
+            for (int nb : adj.keySet()) {     // sort by price, we do not filter unseen neighbors ?
                 pq.add(new int[]{price + adj.get(nb), nb, stops-1});   # reduce stop when adding.
             }
         }
@@ -3168,30 +3494,31 @@ int cheapestPriceWithKStops(int[][] flights, int src, int dst, int k) {
 
 // seed pq with src, edges repr by G Map<Integer, List<int[]>>,  for each nb edge, relax dist
 int networkDelayTime(int[][] times, int N, int K) {
-    Map<Integer, List<int[]>> graph = new HashMap();
+    Map<Integer, List<int[]>> graph = new HashMap();   // vertex --> [edge pair].
     for (int[] edge: times) {
         graph.putIfAbsent(edge[0], new ArrayList<int[]>()).add(new int[]{edge[1], edge[2]});
     }
-    Map<Integer, Integer> dist = new HashMap();
+    // dist map from src-> [destination, dist]
+    Map<Integer, Integer> distMap = new HashMap();
 
     PriorityQueue<int[]> heap = new PriorityQueue<int[]>((info1, info2) -> info1[0] - info2[0]);    
-    heap.offer(new int[]{0, K});    # seed pq with src
+    heap.offer(new int[]{0, K});    // seed pq with src
     while (!heap.isEmpty()) {
         int[] info = heap.poll();
         int d = info[0], node = info[1];
-        if (dist.containsKey(node))  continue;  // already seen.
-        dist.put(node, d);
+        if (distMap.containsKey(node))  continue;      // already seen.
+        distMap.put(node, d);
         if (graph.containsKey(node)) {
-            for (int[] edge: graph.get(node)) {     // for each edge, relax dist
+            for (int[] edge: graph.get(node)) {     // for each edge, relax distMap
                 int nei = edge[0], d2 = edge[1];
-                if (!dist.containsKey(nei))         // only unseen neighbors
+                if (!distMap.containsKey(nei))         // only unseen neighbors
                     heap.offer(new int[]{d+d2, nei});
             }
         }
     }
-    if (dist.size() != N) return -1;
+    if (distMap.size() != N) return -1;
     int ans = 0;
-    for (int cand: dist.values())
+    for (int cand: distMap.values())
         ans = Math.max(ans, cand);
     return ans;
   }
@@ -3213,7 +3540,7 @@ int shortestPathToAllNode(int[][] graph) {
         repeat = false;
         for (int head = 0; head < N; ++head) {
             int d = dist[path][head];
-            for (int nb: graph[head]) {
+            for (int nb : graph[head]) {
                 int nxtPath = path | (1 << nb);
                 if (d + 1 < dist[nxtPath][nb]) {
                     dist[nxtPath][nb] = d+1;
@@ -3236,8 +3563,8 @@ int findMaximizedCapital(int k, int W, int[] Profits, int[] Capital) {
     
     for (int i = 0; i < Profits.length; i++) { pqCap.add(new int[] {Capital[i], Profits[i]}); }
     
-    for (int i = 0; i < k; i++) {
-        while (!pqCap.isEmpty() && pqCap.peek()[0] <= W) {
+    for (int i = 0; i < k; i++) {  // loop k batches, each batch polling capacity and add to profit
+        while (!pqCap.isEmpty() && pqCap.peek()[0] <= W) {  // one batch
             pqPro.add(pqCap.poll());
         }
         if (pqPro.isEmpty()) break;
@@ -3585,7 +3912,7 @@ def radixsort(arr):
   return arr
 print radixsort([170, 45, 75, 90, 802, 24, 2, 66])
 
-""" nlgn LIS, use parent to store each ele's parent """
+
 def longestIncreasingSequence(arr):
   def bisectUpdate(l, val):
     lo,hi = 0, len(l)-1
@@ -3595,7 +3922,7 @@ def longestIncreasingSequence(arr):
         lo = mid+1     # lo will > sz is val is biggest
       else:
         hi = mid
-    # l[lo] bound to great, here we need to ensure l[] is big.
+    // l[lo] bound to great, here we need to ensure l[] is big.
     l[lo] = val # update lo with smaller
     return lo
   parent = []
@@ -3684,7 +4011,7 @@ def concatKeys(s, arr):
       seen = 0
       count.clear()
       continue
-    # calculate rite edge first, as r starts from 0
+    // calculate rite edge first, as r starts from 0
     count[wd] += 1
     seen += 1
     # appear more caused by dups in left, slide left
@@ -3700,24 +4027,6 @@ def concatKeys(s, arr):
   return out
 
 
-"""keep track left min, max profit is when bot at min day sell today.
-keep track rite max, max profit is when bot today and sell at max day.
-"""
-def stock_profit(arr):
-  sz = len(l)
-  maxprofit = 0
-  lmin = arr[0]
-  for i in xrange(1, sz-1):
-    maxprofit = max(maxprofit, arr[i]-lmin)
-    lmin = min(lmin, arr[i])
-  return maxprofit
-    
-  rmax = arr[sz-1]
-  for i in xrange(sz-2,-1,-1):
-    maxprofit = max(maxprofit, rmax-arr[i])
-    rmax = min(rmax, arr[i])
-  return maxprofit
-
 """ allow 2 transactions, so maxp = max{one transaction on 0..i, one trans on i+1..n}
 left trans end at i, max(l[i-1], S[i]-valley)
 rite trans start at i, max(r[i+1], peak-S[i])
@@ -3729,7 +4038,7 @@ def stock_profit(L):
     for i in xrange(sz):
         valley = min(valley, L[i])
         lp[i] = max(lp[i-1], L[i]-valley)  # max of exclude cur, or include cur.
-        # price peak going up from n..0
+        // price peak going up from n..0
         j = sz-i-1
         peak = max(peak, L[j])
         up[j] = max(up[j+1], peak-L[j])  # buy current, and sale at peak.
@@ -3955,16 +4264,51 @@ def maxRectangle(matrix):
     mx = max(mx, maxHistogram(rowHt))
   return mx
 
-  ''' ht of each col, maintain an incr stk. when cliff, ht[col] < stk.top, 
-  stk.top rect ends. cals max, and keep pop stk '''
-  def maxHistogram(rowHt):
-    stk, mx = [], 0
-    for col in xrange(len(rowHt)):
-      while rowHt[stk.top()] > rowHt[col]:  // use while to move left or pop stack.
-        mx = max(mx, rowHt[stk.top()]*(i-stk[-1]+1))  # left cliff * rite cliff
-        stk.pop()
-      stk.append(i)
-    return mx
+
+static int getMaxArea(int arr[], int n) {
+    // Create an empty stack. The stack holds indexes of arr[] array
+    // The bars stored in stack are always in increasing order of their
+    // heights.
+    Stack<Integer> s = new Stack<>();
+        
+    int max_area = 0; // Initialize max area
+    int tp;  // To store top of stack
+    int area_with_top; // To store area with top bar as the smallest bar
+    
+    // Run through all bars of given histogram
+    int i = 0;
+    while (i < n)
+    {
+        // If this bar is higher than the bar on top stack, push it to stack
+        if (s.empty() || arr[s.peek()] <= arr[i])
+            s.push(i++);
+        else{
+            tp = s.peek();  // store the top index
+            s.pop();  // pop the top
+  
+            // Calculate the area with arr[tp] stack as smallest bar
+            area_with_top = arr[tp] * (s.empty() ? i : i - s.peek() - 1);
+  
+            // update max area, if needed
+            if (max_area < area_with_top)
+                max_area = area_with_top;
+        }
+    }
+    
+    // Now pop the remaining bars from stack and calculate area with every
+    // popped bar as the smallest bar
+    while (s.empty() == false)
+    {
+        tp = s.peek();
+        s.pop();
+        area_with_top = arr[tp] * (s.empty() ? i : i - s.peek() - 1);
+  
+        if (max_area < area_with_top)
+            max_area = area_with_top;
+    }
+  
+    return max_area;
+}
 
 """ A[r,c] = (riteEdge[r,c] - leftEdge[r,c]) * ht. 
 use max left when substract left edge.
@@ -4064,29 +4408,7 @@ bottom up each row, inside each row, iter each col.
 At each row/col, recur incl/excl situation.
 Boundary condition: check when i/j=0 can not i/j-1.
 """ """ """ """ """
-def minjp(arr):   # use single var to track, no need to have ary.
-  mjp = 1;
-  maxRightOfCurrentMinJP,nextMaxRite = 1,arr[0],arr[0]   // seed with value of first.
-  for i in xrange(1,n):
-    if i < maxRightOfCurrentMinJP:    
-      nextMaxRite = max(nextMaxRite, i+arr[i])
-    else:
-      mjp += 1
-      maxRightOfCurrentMinJP = nextMaxRite
-    if maxRightOfCurrentMinJP >= n:
-      return mjp
 
-# once need aggregation value, (max/min/tot), need dp[i] : min jp from 0->i, track farest of current jp, 
-import sys
-def minjp(arr):
-  dp = [sys.maxint]*len(arr)
-  dp[0] = 0
-  for i in xrange(1, len(arr)):  # bottom up, expand to top. 
-    for j in xrange(i):
-      if arr[j] + j >= i:  # can reach i
-        dp[i] = min(dp[i], dp[j] + 1)
-  return dp[len(arr)-1]
-assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 
 ''' start from minimal, only item 0, loop items i=0..n, w loops weights at each item. 
 v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
@@ -4108,7 +4430,7 @@ def knapsack(arr, varr, W):
   return row[W]
 print knapsack([2, 3, 5, 7], [1, 5, 2, 9], 18)
 
-# mem optimization. only 2 rows needed.
+// mem optimization. only 2 rows needed.
 def backpack(arr, W):
   pre,row = [0]*(W+1), [0]*(W+1)
   for i in xrange(len(arr)):
@@ -4119,7 +4441,7 @@ def backpack(arr, W):
   return row[W]
 print backpack([2, 3, 5, 7], 11)
 
-# comb can exam head, branch at header incl and excl
+// comb can exam head, branch at header incl and excl
 def combination(arr, path, remain, pos, result):
   if remain == 0:
     result.append(path)  # add to result only when remain
@@ -4172,7 +4494,7 @@ def powerset(arr, offset, path, result):
   ''' subproblem with partial result, incl all interim results. '''
   result.append(path)
   processResult(path)   # optional process result for the path.
-  # within cur subproblem, for loop to incl/excl for next level.
+  // within cur subproblem, for loop to incl/excl for next level.
   for i in xrange(offset, len(arr)):
     # compare i to i-1 !!! not i to offset, as list is sorted.
     if i > offset and arr[i-1] == arr[i]:  continue # not arr[offset]
@@ -4305,7 +4627,7 @@ print permRankDup('baa')
 print permRankDup('BOOKKEEPER') == 10743
 assert permRankDup("BCBAC") == 15
 
-# Generate all possible sorted arrays from alternate eles of two sorted arrays
+// Generate all possible sorted arrays from alternate eles of two sorted arrays
 def alterCombRecur(a,b,ai,bi,froma,path,out):
   if froma:
     v = a[ai]
@@ -4332,9 +4654,9 @@ def alterComb(a,b):
   return out
 print alterComb([10, 15, 25], [1,5,20,30])
 
-# A good example to see difference between recur dfs memorize VS. dp
-# target sum, with two operations. add/sub, recur with each at header.
-# recur i+1 with add/sub
+//  A good example to see difference between recur dfs memorize VS. dp
+//  target sum, with two operations. add/sub, recur with each at header.
+//  recur i+1 with add/sub
 int targetSumRecurDFS(int[] nums, int offset, int sum, int S, int[][] memo) {
     if (offset == nums.length) { return sum == S ? 1 : 0;   } 
     else {
@@ -4347,7 +4669,7 @@ int targetSumRecurDFS(int[] nums, int offset, int sum, int S, int[][] memo) {
         return memo[offset][sum + 1000];
     }
 }
-# dp[i][s] += dp[i-1][s +/- a[i]], two dp rows. for each outer loop, always allocate new one.
+// dp[i][s] += dp[i-1][s +/- a[i]], two dp rows. for each outer loop, always allocate new one.
 int findTargetSumWays(int[] nums, int S) {
     int[] dp = new int[2001];
     dp[nums[0] + 1000] = 1;
@@ -4428,7 +4750,7 @@ def plusBetween(arr, target):
   return dp[len(arr)-1][target]
 print plusBetween([1,2,0,6,9], 81)
 
-""" BFS, search recursion carrying context, when reaching pos, carry path"""
+// BFS, search recursion carrying context, when reaching pos, carry path
 from collections import deque
 def genParenth(n):
   out = []
@@ -4452,7 +4774,7 @@ def genParenth(n):
   return out
 print genParenth(3)
 
-""" recur, generize formula, with boundary condition first """
+// recur, generize formula, with boundary condition first """
 from collections import deque
 def bfsInvalidParen(s):
   res = []
@@ -4717,7 +5039,7 @@ def editDistance(a, b):
       else:  dp[i][j] = 1 + min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1])  # get min
     return dp[len(a)][len(b)]
 
-# String length - Longest Common Sequence
+// String length - Longest Common Sequence
 int minDistance(String word1, String word2) {
     int dp[][] = new int[word1.length()+1][word2.length()+1];  # 1+len to avoid 
     # Longest common sequence.
@@ -4732,17 +5054,17 @@ int minDistance(String word1, String word2) {
     return word1.length() - val + word2.length() - val;
 }
 
-# BFS LinkedList. lseek to first diff, swap each off, j, like permutation, Recur with new state.
+// BFS LinkedList. lseek to first diff, swap each off, j, like permutation, Recur with new state.
 int kSimilarity(String A, String B) {
     if (A.equals(B)) return 0;
     Set<String> seen= new HashSet<>();
     Queue<String> q = new LinkedList<>();  # LinkedList Queue
-    q.add(A);       # seed q with A
+    q.add(A);       // seed q with A start
     seen.add(A);
     int res=0;
     while(!q.isEmpty()){
         res++;
-        for (int sz=q.size(); sz>0; sz--) {   # each level
+        for (int sz=q.size(); sz>0; sz--) {   // each level
             String s = q.poll();
             int i=0;
             while (s.charAt(i)==B.charAt(i)) i++;  # lseek to first not equal.
@@ -4759,27 +5081,6 @@ int kSimilarity(String A, String B) {
     return res;
 }
 
-""" distinct sequence of t in s; bottom up, each s[i] row a list, each t[j] a col in row. 
-dp[i][j] += dp[i-1][j-1], dp[i-1][j], when j==0, and s.i==t.j, dp[i][0] += 1
-incl s[i] for t[j], dp[i-1,j-1], excl, dp[i-1,j], you can do dfs recursion also.
-when iter col, cp prev row, new col as the last entry in the new row entry list.
-"""
-def distinctSeq(s,t):
-  dp = [[0]*len(t) for i in xrange(len(s))]
-  for i in xrange(len(s)):     # bottom up, add more slot
-    for j in xrange(len(t)):   # at each slot, enum all values
-      if i == 0:
-        if s[0] == t[j]:  dp[0][j] = 1
-        continue
-      dp[i][j] = dp[i-1][j]   # not using s[i], so use dp[i-1]
-      if s[i] == t[j]:   # use s[i] only when equals
-        if j == 0:  dp[i][0] = dp[i-1][0] + 1  # s[i]==t[0], match scan start from s[i]
-        else:       dp[i][j] += dp[i-1][j-1]  # reduce one j to j-1
-  return dp[len(s)-1][len(t)-1]
-print distinctSeq("aeb", "be")
-print distinctSeq("abbbc", "bc")
-print distinctSeq("rabbbit", "rabbit")
-
 """
 column is src, and inc bottom up each char in target. only 1 char in target, 2, ..
 two cases, when not eq, excl s[j], take j-1, tab[i,j-1], when incl s[j], +=tab[i-1,j-1], 
@@ -4788,32 +5089,12 @@ two cases, when not eq, excl s[j], take j-1, tab[i,j-1], when incl s[j], +=tab[i
  b  0 0+1  1  2+1 3
  c  0  0   0   0  3
 """
-def distinct(s,t):
-  dp = [[0]*len(t) for _ in xrange(len(s))]
-  for i in xrange(len(t)):
-    for j in xrange(len(s)):
-      if t[i] == s[j]:
-        if j == 0:
-          dp[i][0] = 1
-        else:
-          if i == 0:
-            dp[i][j] = dp[i][j-1] + 1
-          else:
-            dp[i][j] = dp[i-1][j-1] + dp[i][j-1]  # the same row i, j-1 already carries pre result.
-      else:
-        if j > 0:
-          dp[i][j] = dp[i][j-1]
-  return dp[len(t)-1][len(s)-1]
-print distinct("aeb", "be")
-print distinct("abbbc", "bc")
-print distinct("rabbbit", "rabbit")
-
-# increase target slot, traverse origin src when expanding each new item in problem.
+// increase target slot, traverse origin src when expanding each new item in problem.
 static int distinctSeq(String s, String t) {
     int srclen = s.length();
     int tgtlen = t.length();
     int[][] dp = new int[tgtlen][srclen];
-    // gradually inc tgt chars
+    // inc tgt chars one by one.
     for (int tidx=0;tidx<tgtlen;tidx++) {
         char tc = t.charAt(tidx);
         for (int sidx=0;sidx<srclen;sidx++) {
@@ -4839,36 +5120,58 @@ static int distinctSeq(String s, String t) {
 print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
 
+// reuse one row for each target char.
+static int distinctSeq(String src, String tgt) {
+  char[] s = src.toCharArray();
+  char[] t = tgt.toCharArray();
+  int ssz = s.length, tsz=t.length;
+  int[] dp = new int[ssz];   // fill by each tidx row
+  for(int tidx=0;tidx<tsz;tidx++) {
+      char tc = t[tidx];
+      int pre = 0;
+      for(int sidx=0;sidx<ssz;sidx++) {
+          int tmp = dp[sidx];
+              if (s[sidx] == t[tidx]) { dp[sidx] = pre + 1; }
+              else if (sidx > 0) { dp[sidx] = dp[sidx-1]; }
+              else { dp[sidx] = 0; }
+          pre = tmp;
+      }
+  }
+  return dp[ssz-1];
+}
 
-""" recur i+1, dup not allowed, recur i, dup allowed. """
-def comb(arr, t, pos, path, res):
-  if pos >= len(arr):
-    return
-  if t == 0:
-    p = path[:]
-    res.append(p)
-    return
-  if arr[pos] <= t:
-    path.append(arr[pos])
-    comb(arr, t-arr[pos], pos, path, res)
-    path.pop()
-  comb(arr, t, pos+1, path, res)
-path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
+// need memoize
+static List<List<Integer>> combinSum(int[] arr, int target, int off, List<Integer> path, List<List<Integer>> result) {
+  if (target == 0) {
+      result.add(path.stream().collect(Collectors.toList()));
+      return result;
+  }
+  for (int i=off;i<arr.length;i++) {
+      path.add(arr[i]);
+          combinSum(arr, target-arr[i], i+1, path, result);
+      path.remove(path.size()-1);
+  }
+  return result;
+}
+List<Integer> path = new List<>();
+List<List<Integer>> result = new List<>();
+System.out.println(combinSum(new int[]{2,3,6,7}, 9, 0, path, result));
 
-def comb(arr, t, pos, path, res):
-  if t == 0:
-    p = path[:]
-    res.append(p)
-    return
-  # recur with incl each a.i
-  for i in xrange(pos, len(arr)):
-    if arr[i] <= t:
-      path.append(arr[i])
-        comb(arr, t-arr[i], i, path, res)     # dup allowed
-        #comb(arr, n-arr[i], i+1, path, res)   # distinct
-      path.pop()
-  return res
-path=[];res=[];comb([2,3,6,7],9,0,path,res);print res;
+// dup allowed, stay on row i from smaller value. item row i inheriates from item row i-1.
+static int combinSum(int[] arr, int target) {
+    int sz = arr.length;
+    int[] dp = new int[target+1];  // value from 1..target
+    dp[0] = 1;   // when item value = target, count single item 1.
+    for (int i=0;i<sz;i++) {
+        int iv = arr[i];
+        for (int v=iv; v<=target; v++) {
+            dp[v] += dp[v-iv];
+        }
+    }
+    System.out.println("comb sum " + dp[target]);
+    return dp[target];
+}
+combinSum(new int[]{2,3,6,7}, 9);
 
 
 """ tab[i,v] = tot non descreasing at ith digit, end with value v
@@ -4939,7 +5242,7 @@ static int subsetSum(int[] arr, int target) {
     for (int i=0; i<sz; i++) {
         int iv = arr[i];
         int[] cur = new int[target+1];
-        # start from 0, not iv, to carry prev result that less than iv
+        // start from 0, not iv, to carry prev result that less than iv
         for (int v=0; v<=target; v++) {  // as we have two rows, pre / cur, cp pre to cur from 0..n
             // tot is sum of incl/excl cur item.
             cur[v] = pre[v];      // inherite from pre, exclude cur item
@@ -4947,7 +5250,7 @@ static int subsetSum(int[] arr, int target) {
               cur[v] += pre[v-iv];   // include cur item, 
             }
         }
-        # System.arraycopy(cur, 0, pre, 0, target+1);
+        // System.arraycopy(cur, 0, pre, 0, target+1);
         pre = cur;
         System.out.println("cur " + iv + " pre " + Arrays.toString(pre));
     }
@@ -4956,21 +5259,6 @@ static int subsetSum(int[] arr, int target) {
 }
 subsetSum(new int[]{2,3,6,7}, 9);
 
-// dup allowed, stay on row i from smaller value. item row i inheriates from item row i-1.
-static int combinSum(int[] arr, int target) {
-    int sz = arr.length;
-    int[] dp = new int[target+1];  // value from 1..target
-    dp[0] = 1;   // when item value = target, count single item 1.
-    for (int i=0;i<sz;i++) {
-        int iv = arr[i];
-        for (int v=iv; v<=target; v++) {
-            dp[v] += dp[v-iv];
-        }
-    }
-    System.out.println("comb sum " + dp[target]);
-    return dp[target];
-}
-combinSum(new int[]{2,3,6,7}, 9);
 
 """ dp[i,s] i digits sum to s, iterate 0..9, = dp[i-1,s-[1..9]]+[1..9]
 not as subset sum, no incl/excl of arr[i]. so NOT cp prev row.
@@ -4988,7 +5276,7 @@ def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
           continue
         if s > f and dp[i-1][s-f] and len(dp[i-1][s-f]) > 0:
           for e in dp[i-1][s-f]:
-            # if need to be distinct, append j only when it is bigger.
+            // if need to be distinct, append j only when it is bigger.
             if distinct and f <= e[-1]:
               continue
             de = e[:]
@@ -4997,7 +5285,7 @@ def combinationSum(n, sm, distinct=False):  # n slots, sum to sm.
   return dp[n-1][sm]
 print combinationSum(3,9,True)
 
-''' contain sol sz < n, [1,6], [7], [1, 0, 6] '''
+// contain sol sz < n, [1,6], [7], [1, 0, 6] '''
 def combsum(n, t):
   dp = [[None]*(t+1) for i in xrange(n)]
   for i in xrange(n):   # comb, not perm, outer loop slots, for each slot, enum possible values.
@@ -5019,15 +5307,33 @@ def combsum(n, t):
   return dp[n-1][t]
 print combsum(3,7)
 
+static int combsum(int n, int target) {
+  int[][] dp = new int[n][target+1];
+  for (int i=0;i<n;i++) {
+    Arrays.fill(dp[i], 0);
+  }
+  for (int i=0;i<n;i++) {
+      // at each spot, enum target
+      for (int j=0;j<10;j++) {
+          for (int v=Math.max(1,j);v<target;v++) {
+              if (j == v) { dp[i][v] += 1;}
+              dp[i][v] += dp[i-1][v-j];
+          }
+      }
+  }
+  return dp[n-1][target];
+}
+System.out.println(combsum(3,7));
+
 
 """ min number of coins, dup allowed. 1-dim tab. tab[v] = min of tab[v-1/2/5]+1
 """
 int minCoins(int[] coins, int amount) {
-    if(coins == null) return 0;
+    if (coins == null) return 0;
     long[] dp = new long[amount+1];
     Arrays.fill(dp, Integer.MAX_VALUE);
     dp[0]=0;
-    for(int i=0; i<coins.length; i++){
+    for(int i=0; i<coins.length; i++) {
         for(int amt=1; amt<dp.length; amt++){
             if(amt >= coins[i])
                 dp[amt] = Math.min(dp[amt], dp[amt-coins[i]]+1); 
@@ -5095,7 +5401,7 @@ tab[d,v] += tab[d-1,v-[1..m]]. Outer loop is enum dices, so it's like incl/excl.
 """
 def dice(m,n,x):
   dp = [[0]*n for i in xrange(x+1)]
-  ＃ init bottom, one coin only
+  // init bottom, one coin only
   for f in xrange(m):
     dp[1][f] = 1
   for i in xrange(1, n):      # bottom up coins, 1 coin, 2 coin
@@ -5283,7 +5589,6 @@ List<List<String>> partition(String s) {
         }
       }
     }
-
     recurDFS(res, new ArrayList<>(), dp, s, 0);
     return res;
   }
@@ -5466,7 +5771,7 @@ def boggle(G, dictionary):
 """
 def wordWrap(words, m):
   sz = len(words)
-  #extras[i][j] extra spaces if words i to j are in a single line
+  // extras[i][j] extra spaces if words i to j are in a single line
   extras = [[0]*sz for i in xrange(sz)]
   dp = [[0]*sz for i in xrange(sz)] # cost of line with word i:j
   for linewords in xrange(sz/m):
@@ -5655,3 +5960,64 @@ if __name__ == '__main__':
     
     # test find kth
     testFindKth()
+
+
+// LM focuses on IT infrastructure monitoring. Our Saas based solution helps customers to collect
+// their metrics data, ingest those data into our database, and provides webUI to monitor metrics.
+// The overall architecture consists of serval layers, there is data collecting layer, the data 
+// ingestion pipeline and storage, and configurations and metedata store, and a service layer 
+// contains a variety of services that in a whole provides the entire service features.
+// Recently, we start to expand to monitor logs. I am responsible for entire logcloud archi.
+// traditionally, people use ELK for logs as it provides full text search. However, the problem
+// is cost is too high and hard to make a profit.
+// ELK is ingestion time index, and storage and computing is tightly coupled.
+// we trying to attact the problem by first decouple storage and computing, and secondly, 
+// we try to search time indexing.
+// 
+
+// why
+// 1. motived by impact. affect millions customers.
+// 2. use tech can shape the behavior, innovations to find new opportunities.
+// 3. 
+
+// Simplify
+// 1. when we need to monitoring cloud devices in cloud, we have two choices, one is standalone collector
+// that customers can install, or a hosted cloud collector.
+// the pros is that our collector can execute scripts to collector data, more powerful.
+// the cons is that it requires customers to install.
+//
+// 2. using sqlite rather than redshift for AWS billing processing.
+// when new AWS billing format file is out, the recommendation is to use Redshift to store and process it.
+// this incurs new operational overhead. I decided to use sqlite locally to store.
+// the only overhead is storage and possible duplicate processing, as we have many stateless apps can process
+// the billing so it is possible a company's billing can be processed by two different stateless apps.
+
+// 3. Auto detect of log format. Create a list of predefined formatters, do not require user to input. 
+// For 95% cases, this is working. provide fall back when it is not working.
+
+// 4. debug and fact-find, relentless performance optimization.
+// sha-1 to sha-2.
+// In the data reporting path, on very high level, it takes 200ms for a 5k pkg. we started to wondering
+// why and want to optimize it. the code path goes into our local rate limiter, then hystrix circuit breaker. 
+// then okhttp client to send the data. 
+
+// After we isolate each component, by pass it, and benchmark the overhead of everyone, we finally
+// find it was hystrix lib and take the most of time and it turned out our threadpool configuration
+// is too much overhead. we switched to semaphore based, and the time reduced.
+// other example including dedup.
+
+// Modularity
+// More types vs more functions.
+
+
+
+Improve code and design
+1. Modularity design, Visitor pattern vs Type. More types Vs. More Ops.
+    Op1.subtype1(), Op2.subtype1(), Op1.subtype2(), Op2.subtype()
+    Type1.op1(), Type1.op2(), Type2.op1(), Type2.op2()
+2. Fault tolerance, Circuit breaker.
+3. Rate Limiter.
+4. IPC for loose coupling.
+5. Deployment, Observable.
+6. adding cache in front of services, lazy loading.
+
