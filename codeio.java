@@ -450,20 +450,16 @@ void swap(int[] arr, int i, int j) { int tmp = arr[i]; arr[i] = arr[j]; arr[j] =
 int[] sortColor(int[] arr) {
     int l = 0, r = arr.length-1;
     int stidx = 0;
+    int edidx = r;    // from end
     for (int i=0; i<=r; i++) {
         if (arr[i] == 0) {
             swap(arr, stidx, i);
             stidx += 1;
-        }
-    }
-    int edidx = r;    // from end
-    int i = stidx;
-    while (i < edix) {
-      if (arr[i] == 2) {
+        } else if (arr[i] == 2) {
           swap(arr, edidx, i);
-          edidx -= 1;
-      }
-      i++;
+          edidx--;
+          i--;    // i-- as loop will inc i
+        }
     }
     System.out.println(Arrays.toString(arr));
     return arr;
@@ -513,13 +509,13 @@ static int findInsertPosition(int[] arr, int val) {
 findInsertPosition(new int[]{2,5,7,8,8,8,8,9}, 8);
 
 
-""" ret insertion pos, the first pos t <= a[idx]. a[idx-1] < t <= a[idx]. even with dups.
-when find high end, idx-1 is the first ele smaller than searching val."""
+// return the index to the First element GreatEqual to target.
+// if arr does not have element GreatEqs than V, return sz as the insertion point.
 static int bsect(int[] arr, int v) {
     int l = 0, r = arr.length-1;
-    // bsect, check the out condition first.
-    if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }
-    
+    if (v > arr[r]) {
+      return arr.length;   // do not have element great than V, insertion shall be 
+    }
     while (l < r) {
         int m = (l+r)/2;
         if (arr[m] < V) {  // when using =, insert pos is to the end.
@@ -532,10 +528,14 @@ static int bsect(int[] arr, int v) {
 }
 print bisect([1,1,3,5,7])
 
-// bisect needs to check head / tail first. the index returned, a[index-1] < t, a[index] >= t
+// bisect needs to check head / tail first.
+// ceiling returns index to the element Great(Not Eq) than.
+// if arr does not have element Great 
 static int ceiling(int[] arr, int t) {
     int l = 0, r = arr.length -1;
-    if (t >= arr[sz-1] || t < arr[0]) { return sz-1 or 0; }  // boundary check up front
+    if (t > arr[sz-1]) {
+      return sz;   
+    }
     while (l < r) {
         int m = (l+r) / 2;
         if (arr[m] <= t) {  // <=, lift l even when eqs.
@@ -551,26 +551,13 @@ floorceil([1, 2, 8, 10, 10, 12, 19], 0)
 floorceil([1, 2, 8, 10, 10, 12, 19], 2)
 floorceil([1, 2, 8, 10, 10, 12, 19], 28)
     
-// a[i-1] < a[i] > a[i+1], binary search mid > mid+1;
-int findPeak(int[] arr, int lo, int hi) {
-  if(low == high) return low;
-  while (lo < hi) {
-    int mid = (low+high)/2;
-    if(arr[mid] < arr[mid+1])            // still climbing, mov lo+1
-        lo = mid+1;                      // lo = mid+1
-    else
-        hi = mid;      // down, hi = mid1
-  }
-  return lo;
-}
-
 """ not to find insertion point, check which seg is mono """
 static int bsearchRotate(int[] arr, int v) {
     int l = 0, r = arr.length-1;
     while (l < r) {
         int m = (l+r)/2;
         if (arr[m] == v) return m;   // avoid dup
-        if (arr[l] < arr[m]) {   // left segment is not rotated
+        if (arr[l] < arr[m]) {       // left segment is not rotated
             if (arr[l] <= v && v <= arr[m]) {  // <= v  // v falls into this segment
                 r = m;
             } else {
@@ -591,7 +578,7 @@ static int bsearchRotate(int[] arr, int v) {
     }
     return -1;
 }
-print binarySearchRotated([3, 4, 5, 1, 2], 2)
+System.out.println(binarySearchRotated(new int[]{3, 4, 5, 1, 2}, 2));
 print binarySearchRotated([3], 2)
 
 
@@ -600,13 +587,13 @@ static int rotateMin(int[] arr) {
     int l = 0;
     int r = arr.length-1;
     while (l < r) {
-        while (l < r && arr[l] == arr[l+1]) l += 1;
+        while (l < r && arr[l] == arr[l+1]) l += 1;  // <-- !!!
         while (r > l && arr[r] == arr[r-1]) r -= 1;
         int m = (l+r)/2;
         if (arr[m] > arr[m+1]) {   // inverse, m > m+1
-            return arr[m];
+            return arr[m+1];
         }  // l and m in the same segment.
-        if (arr[l] < arr[m] && m < r) {
+        if (arr[l] < arr[m] && m < r) {    // because when dup, u moved l/r
             l = m+1;     // m must less than r.
         } else {
             r = m;
@@ -622,7 +609,6 @@ rotatedMin([0,1])
 rotatedMin([0,1,3])
 rotatedMin([5,6,6,7,0,1,3])
 rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
-
 
 """ find the max in a ^ ary,  m < m+1 """
 static int findMax(int[] arr) {
@@ -664,7 +650,6 @@ public List<List<Integer>> threeSum(int[] num) {
     return res;
 }
 
-
 """ merge two sorted arry """
 static int[] merge(int[] arra, int[] arrb) {
     int ar = arra.length-1, br = arrb.length-1;
@@ -685,13 +670,30 @@ print merge([9,8,3], [6,5])
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 // linear
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
-def kadane_maxSubAry(A):
-    # M[i] = max(M[i-1] + A.i, A.i)
-    max_ending_here = max_so_far = 0
-    for x in A:
-        max_ending_here = max(0, max_ending_here + x)
-        max_so_far = max(max_so_far, max_ending_here)
-    return max_so_far
+static int kadan(int[] arr) {
+  int maxSoFar = arr[0], maxEndHere = arr[0];
+  int curStart = 0, curEnd = 0;
+  int maxStart = 0, maxEnd = 0;
+  
+  for (int i = 1; i < arr.length; i++ ) {
+    // if add a.i to prev not as big as restart from i, then restart from i.
+    if (maxEndHere + arr[i] < arr[i]) {  
+      maxEndHere = arr[i];  // restart from i
+      curStart = i;
+    } else {
+      maxEndHere += arr[i];
+    }
+    curEnd = i;
+    if(maxSoFar < maxEndHere && curEnd - curStart >= 2) {  // subary must be at least 2 element
+      maxSoFar = maxEndHere;
+      maxStart = curStart;
+      maxEnd = curEnd;
+    }
+  }
+  // if not find at least 2 element, linear scan and ret max and its left or rite.
+  System.out.println("max " + maxSoFar + " start " + arr[maxStart] + " end " + arr[maxEnd]);
+  return maxSoFar;
+}
 
 // for each i, either belong to prev seq, or starts its own.
 // s[i] = max(s[i-1]+A.i, A.i), either expand sum, or start new win from cur '''
@@ -709,7 +711,7 @@ int numSubarrayBoundedMax(int arr[], int L, int R) {
     int result=0, left=-1, right=-1;
     for (int i=0; i<A.size(); i++) {
         if (A[i] > R)  left = i;     // i restart a new subary
-        if (A[i] >= L) right = i;   #
+        if (A[i] >= L) right = i;    // 
         result += right-left;
     }
     return result;
@@ -730,8 +732,8 @@ static int maxkbits(int[] arr, int k ) {
         stk.add(arr[i]);
     }
     int tot = 0;
-    for(int i=0;i<k;i++) {
-        tot = tot*10 + stk.get(i);
+    for(int i=0; i<k; i++) {
+        tot = tot*10 + stk.pop(i);
     }
     System.out.print("maxbits " + tot);
     return tot;
@@ -758,7 +760,7 @@ print maxNum([3, 4, 6, 5], [9, 1, 2, 5, 8, 3], 5)
 static String removeDupLetters(String s) {
   Set<Character> inStk = new HashSet<>();
   Map<Character, Integer> counts = new HashMap<>();
-  Stack<Character> stk = new Stack<>();
+  Stack<Character> keepStk = new Stack<>();
 
   for (int i=0;i<s.length();i++) {
     char c = s.charAt(i);
@@ -767,13 +769,13 @@ static String removeDupLetters(String s) {
   for (int i=0;i<s.length();i++) {
     char c = s.charAt(i);
     if (!inStk.contains(c)) {
-      while (!stk.empty() && stk.peek() > c && counts.get(stk.peek()) > 0 ) {
-        inStk.remove(stk.peek());
-        stk.pop();
+      while (!keepStk.empty() && keepStk.peek() > c && counts.get(keepStk.peek()) > 0 ) {
+        inStk.remove(keepStk.peek());
+        keepStk.pop();   // no keep of keep stk top
       }
-      stk.push(c);
+      keepStk.push(c);   // push current into keep stk.
       inStk.add(c);
-      counts.put(c, counts.get(c)-1);
+      counts.put(c, counts.get(c)-1);  // used one, reduce
     }
   }
   String res = "";
@@ -812,29 +814,6 @@ public void stackSorting(Stack<Integer> stack) {
   }
 }
 
-// longest non repeat substring. sliding window(locate left/rite). when match, need to mov l = pre+1.
-static String nonRepeat(String s) {
-  if (s == null || s.length() == 0) { return s;  }
-  int maxlen = 0, maxstart = 0, maxend = 0;
-  int l = 0;
-  Map<Character, Integer> pos = new HashMap<>();
-  for(int r=0;r<s.length();r++) {
-    char ch = s.charAt(r);
-    if (pos.containsKey(ch)) {
-      int ridx = pos.get(ch);
-      if (l <= ridx) { l = ridx + 1;}  // <= as we need to advance l even when equals.
-    }
-    pos.put(ch, r);
-    if (r - l + 1 > maxlen) {
-      maxstart = l;
-      maxend = r;
-      maxlen = r - l + 1;
-    }
-  }
-  System.out.println("non repeat substring - > " + s.substring(maxstart, maxend+1));
-  return s.substring(maxstart, maxend+1);
-}
-
 // recur with substring, or recur with soffset, poffset.
 static boolean regMatch(String s, String p) {
     int psz = p.length(), ssz = s.length();
@@ -844,7 +823,7 @@ static boolean regMatch(String s, String p) {
     if (ssz == 0)                         return false;
 
     char shd = s.charAt(0), phd = p.charAt(0);
-    if (phd != '*') {   # not *, easiest first
+    if (phd != '*') {   // not *, easiest first
         if (phd != '?' && shd != phd) { return false; }
         return regMatch(s.substring(1), p.substring(1));    # dfs recur
     }
@@ -925,7 +904,7 @@ public List<String> findRepeatedDnaSequences(String s) {
 			hash = (hash << 2) + map.get(s.charAt(i)); 
 		} else {
 			hash = (hash << 2) + map.get(s.charAt(i));
-			//make length of hash to be 20
+			// make length of hash to be 20
 			hash = hash &  (1 << 20) - 1; 
  
 			if (temp.contains(hash) && !added.contains(hash)) {
@@ -997,7 +976,7 @@ int longestMountainSubary(int[] arr) {
   for (int i=1;i<arr.length;i++) {
     // down > 0, means we are in down phase, when switching to up phase, reset.
     if (down > 0 && arr[i-1] < arr[i] || arr[i-1] == arr[i]) {   // turning point. reset counters.
-      up = down = 0;    // reset when encouter turning point
+      up = down = 0;    // reset when encouter turning points
     }
     if (arr[i-1] < arr[i]) up++;
     if (arr[i-1] > arr[i]) down++;
@@ -1023,21 +1002,25 @@ static int longestWiggleSubSequence(int[] arr) {
 
 
 // # idea is, there are 2 options, swap / notswap, need to use two state to track them.
-// # swap[i] = min( swap[i-1], notswap[i-1]+1), etc
+// swap[i] means swap a.i/b.i, keep means no swap a.i/b.i
+// if a.i > a.i-1 and b.i > b.i-1, then keep.i = keep.i-1. swap.i = swap.i-1 + 1. if swap, swap both.
+// if b.i > a.i-1 and a.i > b.i-1, 
+//    swap.i = min(swap.i, keep.i-1 + 1)   // swap i, or swap i-1
+//    keep.i = min(keep.i, swap.i-1)
 int minSwap(int[] A, int[] B) {
     // track j=k notswap: notswap, s: swapped
-    int notswap1 = 0, swap1 = 1;
+    int keep = 0, swap1 = 1;
     for (int i = 1; i < A.length; ++i) {
         int notswap2 = Integer.MAX_VALUE, swap2 = Integer.MAX_VALUE;
         if (A[i-1] < A[i] && B[i-1] < B[i]) {         // not need to swap
-            notswap2 = Math.min(notswap2, notswap1);  // the same as pre value of not swap
+            notswap2 = Math.min(notswap2, keep);  // the same as pre value of not swap
             swap2 = Math.min(swap2, swap1 + 1);       // or if swap, pre also need swap.
         }
         if (A[i-1] < B[i] && B[i-1] < A[i]) {
             notswap2 = Math.min(notswap2, swap1);     // either pre swap
-            swap2 = Math.min(swap2, notswap1 + 1);    // or pre not swap, current swap.
+            swap2 = Math.min(swap2, keep + 1);    // or pre not swap, current swap.
         }
-        notswap1 = notswap2;
+        keep = notswap2;
         swap1 = swap2;
     }
     return Math.min(n1, s1);
@@ -1068,7 +1051,7 @@ def noConsecutive(text):
       segidx += 1
   return out
 
-// track all char cnts. ++/-- when sliding in and out. Upbeat top char cnt in the window
+// track all char cnts. update topCharCnts. when sliding in and out. Upbeat top char cnt in the window
 static int maxLenKRepeat(char[] arr, int k) {
     int sz = arr.length;
     int l = 0; r = 0;
@@ -1102,15 +1085,13 @@ static int[] slidingWinMax(int[] arr, int k) {
         }
         maxStk.add(arr[i]);
         maxIdxStk.add(i);
-        winsize += 1;
-        if (winsize >= k) {  // adjust l
+        if (r-l+1 >= k) {  // adjust l
             maxarr[widx++] = maxStk.firstElement();
             if (maxIdxStk.firstElement() == l) {
                 maxStk.remove(0);
                 maxIdxStk.remove(0);
             }
             l += 1;
-            winsize -= 1;
         }
     }
     System.out.println("max in window " + Arrays.toString(maxarr));
@@ -1146,26 +1127,26 @@ static int maxWinMzero(int[] arr, int m) {
 }
 assertEqual(8, maxWinMzero(new int[]{1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1}, 2));
 
-// track expected count and seen cnt for each char while looping.
+// track expected count and winmap cnt for each char while looping.
 static int minWinString(String s, String t) {
     int[] expects = new int[26];
-    int[] seen = new int[26];
+    int[] winmap = new int[26];
     for (int i=0;i<t.length();i++) {  expects[t.charAt[i] - 'a'] += 1; }
 
     int l = 0, winsize = 0, minwin = 999;
     for (int r=0; r<s.length(); r++) {
         char cur = s.charAt(i);
         int cidx = cur - 'a';
-        seen[cidx] += 1;
-        if (seen[cidx] <= expects[cidx]) { winsize += 1; }
+        winmap[cidx] += 1;
+        if (winmap[cidx] <= expects[cidx]) { winsize += 1; }
         if (winsize == t.length()) {
             while (l < r) {     // while loop to move left edge
                 int lcharidx = s.charAt(l) - 'a';
-                if (seen[lcharidx] > expects[lcharidx]) {
-                    seen[lcharidx] -= 1;   // reduce seen cnt when sliding out.
+                if (winmap[lcharidx] > expects[lcharidx]) {
+                    winmap[lcharidx] -= 1;   // reduce winmap cnt when sliding out.
                     l += 1;
                 } else {
-                    break;    // can not mov anymore, break.
+                    break;    // can not squeeze left anymore, break.
                 }
             }
             minwin = Math.min(minwin, i-l+1);
@@ -1177,40 +1158,57 @@ static int minWinString(String s, String t) {
 print minwin("azcaaxbb", "aab")
 print minwin("ADOBECODEBANC", "ABC")
 
-// slide in r,  ++matches, slide out l, if slide out l make not meet, --matches.
-static String anagram(String arr, String pattern) {
-  int winsz = pattern.length();
-  Map<Character, Integer> patternMap = new HashMap<>();
-  for(int i=0;i<winsz;i++) { patternMap.put(pattern.charAt(i), patternMap.getOrDefault(pattern.charAt(i), 0) + 1);}
-
-  Map<Character, Integer> winMap = new HashMap<>();
-  int matches = 0;   // winsz is need match
-  int l = 0, r = 0;
-  for (r=0;r<winsz;r++) {
-    char c = arr.charAt(r);
-    winMap.put(c, winMap.getOrDefault(c, 0) + 1);
-    if (patternMap.containsKey(c) && winMap.get(c) <= patternMap.get(c)) {
-      matches++;
-      if (matches == winsz) {
-        return arr.substring(l, r+1);
-      }
+// longest non repeat substring. sliding window(locate left/rite). when match, need to mov l = pre+1.
+static String maxNoRepeat(String s) {
+  if (s == null || s.length() == 0) { return s;  }
+  int maxlen = 0, maxstart = 0, maxend = 0;
+  int l = 0;
+  Map<Character, Integer> pos = new HashMap<>();
+  for(int r=0;r<s.length();r++) {
+    char ch = s.charAt(r);
+    if (pos.containsKey(ch)) {
+      int ridx = pos.get(ch);
+      if (l <= ridx) { l = ridx + 1;}  // <= as we need to advance l even when equals.
+    }
+    pos.put(ch, r);
+    if (r - l + 1 > maxlen) {
+      maxstart = l;
+      maxend = r;
+      maxlen = r - l + 1;
     }
   }
-  for(r=winsz;r<arr.length();r++) {
-    // slide out left edge first, as win size is fixed.
-    char lchar = arr.charAt(l);
-    winMap.put(lchar, winMap.get(lchar) - 1);
-    if (patternMap.containsKey(lchar) && winMap.get(lchar) < patternMap.get(lchar)) {
-      matches--;
+  System.out.println("non repeat substring - > " + s.substring(maxstart, maxend+1));
+  return s.substring(maxstart, maxend+1);
+}
+
+// slide r, mov l when a.r is not needed. 
+static String anagram(String arr, String p) {
+  Map<Character, Integer> winMap = new HashMap<>();
+  Map<Character, Integer> patternMap = new HashMap<>();
+  for (int i=0;i<p.length();i++) {
+    patternMap.put(p.charAt(i), patternMap.getOrDefault(p.charAt(i), 0)+1);
+  }
+  int l = 0;
+  for(int r=0;r<arr.length();r++){
+    char ic = arr.charAt(r);
+    if (!patternMap.containsKey(ic)) {
+      l = r+1;
+      winMap.clear();
+      continue;
     }
-    l += 1;
-    char rchar = arr.charAt(r);
-    winMap.put(rchar, winMap.getOrDefault(rchar, 0) + 1);
-    if (patternMap.containsKey(rchar) && winMap.get(rchar) <= patternMap.get(rchar)) {
-      matches++;
-      if (matches == winsz) {
-        return arr.substring(l, r+1);
+    winMap.put(ic, winMap.getOrDefault(ic, 0)+1);
+    if (winMap.get(ic) == patternMap.get(ic)) {
+      if (r-l+1 == p.length()) {
+        return arr.substring(l);
       }
+    }
+    if (winMap.get(ic) > patternMap.get(ic)) {
+      while (arr.charAt(l) != ic) {
+        winMap.put(arr.charAt(l), winMap.get(arr.charAt(l)-1));
+        l++;
+      }
+      l++;
+      winMap.put(ic, winMap.get(ic)-1);
     }
   }
   return null;
@@ -1298,7 +1296,7 @@ static int maxWinTwoChars(int[] arr) {
     for(int i=1;i<sz;i++){
         if (arr[i] == arr[i-1]) {  continue; }       // simplest, cur is the same as pre
         else if (pre == -1) { pre = i;  continue; }  // first time pre, track and continue
-        else if (arr[i] == arr[prepre]) { pre = i - 1; }  # cur != pre, but =prepre, !!! relocate pre at the start of non continue gap
+        else if (arr[i] == arr[prepre]) { pre = i - 1; }  // cur != pre, but =prepre, !!! relocate pre at the start of non continue gap
         else {
             maxlen = Math.max(maxlen, i-prepre);
             prepre = pre + 1;  // + 1
@@ -1350,6 +1348,7 @@ def minjp(arr):  // use single var to track, no need to have ary.
     if maxRightOfCurrentMinJP >= n:
       return mjp
 
+
 // once need aggregation value, (max/min/tot), need dp[i] : min jp from 0->i, track farest of current jp, 
 import java.util.PriorityQueue;
 import java.util.concurrent.locks.StampedLock;
@@ -1400,16 +1399,16 @@ List<String> topKFrequent(String[] words, int k) {
     Map<String, Integer> wordCount = new HashMap();
     for (String word: words) {    // wd, and its counts
       wordCount.put(word, wordCount.getOrDefault(word, 0) + 1); }
-    PriorityQueue<String> heap = new PriorityQueue<String>(
+    PriorityQueue<String> minHeap = new PriorityQueue<String>(
         (w1, w2) -> wordCount.get(w1).equals(wordCount.get(w2)) ?
         w2.compareTo(w1) : wordCount.get(w1) - wordCount.get(w2) );
 
     for (String word: wordCount.keySet()) {   // add all words to PQ
-        heap.offer(word);
-        if (heap.size() > k) heap.poll();     // cap the heap size.
+        minHeap.offer(word);
+        if (minHeap.size() > k) minHeap.poll();     // cap the minHeap size.
     }
     List<String> ans = new ArrayList();
-    while (!heap.isEmpty())  {  ans.add(heap.poll()); }
+    while (!minHeap.isEmpty())  {  ans.add(minHeap.poll()); }
     Collections.reverse(ans);
     return ans;
 }
@@ -1483,16 +1482,16 @@ class UnionFind {
         parent = new int[n];
         for(int i=0; i<n; i++) { parent[i] = i; }
     }
-    private int root(int i) {
+    private int findParent(int i) {
         while (parent[i] != i) {
             parent[i] = parent[parent[i]];
             i = parent[i];
         }
         return i;
     }
-    public boolean connected(int i, int j) { return root(i) == root(j); }
+    public boolean connected(int i, int j) { return findParent(i) == findParent(j); }
     public void union(int p, int q){
-      int i = root(p), j = root(q);
+      int i = findParent(p), j = findParent(q);
       parent[i] = j;
     }
     // returns the maxium size of union
@@ -1617,11 +1616,10 @@ at each idx, either it starts a new seq, or it join prev sum
 '''
 int maxProduct(int A[], int n) {
   // store the result that is the max we have found so far
-  int r = A[0];
-
+  int gmax = A[0];
   // imax/imin stores the max/min product of
   // subarray that ends with the current number A[i]
-  for (int i = 1, imax = r, imin = r; i < n; i++) {
+  for (int i = 1, imax = gmax, imin = gmax; i < n; i++) {
       // multiplied by a negative makes big number smaller, small number bigger
       // so we redefine the extremums by swapping them
       if (A[i] < 0) swap(imax, imin);
@@ -1632,9 +1630,9 @@ int maxProduct(int A[], int n) {
       imin = min(A[i], imin * A[i]);
 
       // the newly computed max value is a candidate for our global result
-      r = max(r, imax);
+      gmax = max(gmax, imax);
   }
-  return r;
+  return gmax;
 }
 print prod([-6,-3])
 print prod([-6,3,-4,-5,2])
@@ -1706,6 +1704,7 @@ Class Skyline {
   List<Event> events = new ArrayList<>();
   for (int i=0;i<arr.length;i++) { events.add(new Event(arr[i].x, arr[i].ht, arr[i].type))}
   Collections.sort(events);
+  // using pq instead of stk, to be able to extract max and delete key. 
   PriorityQueue<int[]> maxHeap = new PriorityQueue<>(sz, (e1, e2) -> {e1.ht - e2.ht});
   for (Event e : events) {
     if (e.type == "entering") {
@@ -1713,7 +1712,7 @@ Class Skyline {
         res.add(e.id, e.ht)
       }
       maxheap.add(new HeapEntry(e.id, e.ht);
-    } else if (e.type == "leaving") {
+    } else if (e.type == "leaving") {  // need to delete from pq.
       maxheap.remove(new HeapEntry(e.di, e.ht))
       if (e.ht > maxheap.peek()) {
         res.add(e.x, maxheap.max());
@@ -1903,35 +1902,31 @@ int[] robSub(TreeNode root) {
 """ keep track of 2 values for each ele, max of exclude this ele, and the
 max of no care of whether incl or excl cur ele. """
 def calPack(arr):
-  maxsofar, excl= arr[0], 0     // maxsofar set to include head
-  for i in xrange(1,len(arr)):  // start from 1
-    inclcur = excl + arr[i]   // use pre excl
-    excl = maxsofar   // exclude current, use maxsofar, excl become excl pre in another round.
-    // when out, update max so far for current item before leaving
-    maxsofar = max(inclcur, excl)
-  return max(maxsofar,exclPre)
+  premax, preexcl= arr[0], 0     // premax is the max of incl/preexcl; set to include head
+  for i in xrange(1, len(arr)):  // start from 1
+    inclcur = preexcl + arr[i]   // use pre preexcl
+    exclcur = premax   // exclude current, use premax, preexcl become preexcl pre in another round.
+    // i become pre; update state of i, as i became pre.
+    preexcl = exclcur;
+    premax = max(inclcur, exclcur)
+  return max(premax,preexcl)
 
 // # enum of all values, if value is in num, exam include v, means exclude v-1 when v-1 is also in the ary.
-// # use include, exclude, and maxsofar to track.
+// # use include, exclude, and premax to track.
 int deleteAndEarn(int[] nums) {
-    int[] count = new int[10001];
-    for (int x: nums) count[x]++;
-    int excl = 0, incl = 0, prev = -1, maxsofar = 0;
-    for (int k = 0; k < 1000; k++) {      // iterate thru all valu
-      if (count[k] > 0) {    // value present
-        if (prev != k-1) {                // prev included value not adj to current val, add maxsofar
-          incl = k * count[k] + maxsofar;   // can safely include
-          excl = maxsofar;
-        } else {
-          incl = k * count[k] + excl;     // prev include adj to cur.
-          excl = maxsofar;
-        }
-        prev = k;
-      }
-      maxsofar = Math.max(incl, excl);
-    }
-    return Math.max(avoid, using);
+    int[] points = new int[10001];
+    for (int n: nums) points[n] += n;   // how many points we can get if delete nums[i]
+    return rob(points);
+}
+static int rob(int[] points){
+  int premax, preexcl = points[0], 0;
+  for (int i=1;i<points.length;i++) {   // at each point, take or not.
+    int robi = preexcl + points[i];
+    int excli = premax;
+    preexcl = excli;
+    premax = max(robi, excli);
   }
+  return premax;
 }
 
 """ if different coins count the same as 1 coin only, the same as diff ways to stair """
@@ -1969,10 +1964,13 @@ int ways(int ch) {
     return 1;
 }
 int ways(char ch1, char ch2) {
-    String key = "" + ch1 + "" + ch2;
-    if(ch1 != '*' && ch2 != '*') { if (Integer.parseInt(key) >= 10 && Integer.parseInt(key) <= 26) return 1;} 
-    else if (ch1 == '*' && ch2 == '*') { return 15; }
-    else if (ch1 == '*') {
+    String key = "" + ch1 + "" + ch2;  // memoize
+    if(ch1 != '*' && ch2 != '*') {     // no wild card
+      if (Integer.parseInt(key) >= 10 && Integer.parseInt(key) <= 26) 
+        return 1;
+    } 
+    else if (ch1 == '*' && ch2 == '*') { return 15; }  // both wildcard
+    else if (ch1 == '*') {   // one wildcard
         if (Integer.parseInt(""+ch2) >= 0 && Integer.parseInt(""+ch2) <= 6) return 2;
         else return 1;
     } else {
@@ -1986,7 +1984,7 @@ static int decodeWays(String s) {
     long[] dp = new long[2];
     dp[0] = ways(s.charAt(0));
     if (s.length() < 2) return (int)dp[0];
-    // dp[1] is nways from [0,1]
+    // dp[1] is nways from [0,1], dp[i] = dp[i-1]*ways(a[i]) + dp[i-2]
     dp[1] = dp[0] * ways(s.charAt(1)) + ways(s.charAt(0), s.charAt(1));
     // DP tab bottom up from string of 2 chars to N chars.
     for(int j = 2; j < s.length(); j++) {  // start from j=2
@@ -2043,6 +2041,19 @@ static int kth(int[] arr, int[] brr, int k) {
   }
 }
 System.out.println(kth(new int[]{2, 3, 6, 7, 9}, new int[]{1, 4, 8, 10}, 4));
+
+static int kth(int[] arr, int[] brr, int k) {
+  if (arr.length > brr.length) return kth(brr, arr, k);
+  if (arr.length == 0) { return brr[k-1]; }
+  if (k == 1) { return Math.min(arr[0], brr[0])}
+  int pa = Math.min( k>>1, arr.length);
+  int pb = k - pa;
+  if (arr[pa-1] < brr[pb-1]) {
+    kth(Arrays.copyOfRange(arr, pa, arr.length), brr, k-pa);
+  } else {
+    kth(arr, Arrays.copyOfRange(brr, pb, brr.length), k-pb);
+  }
+}
 
 // binary partition the shorter ary to left/rite, longer one partition by (m+n)/2 - partidx;
 static double medianOfTwoSorted(int[] A, int[] B) {
@@ -2118,7 +2129,7 @@ static int longestIntervalChain(int[][] arr) {
     int st = arr[i][0], ed = arr[i][1];
     int idx = Arrays.binarySearch(dp, st);
     if (idx == dp.length) {       dp.add(ed); }     // append to the end
-    else if (ed < dp[idx]) {      dp.set(idx,ed);}  // update ix with current smaller value
+    else if (ed < dp[idx]) {      dp.set(idx,ed); }  // update ix with current smaller value
   }
   return dp.size() - 1;
 }
@@ -3338,6 +3349,37 @@ static Stream<Map.Entry<K,V>> sortMap(int[] arr) {
   return stream;
 }
 
+// triplet inversion. use TreeMap as avl tree, headMap / tailMap / subMap.
+static long maxInversions(List<Integer> prices) {
+  TreeMap<Integer, Integer> tree = new TreeMap<>();
+  int[] leftBig = new int[prices.size()];
+  int[] riteSmall = new int[prices.size()];
+  for (int i=0;i<prices.size();i++) {
+      Map<Integer, Integer> sub = tree.tailMap(prices.get(i), false);
+      // consider duplicates.
+      for (int v : sub.values()) {
+          leftBig[i] += v;
+      }
+      tree.put(prices.get(i), tree.getOrDefault(prices.get(i), 0) + 1);
+  }
+  tree.clear();
+  for (int i=prices.size()-1;i>=0;i--) {
+      Map<Integer, Integer> sub = tree.headMap(prices.get(i), false);
+      for (int v : sub.values()) {
+          riteSmall[i] += v;
+      }
+      tree.put(prices.get(i), tree.getOrDefault(prices.get(i), 0) + 1);
+  }
+  int tot = 0;
+  for(int i=1;i<prices.size()-1;i++) {
+      tot += leftBig[i] * riteSmall[i];
+  } 
+  return tot;
+}
+// prices =  [15,10,1,7,8]
+// tot = (15, 10, 1), (15, 10, 7), and (15, 10, 8)
+
+
 """ no same char shall next to each other """
 from collections import defaultdict
 def noAdj(text):
@@ -3494,9 +3536,9 @@ int cheapestPriceWithKStops(int[][] flights, int src, int dst, int k) {
 
 // seed pq with src, edges repr by G Map<Integer, List<int[]>>,  for each nb edge, relax dist
 int networkDelayTime(int[][] times, int N, int K) {
-    Map<Integer, List<int[]>> graph = new HashMap();   // vertex --> [edge pair].
+    Map<Integer, List<int[]>> adjacentMap = new HashMap();   // vertex --> [edge pair].
     for (int[] edge: times) {
-        graph.putIfAbsent(edge[0], new ArrayList<int[]>()).add(new int[]{edge[1], edge[2]});
+        adjacentMap.putIfAbsent(edge[0], new ArrayList<int[]>()).add(new int[]{edge[1], edge[2]});
     }
     // dist map from src-> [destination, dist]
     Map<Integer, Integer> distMap = new HashMap();
@@ -3508,10 +3550,10 @@ int networkDelayTime(int[][] times, int N, int K) {
         int d = info[0], node = info[1];
         if (distMap.containsKey(node))  continue;      // already seen.
         distMap.put(node, d);
-        if (graph.containsKey(node)) {
-            for (int[] edge: graph.get(node)) {     // for each edge, relax distMap
+        if (adjacentMap.containsKey(node)) {
+            for (int[] edge: adjacentMap.get(node)) {     // for each edge, relax distMap
                 int nei = edge[0], d2 = edge[1];
-                if (!distMap.containsKey(nei))         // only unseen neighbors
+                if (!distMap.containsKey(nei))           // only unseen neighbors
                     heap.offer(new int[]{d+d2, nei});
             }
         }
@@ -5036,7 +5078,7 @@ def editDistance(a, b):
       if i == 0:      dp[0][j] = j    # distance is j
       elif j == 0:    dp[i][0] = i
       elif a[i-1] == b[j-1]:  dp[i][j] = dp[i-1][j-1]
-      else:  dp[i][j] = 1 + min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1])  # get min
+      else:  dp[i][j] = 1 + min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1])  // get min
     return dp[len(a)][len(b)]
 
 // String length - Longest Common Sequence
@@ -5961,6 +6003,45 @@ if __name__ == '__main__':
     # test find kth
     testFindKth()
 
+
+// Implement Blocking Queue
+
+Condition isFullCondition;
+Condition isEmptyCondition;
+Lock lock;
+
+public BQueue() { this(Integer.MAX_VALUE); }
+
+public BQueue(int limit) {
+    this.limit = limit;
+    lock = new ReentrantLock();
+    isFullCondition = lock.newCondition();
+    isEmptyCondition = lock.newCondition();
+}
+
+// must hold the lock.
+public synchronize get() {
+  while (q.empty()) { 
+    wait();
+  }
+  q.add();
+  notifyAll();
+}
+
+public void put (T t) {
+    lock.lock();
+    try {
+       while (isFull()) {
+          try {
+              isFullCondition.await();
+          } catch (InterruptedException ex) {}
+        }
+        q.add(t);
+        isEmptyCondition.signalAll();
+    } finally {
+        lock.unlock();
+    }
+ }
 
 // LM focuses on IT infrastructure monitoring. Our Saas based solution helps customers to collect
 // their metrics data, ingest those data into our database, and provides webUI to monitor metrics.
