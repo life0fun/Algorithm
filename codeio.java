@@ -511,6 +511,7 @@ findInsertPosition(new int[]{2,5,7,8,8,8,8,9}, 8);
 
 // return the index to the First element GreatEqual to target.
 // if arr does not have element GreatEqs than V, return sz as the insertion point.
+// caller needs to check if ret >= arr.size, 
 static int bsect(int[] arr, int v) {
     int l = 0, r = arr.length-1;
     if (v > arr[r]) {
@@ -530,7 +531,8 @@ print bisect([1,1,3,5,7])
 
 // bisect needs to check head / tail first.
 // ceiling returns index to the element Great(Not Eq) than.
-// if arr does not have element Great 
+// if arr does not have element Great, return arr.length;
+// caller needs to check if ret >= arr.size, 
 static int ceiling(int[] arr, int t) {
     int l = 0, r = arr.length -1;
     if (t > arr[sz-1]) {
