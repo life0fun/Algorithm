@@ -6044,52 +6044,7 @@ public void put (T t) {
     }
  }
 
-// LM focuses on IT infrastructure monitoring. Our Saas based solution helps customers to collect
-// their metrics data, ingest those data into our database, and provides webUI to monitor metrics.
-// The overall architecture consists of serval layers, there is data collecting layer, the data 
-// ingestion pipeline and storage, and configurations and metedata store, and a service layer 
-// contains a variety of services that in a whole provides the entire service features.
-// Recently, we start to expand to monitor logs. I am responsible for entire logcloud archi.
-// traditionally, people use ELK for logs as it provides full text search. However, the problem
-// is cost is too high and hard to make a profit.
-// ELK is ingestion time index, and storage and computing is tightly coupled.
-// we trying to attact the problem by first decouple storage and computing, and secondly, 
-// we try to search time indexing.
-// 
 
-// why
-// 1. motived by impact. affect millions customers.
-// 2. use tech can shape the behavior, innovations to find new opportunities.
-// 3. 
-
-// Simplify
-// 1. when we need to monitoring cloud devices in cloud, we have two choices, one is standalone collector
-// that customers can install, or a hosted cloud collector.
-// the pros is that our collector can execute scripts to collector data, more powerful.
-// the cons is that it requires customers to install.
-//
-// 2. using sqlite rather than redshift for AWS billing processing.
-// when new AWS billing format file is out, the recommendation is to use Redshift to store and process it.
-// this incurs new operational overhead. I decided to use sqlite locally to store.
-// the only overhead is storage and possible duplicate processing, as we have many stateless apps can process
-// the billing so it is possible a company's billing can be processed by two different stateless apps.
-
-// 3. Auto detect of log format. Create a list of predefined formatters, do not require user to input. 
-// For 95% cases, this is working. provide fall back when it is not working.
-
-// 4. debug and fact-find, relentless performance optimization.
-// sha-1 to sha-2.
-// In the data reporting path, on very high level, it takes 200ms for a 5k pkg. we started to wondering
-// why and want to optimize it. the code path goes into our local rate limiter, then hystrix circuit breaker. 
-// then okhttp client to send the data. 
-
-// After we isolate each component, by pass it, and benchmark the overhead of everyone, we finally
-// find it was hystrix lib and take the most of time and it turned out our threadpool configuration
-// is too much overhead. we switched to semaphore based, and the time reduced.
-// other example including dedup.
-
-// Modularity
-// More types vs more functions.
 
 
 
