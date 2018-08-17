@@ -497,7 +497,7 @@ static int findInsertPosition(int[] arr, int val) {
   int sz = arr.length;
   int l=0,r=sz-1;
   if (val < arr[l]) {  return 0; }
-  if (arr[r] <= val) { return r; }
+  if (arr[r] <= val) { return r+1; }
   while (l < r) {
     int m = (l+r)/2;
     if (val < arr[m]) { r = m;}
@@ -1071,7 +1071,7 @@ static int maxLenKRepeat(char[] arr, int k) {
     }
 }
 
-// stack cache win max value and its Idx, so we can mov left edge
+// consume slided in item first, then adjust state.
 static int[] slidingWinMax(int[] arr, int k) {
     int sz = arr.length;
     int[] maxarr = new int[sz];
@@ -1102,32 +1102,31 @@ static int[] slidingWinMax(int[] arr, int k) {
 print maxWin([5,3,4,6,9,7,2],2)
 print maxWin([5,3,4,6,9,7,2],3)
 
-// sliding window, outer loop mov rite edge, inner loop mov left edge, cautious on r.
-// Always process rite edge first. You can check arr[i], or check win size.
-// park at m+1 to include extends non-zero elements.
-static int maxWinMzero(int[] arr, int m) {
-    int l = 0;
-    int sz = arr.length;
-    int zcnts = 0;
-    int maxwinsize = 0;
-    for (int r=0; r<sz; r++) {
-        if (arr[r] == 1) {    // always updates maxwinsize when moving r.
-            if (zcnts == m) { maxwinsize = Math.max(maxwinsize, r-l+1); }
-            continue;
-        } else {
-            zcnts += 1;          // slide in, cnt++
-            if (zcnts == m+1) {  
-                maxwinsize = Math.max(maxwinsize, r-l);
-                while (arr[l] != 0) { l += 1; }
-                l += 1;
-                zcnts -= 1;  // slide out, cnt--
-            }
-        }
-    }
-    System.out.println("szie -> " + maxwinsize);
-    return maxwinsize;
+// always consume a.i first, adjust state after that.
+static int getSpecialSubstring(String s, int k, String charValue) {
+  int normal = 0;
+  int l = 0;
+  int maxlen = 0;
+  for(int i=0;i<s.length();i++) {
+      char icode = charValue.charAt(s.charAt(i)-'a');
+      if (icode == '0') {
+          normal++;
+      }
+      if (normal > k) {   // mov l when > k.
+          while (charValue.charAt(s.charAt(l)-'a') == '1') {
+              l++;
+          }
+          l++;
+          normal--;
+      }
+      // always upbeat on new i.
+      maxlen = Math.max(maxlen, i-l+1);
+  }
+  return maxlen;
 }
-assertEqual(8, maxWinMzero(new int[]{1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1}, 2));
+// giraffe
+// 2
+// 01111001111111111011111111
 
 // track expected count and winmap cnt for each char while looping.
 static int minWinString(String s, String t) {
@@ -3035,7 +3034,7 @@ AVLTree(object):
       else { rite = rite.insert(k); }
       AVLTree newMe = balance();
       return newMe;
-    }
+  }
   // update current node stats by asking your direct children. The children also do the same.
   def updateHeightSize(self):
     self.height = 0
@@ -3358,7 +3357,7 @@ static long maxInversions(List<Integer> prices) {
   int[] riteSmall = new int[prices.size()];
   for (int i=0;i<prices.size();i++) {
       Map<Integer, Integer> sub = tree.tailMap(prices.get(i), false);
-      // consider duplicates.
+      // include duplicates.
       for (int v : sub.values()) {
           leftBig[i] += v;
       }
@@ -6005,9 +6004,9 @@ if __name__ == '__main__':
     # test find kth
     testFindKth()
 
-
+// 
 // Implement Blocking Queue
-
+//
 Condition isFullCondition;
 Condition isEmptyCondition;
 Lock lock;
@@ -6017,7 +6016,7 @@ public BQueue() { this(Integer.MAX_VALUE); }
 public BQueue(int limit) {
     this.limit = limit;
     lock = new ReentrantLock();
-    isFullCondition = lock.newCondition();
+    isFullCondition = lock.newCondition();    // generate condi var from lock
     isEmptyCondition = lock.newCondition();
 }
 
