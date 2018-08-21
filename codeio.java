@@ -585,17 +585,17 @@ print binarySearchRotated([3], 2)
 
 
 """ find min in rotated. / / with dup, advance mid, and check on each mov """
-static int rotateMin(int[] arr) {
+static int rotatedMin(int[] arr) {
     int l = 0;
     int r = arr.length-1;
     while (l < r) {
         while (l < r && arr[l] == arr[l+1]) l += 1;  // <-- !!!
         while (r > l && arr[r] == arr[r-1]) r -= 1;
         int m = (l+r)/2;
-        if (arr[m] > arr[m+1]) {   // inverse, m > m+1
+        if (m < r && arr[m] > arr[m+1]) {   // inverse, m > m+1
             return arr[m+1];
         }  // l and m in the same segment.
-        if (arr[l] < arr[m] && m < r) {    // because when dup, u moved l/r
+        if ( m < r && arr[l] < arr[m]) {    // because when dup, u moved l/r
             l = m+1;     // m must less than r.
         } else {
             r = m;
@@ -603,14 +603,9 @@ static int rotateMin(int[] arr) {
     }
     return -1
 }
-rotatedMin([4,5,0,1,2,3])
-rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4])
-rotatedMin([4,5,5,6,6,6,6,0,1,4,4,4,4,4,4,4,4])
-rotatedMin([6,6,6,0])
-rotatedMin([0,1])
-rotatedMin([0,1,3])
-rotatedMin([5,6,6,7,0,1,3])
-rotatedMin([5,5,5,5,6,6,6,6,6,6,6,6,6,0,1,2,2,2,2,2,2,2,2])
+System.out.println(rotateMin(new int[]{4,5,0,1,2,3}));
+rotatedMin(new int[]{2,2,1,2,2,2,2,2})
+rotatedMin(new int[]{2,2,2,2,2,2,1,2})
 
 """ find the max in a ^ ary,  m < m+1 """
 static int findMax(int[] arr) {
