@@ -580,8 +580,7 @@ static int bsearchRotate(int[] arr, int v) {
     }
     return -1;
 }
-System.out.println(binarySearchRotated(new int[]{3, 4, 5, 1, 2}, 2));
-print binarySearchRotated([3], 2)
+System.out.println(bsearchRotate(new int[]{3, 4, 5, 1, 2}, 2));
 
 
 """ find min in rotated. / / with dup, advance mid, and check on each mov """
@@ -595,7 +594,7 @@ static int rotatedMin(int[] arr) {
         if (m < r && arr[m] > arr[m+1]) {   // inverse, m > m+1
             return arr[m+1];
         }  // l and m in the same segment.
-        if ( m < r && arr[l] < arr[m]) {    // because when dup, u moved l/r
+        if (arr[l] < arr[m]) {    // because when dup, u moved l/r
             l = m+1;     // m must less than r.
         } else {
             r = m;
