@@ -227,20 +227,16 @@ Partition, Secondary Index, Replica, Rebalance.
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
   
-// dept max salary, left outer join null bigger than your e.id. No group by.
+// dept max salary, left outer join itself null bigger than your e.id. No group by.
 SELECT D.Name AS Department , E.Name AS Employee, E.Salary 
 from Department D, Employee E LEFT OUTER JOIN Employee e2 on (e2.departmentid = E.departmentid and E.salary < e2.salary) 
 where e2.id IS NULL and E.DepartmentId = D.id;
-  
-// Top 3 salary, dup not allowed.
-SELECT D.Name as Department, E.Name as Employee, E.Salary 
-  FROM Department D, Employee E, Employee E2  
-  WHERE D.ID = E.DepartmentId and E.DepartmentId = E2.DepartmentId and 
-  E.Salary <= E2.Salary     // there only will have at most 3 row from joined E2 that has salary higher than me.
-  group by D.ID, E.Name 
-  having count(distinct E2.Salary) <= 3   // count(*)
-  order by D.Name, E.Salary desc
-GO
+
+// greatest-n-per-group query using left outer join. as only 1 records has null bigger, no group needed.
+SELECT t1.*
+FROM transactions t1 LEFT OUTER JOIN transactions t2 ON (t1.acct_id = t2.acct_id AND t1.trans_date < t2.trans_date)
+WHERE t2.acct_id IS NULL;
+
 
 // top 2 per dept, left outer join.
 SELECT D.Name AS Department, E.Name AS Employee, E.Salary 
@@ -251,10 +247,16 @@ group by e.name
 having count(*) <=2 
 GO
 
-// greatest-n-per-group query using left outer join. as only 1 records has null bigger, no group needed.
-SELECT t1.*
-FROM transactions t1 LEFT OUTER JOIN transactions t2 ON (t1.acct_id = t2.acct_id AND t1.trans_date < t2.trans_date)
-WHERE t2.acct_id IS NULL;
+// Top 3 salary, dup not allowed.
+SELECT D.Name as Department, E.Name as Employee, E.Salary 
+  FROM Department D, Employee E, Employee E2  
+  WHERE D.ID = E.DepartmentId and E.DepartmentId = E2.DepartmentId and 
+  E.Salary <= E2.Salary     // there only will have at most 3 row from joined E2 that has salary higher than me.
+  group by D.ID, E.Name 
+  having count(distinct E2.Salary) <= 3   // count(*)
+  order by D.Name, E.Salary desc
+GO
+
 
 SELECT t1.*
 FROM `Table` AS t1 LEFT OUTER JOIN `Table` AS t2 ON ( t1.GroupId = t2.GroupId AND 
