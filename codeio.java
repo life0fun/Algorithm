@@ -37,10 +37,10 @@
 // prepre, pre, cur, next
 
 // dp[i,j] = dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]
-// reuse row i, use temp store [j-1], set to pre after each j; 
-//   temp = dp[j]; dp[j] += dp[j-1] + pre; pre = temp;
+// reuse row i, a.i is the prev for a[i+1]. use cur store [j], set to pre after each j; 
+//   cur = dp[j]; dp[j] += dp[j-1] + pre; pre = cur;
 
-// dp[i], two loops, outer add more slots/problem set. i->n, inner enum all possible values, j->i, or v->V;
+// dp[i], two loops, outer add more slots/problem set. i->n, inner enum all value set, 1-6, face value, j->i, or v->V;
 // dp[i,j], 3 loops, loop gap, loop i, and loop k or coin value between i..j.
 // dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
 
@@ -52,7 +52,7 @@
 // after adding more item, rite seg is fixed, need to recur on left seg.
 //   dp[i] = max( dp[j] for j in 1..i-1,)
 //   for i in 1..slot:
-//     for v in 1..i  or for v in 1..V
+//     for v in 1..i  or for v in [1..V], all possible WTs
 //       dp[i] += dp[i-v]  enum all possible v at slot i
 //       // or max min
 //       dp[i] = min(dp[j+1] + 1, dp[i])
@@ -61,7 +61,7 @@
 
 // 3. when left and rite segments both need to recur.  i->k, k->j, enum all 2 segs. 
 // each segs recur divide to 2 segs. 
-//   for gap len in i..n, for i in 1..n. 
+//   for gap len range from i..n, for i range from 1..n. 
 //     dp[i][j] = min( dp[i][j-1] + dp[i+1][j] )
     
 //     dp[i][j] = min(dp[i][j], dp[i][k] + dp[k+1][j] + arr[i]*arr[k]*arr[j])
@@ -71,6 +71,8 @@
 //     dp[i,j,k] = max(dp[i+m, j, k-1]+(arr[i+m]-arr[i]))
 
 // 4. RecurDFS(offset, path) VS. DP[i,j]. two ways of thinkings.
+//   Recur from cur state to new state, reduced offset, carrying context.
+//   Just recur incl/excl header, VS. loop each remain slot, apply recur(offset+1) or recur(i+1)
 //   a. at each offset, branch out partial value in path. recurDFS(offset+1, path).
 //      we do not need incl/excl, so recur dfs at head good, like forEach child, dfs(child)
 //   b. DP[i,j], divide to dp[i,k] + dp[k,j]; 3 loops, gap, i, and k.
@@ -179,7 +181,6 @@
 // - - - - -
 
 
-
 // Merge sort and AVL tree, riteSmaller, Stack.push(TreeMap for sort String, index, ) 
 // Recursive, pass in the parent node and fill null inside recur. left = insert(left, val);
 // https://leetcode.com/problems/reverse-pairs/discuss/97268/General-principles-behind-problems-similar-to-%22Reverse-Pairs%22
@@ -229,7 +230,7 @@ Partition, Secondary Index, Replica, Rebalance.
   
 // dept max salary, left outer join itself null bigger than your e.id. No group by.
 SELECT D.Name AS Department , E.Name AS Employee, E.Salary 
-from Department D, Employee E LEFT OUTER JOIN Employee e2 on (e2.departmentid = E.departmentid and E.salary < e2.salary) 
+from Department D, Employee E LEFT OUTER JOIN Employee e2 on (e2.departmentid = E.departmentid and E.salary <= e2.salary) 
 where e2.id IS NULL and E.DepartmentId = D.id;
 
 // greatest-n-per-group query using left outer join. as only 1 records has null bigger, no group needed.
@@ -257,6 +258,11 @@ SELECT D.Name as Department, E.Name as Employee, E.Salary
   order by D.Name, E.Salary desc
 GO
 
+select p1.id, p1.salary, count(*) from people p1 
+left join people p2 on p1.id <> p2.id and p1.salary < p2.salary
+where p2.id is not null
+group by p1.id
+having count(*) = 2
 
 SELECT t1.*
 FROM `Table` AS t1 LEFT OUTER JOIN `Table` AS t2 ON ( t1.GroupId = t2.GroupId AND 
@@ -497,12 +503,12 @@ public void rainbowSort(int[] colors, int left, int rite, int startColor, int en
 //     If T == 8' return 14
 static int findInsertPosition(int[] arr, int val) {
   int sz = arr.length;
-  int l=0,r=sz-1;
+  int l = 0, r = sz-1;
   if (val < arr[l]) {  return 0; }
   if (arr[r] <= val) { return r+1; }
   while (l < r) {
     int m = (l+r)/2;
-    if (val < arr[m]) { r = m;}
+    if      (val < arr[m]) { r = m;}
     else if (arr[m] <= val) { l = m+1;}
   }
   System.out.println("insert point is " + l);
@@ -511,7 +517,7 @@ static int findInsertPosition(int[] arr, int val) {
 findInsertPosition(new int[]{2,5,7,8,8,8,8,9}, 8);
 
 
-// return the index to the First element GreatEqual to target.
+// ret index to the Head/First element GreatEqual to target. (target <= Arr[i])
 // if arr does not have element GreatEqs than V, return sz as the insertion point.
 // caller needs to check if ret >= arr.size, 
 static int bsect(int[] arr, int v) {
@@ -582,7 +588,7 @@ static int bsearchRotate(int[] arr, int v) {
     }
     return -1;
 }
-System.out.println(bsearchRotate(new int[]{3, 4, 5, 1, 2}, 2));
+assert bsearchRotate(new int[]{3, 4, 5, 1, 2}, 2) == 5;
 
 
 """ find min in rotated. / / with dup, advance mid, and check on each mov """
@@ -591,7 +597,7 @@ static int rotatedMin(int[] arr) {
     int r = arr.length-1;
     while (l < r) {
         while (l < r && arr[l] == arr[l+1]) l += 1;  // <-- !!!
-        while (r > l && arr[r] == arr[r-1]) r -= 1;
+        while (l < r && arr[r] == arr[r-1]) r -= 1;
         int m = (l+r)/2;
         if (m < r && arr[m] > arr[m+1]) {   // inverse, m > m+1
             return arr[m+1];
@@ -631,7 +637,8 @@ public List<List<Integer>> threeSum(int[] num) {
     Arrays.sort(num);
     List<List<Integer>> res = new LinkedList<>(); 
     for (int i = 0; i < num.length-2; i++) {
-        if (i == 0 || (i > 0 && num[i] != num[i-1])) {
+        if (i == 0 || 
+            (i > 0 && num[i] != num[i-1])) {
             int lo = i+1, hi = num.length-1, sum = 0 - num[i];
             while (lo < hi) {
                 if (num[lo] + num[hi] == sum) {
@@ -669,21 +676,21 @@ print merge([9,8,3], [6,5])
 // linear
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 static int kadan(int[] arr) {
-  int maxSoFar = arr[0], maxEndHere = arr[0];
+  int maxSoFar = arr[0], curMax = arr[0];
   int curStart = 0, curEnd = 0;
   int maxStart = 0, maxEnd = 0;
   
   for (int i = 1; i < arr.length; i++ ) {
     // if add a.i to prev not as big as restart from i, then restart from i.
-    if (maxEndHere + arr[i] < arr[i]) {  
-      maxEndHere = arr[i];  // restart from i
+    if (curMax + arr[i] < arr[i]) {  
+      curMax = arr[i];  // restart from i
       curStart = i;
     } else {
-      maxEndHere += arr[i];
+      curMax += arr[i];
     }
     curEnd = i;
-    if(maxSoFar < maxEndHere && curEnd - curStart >= 2) {  // subary must be at least 2 element
-      maxSoFar = maxEndHere;
+    if(maxSoFar < curMax && curEnd - curStart >= 2) {  // subary must be at least 2 element
+      maxSoFar = curMax;
       maxStart = curStart;
       maxEnd = curEnd;
     }
@@ -916,10 +923,12 @@ public List<String> findRepeatedDnaSequences(String s) {
   return result;
 }
 
+// iterate each cur of arr, bisect each ele into dp[] sorted array.
+// cur bigger than all in dp, append to dp end, increase lislen.
 // enhancement is use parent[] to track the parent for each node in the ary.
 int lengthOfLIS(int[] arr) {
     int[] dp = new int[arr.length];  // set dp[i] to max.
-    int lislen = 0;   // no one in
+    int lislen = 0;   // dp[] is empty initially.
     for (int cur : arr) {
         int lo = 0, hi = lislen;     // lislen is 0 for now.
         while (lo != hi) {  
@@ -928,7 +937,7 @@ int lengthOfLIS(int[] arr) {
             else              hi = m;
         }
         dp[lo] = cur;   // will not outofbound as hi=m, and after binsearch, a[lo] bound to > than k
-        if (lo == lislen) { ++lislen; }  // lo will eq to sz when x is the biggest.
+        if (lo == lislen) { ++lislen; }  // bisect indicate append to DP end. increase size.
     }
     return lislen;
 }
@@ -1103,15 +1112,13 @@ static int getSpecialSubstring(String s, int k, String charValue) {
   int normal = 0;
   int l = 0;
   int maxlen = 0;
-  for(int i=0;i<s.length();i++) {
-      char icode = charValue.charAt(s.charAt(i)-'a');
-      if (icode == '0') {
-          normal++;
-      }
+  for(int i = 0; i < s.length(); ++i) {
+      char ichar = charValue.charAt(s.charAt(i)-'a');
+      if (ichar == '0') { normal++; }
       if (normal > k) {   // mov l when > k.
           while (charValue.charAt(s.charAt(l)-'a') == '1') {
               l++;
-          }
+          }  // break out and stop at first != 1
           l++;
           normal--;
       }
@@ -1131,7 +1138,7 @@ static int minWinString(String s, String t) {
     for (int i=0;i<t.length();i++) {  expects[t.charAt[i] - 'a'] += 1; }
 
     int l = 0, winsize = 0, minwin = 999;
-    for (int r=0; r<s.length(); r++) {
+    for (int r = 0; r < s.length(); ++r) {   // half open
         char cur = s.charAt(i);
         int cidx = cur - 'a';
         winmap[cidx] += 1;
@@ -1146,7 +1153,7 @@ static int minWinString(String s, String t) {
                     break;    // can not squeeze left anymore, break.
                 }
             }
-            minwin = Math.min(minwin, i-l+1);
+            minwin = Math.min(minwin, r-l+1);
         }
     }
     System.out.println("min win of " + s + " : " + t + " = " + minwin);
@@ -1683,7 +1690,8 @@ class Event implements Comparable<Event> {
   int id, x, ht, type;
   @Override public int compareTo(Event other) { if (this.x == other.x) {return this.type * this.x - other.type* other.x; } return this.x - other.x;
 }
-class HeapEntry { int id, int ht, 
+class HeapEntry { 
+  int id, int ht, 
   @Override public boolean equals(Object o){ 
     if(o instanceof HeapEntry){
       HeapEntry e = (HeapEntry)o;
@@ -3198,10 +3206,10 @@ def riteSmaller(arr):
       lidx,ridx = left[l], rite[r]
       if arr[lidx] < arr[ridx]:  # left < rite, then rite side, [0..r] is inverse. no inverse, r=0;
         rank[lidx] += r
-        out.append(lidx)
+        out.append(left[lidx])
         l += 1
       else:
-        out.append(ridx)
+        out.append(rite[ridx])
         r += 1
     for i in xrange(l, len(left)):
       out.append(left[i])
