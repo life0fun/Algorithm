@@ -1,0 +1,234 @@
+Please use threads----typically by giving large items of work
+(such as complete RPC requests) to a thread pool (preferably
+one that can resize). It takes time to learn the techniques, but it's worth it.
+Using things like ControlFlows ultimately has a higher maintenance burden.
+
+Details:
+
+I've done a lot of programming in both the normal thread-based style,
+and the event-driven style typified by ControlFlow or SelectServer.
+I've used both approaches both at Google and elsewhere.
+
+The event-based style is indeed useful in some circumstances:
+- simulators (which often require determinism)
+- embedded systems that have no space for stacks
+- for legacy compatibility, when an existing library demands it.
+(The last can occur with user interface code, because some window systems
+have an event-driven model.)
+
+But in operating systes and networks servers---the predominant applications at
+Google---the event-driven style usually add significant maintenance burden
+without enough compensating benefit. The maintenance burden is obvious when
+you write the same code in both models, and is largely independent of the
+inherent complexity of the underlying task. As a result, in operating systems
+and network servers the event-driven model was largely abandoned in the '70s
+and early '80s. There are a exceptions like the V system, but when you talk to
+the developers of the V system they don't say "it was wonderful"---instead they
+say "we got used to it, and now the project is done we use threads".
+
+Whenever I've had to use an event-driven style, I found that it increased the
+size of the code substantially, and made it harder to follow, debug, and
+change it. Notice that I do not say that the event-driven model is necessarily
+slow. If a system is simple enough that one person can write the whole thing,
+and he wishes to eke out the last bit of performance from a single CPU, it
+might even be faster than the more standard design using threads.
+However, Google's servers are not simple, include code written by thousands of people, and saving
+the last couple of percent of our cycles on one processor is less important than
+making use of all the processors, and far less important than being able to
+maintain the code next year.
+
+Much of Google's code uses the event-driven model, but that's not because the
+model especially fits our uses. Rather, it's because of a historical accident:
+Google uses Linux; Linux was slow to acquire a working, efficient thread
+library; and Google was even slower to fix the bugs in the broken library and to
+adopt the new, faster library.
+(For clarity, the Linux kernel used threads internally---it was the
+thread library available in user-space that was broken and slow.) When
+Google's early code was written, it was hard to use many threads effectively,
+so a lot of code was written around SelectServer. Some developers even grew
+fearful of threads because every time they tried to use them, things broke for
+reasons they did not understand. This was made worse because Google employed
+no checking tools or conventions to help programmers get locking right. Inertia
+and continued fear have caused the event-driven model to remain heavily-used at
+Google even though the threading problems are long-since fixed, and checkers
+and coding conventions have been made available.
+
+------------------------
+
+Here's why the event driven model leads to complex code.
+
+First, consider how one learns to write sequential code:
+A traditional, single-threaded programme uses sequential
+composition (normally written as semicolon) and
+procedure call to compose large programmes from small
+pieces that can be written independently.
+Let's call this the "normal, sequential style". Presumably
+this style is considered to be a reasonable way to express sequential,
+imperative code--it's survived for sixty years with no
+radical improvements.
+
+The problem at hand is how to express parallel composition too, so
+that we can do two things: make use of multiple CPUs, and overlap I/O.
+
+
+If you use threads (or more often thread pools) as the basic way to express
+concurrency, a single sequential "activity" can be given to a single thread,
+and each activity can be written largely in the normal, sequential style.
+Except in unusual cases, you get to use semicolon and procedure call at will.
+The places you have to do something special are:
+- to say which things should run in parallel
+- to express communication, if any, between threads
+These two exceptions seem inevitable when using more than one CPU---you have to
+say what can run on each CPU, and how the CPUs interact. Threads are just
+virtual CPUs.
+
+Most people are familiar with ways to express these things. For example:
+- to say what needs to run in parallel, we might say:
+"use Futures to run these two procedures in parallel and
+wait until both are complete"
+- to say how one thread interacts with another, we might say:
+"use a lock to make sure this thread's accesses to X can't be
+interleaved with accesses to X by other threads"
+
+These extra things can be annoying and error prone, which is why we have
+checkers to check that they are done correctly. The good things are:
+- if the programmer wants to use a library call written by someone else (let's
+say printf()) he can almost always do so simply by calling it or (if he's
+unlucky) wrapping a lock around it and calling it.
+- parallelsim and communication code are added only where the application and
+performance considerations dictate; few other changes are needed.
+- communication between threads is made explicit by locking or writing on
+channels, so the next maintainer can see which statements interact with other
+activities and which do not.
+- different ways to express parallelism and communication can be accommodated
+in different parts of the programme without interference; the extensions are
+modular in that sense. (One library can use channels while another uses
+locks; one can use Futures while another creates a thread explicitly.)
+
+Now let's consider the event-driven style. In this style, the programmer
+decomposes his code into fragments, such that each fragment is written
+largely in the normal, sequential style, but with two additional constraints:
+- no fragment may block (all blocking actions must take place at the end of a
+fragment)
+- the stack is empty at the beginning at end of a fragment
+We then schedule the fragments with a user-space scheduler---at Google, that
+scheduler is often SelectServer.
+
+[Aside on the performance of such user-space schedulers:
+Fragment context switches are much like thread context switches, and without
+careful optimization of the whole system are not substantially faster:
+- we might expect fragment context switches to occur a more often
+than thread context switches because fragment context
+switches occur when a fragment reaches an operation that _could_ block, while thread
+context switches occur when a thread _does_ block. Timeslicing
+doesn't occur much in practice because timeslices are very large compared
+to instructions, and threads usually block voluntarily before they run
+out of a timeslice.
+
+- fragment switches and thread switches take about the same time. The dominant cost 
+is the cache misses on the data the next scheduled thread/fragment will use. 
+The fragment scheduler will have no cache misses switches on the stack, 
+but that's offset by more cache misses in other data structures that hold 
+the fragment context that a thread would store on the stack.
+]
+
+First, notice that the decomposition into fragments has so far not depended on
+what the programmer wishes to do in parallel, or how fast various pieces run.
+The immediate problem with the event-driven style then is that the code is no
+longer written largely in the normal, sequential style, but has been split up
+in ways that have nothing to do with the choice of what to run in parallel.
+If it were easier to read code that's been split up into fragments, introductory
+programming courses would tell students _always_ split the code up into
+fragments based on where the code blocks. But we don't do that in normal,
+sequential code---instead we split the code up into procedures. The boundaries
+are chosen based on what the code achieves rather than how it achieves it,
+because abstraction is useful. This suggests that the decomposition has a cost
+in readability---it's harder to follow the code when the next statement to be
+executed isn't the next one on the page, of the one after the call site.
+
+Second, notice that the decomposition of an activity into fragments
+affects the code in global ways, and hurts abstraction. 
+Imagine that fragment X(); Y(); Suppose further that X() calls Z(), 
+unknown to the caller of X(). Now imagine that the maintainers of Z() wish to 
+change Z() so that it may block in some circumstances. 
+To satisfy the constraints, Z() would have to be split in two,
+so the stack can be empty when the blocking operation occurs. To acheive this,
+X() would have to be split in two, also. We'd then have to arrange to run the
+second half of X() after the second half of Z(), even though we have no stack
+to remember that X() notionally called Z(). Then we'd have to make two
+fragments:
+X0(); Z0();
+Z1(); X1(); Y();
+As I've described it, a simple change to Z() that should have been local
+affected multiple levels of abstraction. Such changes are annoying enough that
+we try to avoid them.
+
+Instead, we add a guideline to the rule above:
+- every call to a routine whose future implementation could _potentially_
+block should occur at the end of a fragment
+This allows the author of such routine to block should he need to
+in a future implementation of his routine.
+This helps, but the situation still isn't great:
+- the guideline relies on developers guessing
+when they should make a routine be capable
+of blocking. When they are wrong, the necessary transformations are
+still annoying.
+- the guideline introduces more fragment boundaries (and more fragment
+context switches),
+making the code even harder to follow.
+- it still outlaws the use of libraries that were not written with the
+particular
+event-driven system (you have to write a duplicate printf()).
+
+There are other annoyances:
+- To decompose code into fragments tends to increase its size unless you have
+language support. This is because to implement and document a fragment
+boundary typically requires more text than a semicolon.
+
+- Communication between activities (different flows of control) can be achieved
+with normal variable accesses; no special synchronization operations are
+needed. This seems like a boon to the _author_ of the code----authors love
+this feature. But to the next _maintainer_, it's a nightmare. Without strong
+commonenting or style conventions, it's impossible to tell by local
+inspection which assignment statements affect other parallel activities and
+which have only local affect.
+
+This is similar to the choice between dynamic and static types; the author of
+a programme often finds it faster to programme without having to write all
+the types into the code. He sees no ill effects because he remembers far more
+about the code than comments typically tell. But the next maintainer then
+has to read every call site of a routine to tell what argument types are
+possible. There may be comments, but without checking, he cannot be sure
+whether to trust them, and a few executions may not tell the whole story.
+
+Thus, communicating between flows of control without explicit locking or channels
+is rather like throwing away part of the type system.
+
+- Debugging tools that use stack traces are less useful when the stack doesn't
+reflect the call history. The sequence of fragment executions leading to the
+current one is often not recorded, and rarely available in a form taht a tool
+understands
+
+But worse than all of this, we still haven't achieved concurrent use of CPUs.
+So far, our user-space scheduler acts on only one operating-system-provided thread, 
+and so has allowed us to overlap only I/O. To go further, we need multiple
+threads of control, and suddenly we need the machinery from the other model:
+- a way to express which activities take place in which thread
+- a way to communicate between threads.
+These are exactly the same annoying and error prone things that were the primary
+disadvantage of the model with threads. If you want all the activities to
+share the same statistics counters, of the same cache of previously-completed
+work, you still need the synchronization. The only way to avoid these
+mechanisms is to pay the price for not sharing mutable resources (like caches),
+and to insist that each request use no more cycles than can be provided by one
+CPU.
+
+None of these problems are fatal of course. We can and do use the even-drivent
+model in many programmes. But it costs more to maintain, and that's bad.
+
+And finally if you don't believe the description or the argument from long
+experience, there's the argument from authority.
+Ask Bill Coughran or Eric Schmidt, and they'll tell you to use threads.
+I know, because I have asked them.
+
+Mike
