@@ -1,17 +1,17 @@
 // # www.cnblogs.com/jcliBlogger/
 
-// 1. Ary iter with stat[i], at each ele, action branches is deterministic, either buy or sell, update states_i. 
-// 2. At A[i], action must be deterministic, incl/excl/buy/sell; state hist is aggregated with the updates at i. 
-// 2. Each containt is a state, bot[i], bot_cooldown[i], sold[i], sold_cooldown[i]
-// 3. bot_i = softmax(buy_cheaper, no_buy), sold[i]=add(sold[i-1], bot[i]+Ai), sold_cooldown[i]=sold[i-1]
-// 3. If all actions are useful for i+1, Recur(A, i+1, state1_action1, state2_action1) + R(A, i+1, state1_action2, ...)
+// 1. Ary iter with stat[i], at each ele, selection branches is deterministic, either buy or sell, update states_i. 
+// 2. dp[i][e1] = max(dp[i-1][e1], dp[i-1][e2],...). the optimal at [i] is transitive from [i-1] thus updates the global. 
+// 3. Each constraint is a state, dp[i][bot, bot_cooldown, sold, sold_cooldown].
+// 4. Recur(Ary, i, j), multi-select at [i], dp[i]=max(dp[i-1][branch1], dp[i-1][branch2], ...) 
+// 5. LOop Range: A[i=size()] is empty substr is a valid input. Recur to body to enforce Invariant. Loop Exit: i > j or i=size.
 // 4. Permutate and backtrack full state tree with Recur(i+1, prefix state).  
 
 // 1. DP recur with smaller problem with d[i-1][j-1], bottom up.
 // 2. Search DFS/BFS/Permutation, start with init, each run gen with new state or new offset with visited map and memoize path.
 // Enum constant values. e.g, ages, sum values, etc.
 
-// DP : recur with smaller problem. bottom up. dp[i,j] = Math.min( dp[i-1,j-1] )
+// DP : recur with smaller problem. bottom up. dp[i,j] = Math.min(dp[i-1,j-1])
 // 1. divide to left rite, recur, memoize, and merge.
 // 2. reucr left when rite is defined, e.g., add 1 more row to result set, 
 // 3. recur both left rite when rite is not defined, 
