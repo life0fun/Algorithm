@@ -1,6 +1,11 @@
 // # www.cnblogs.com/jcliBlogger/
 
-// Some problem, not require simulation, but calculate the target state and 
+// 1. Ary iter with stat[i], at each ele, action branches is deterministic, either buy or sell, update states_i. 
+// 2. At A[i], action must be deterministic, incl/excl/buy/sell; state hist is aggregated with the updates at i. 
+// 2. Each containt is a state, bot[i], bot_cooldown[i], sold[i], sold_cooldown[i]
+// 3. bot_i = softmax(buy_cheaper, no_buy), sold[i]=add(sold[i-1], bot[i]+Ai), sold_cooldown[i]=sold[i-1]
+// 3. If all actions are useful for i+1, Recur(A, i+1, state1_action1, state2_action1) + R(A, i+1, state1_action2, ...)
+// 4. Permutate and backtrack full state tree with Recur(i+1, prefix state).  
 
 // 1. DP recur with smaller problem with d[i-1][j-1], bottom up.
 // 2. Search DFS/BFS/Permutation, start with init, each run gen with new state or new offset with visited map and memoize path.
@@ -36,18 +41,18 @@
 //  ... [i] [i+1] - [k] - [j-1] [j]
 // prepre, pre, cur, next
 
-// dp[i,j] = dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]
+// dp[i,j] = Agg(dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]); Agg(left, upper_left, upper);
 // reuse row i, a.i is the prev for a[i+1]. use cur store [j], set to pre after each j; 
 //   cur = dp[j]; dp[j] += dp[j-1] + pre; pre = cur;
 
-// dp[i], two loops, outer add more slots/problem set. i->n, inner enum all value set, 1-6, face value, j->i, or v->V;
+// dp[i], two loops, outer iterate each Ary elements, i->n; inner enum possible value set, 1-6, or 0->k=i
 // dp[i,j], 3 loops, loop gap, loop i, and loop k or coin value between i..j.
 // dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
 
 // 1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
 // dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
 
-// 1. Total number of ways, dp[i] += dp[i-1][v]
+// 1. Total number of ways, dp[i] += sum(dp[i-1][v])
 // 2. Expand. dp[i][j] = 1 + dp[i+1][j-1]
 // after adding more item, rite seg is fixed, need to recur on left seg.
 //   dp[i] = max( dp[j] for j in 1..i-1,)
@@ -70,10 +75,10 @@
 //     #dp[i,j,k] = max profit of arr[i..j] with k trans.
 //     dp[i,j,k] = max(dp[i+m, j, k-1]+(arr[i+m]-arr[i]))
 
-// 4. RecurDFS(offset, prefix) VS. DP[i,j]. two ways of thinkings.
-//   Recur from cur state to new state, reduced offset, carrying context.
-//   Just recur incl/excl header, VS. loop each remain slot, apply recur(offset+1) or recur(i+1)
-//   a. at each offset, branch out partial value in prefix. recurDFS(offset+1, prefix).
+// 4. RecurDFS(i, prefix_path_context) VS. DP[i,j]. two ways of thinkings.
+//   Recur element i -> N, carrying all prefix path context.
+//   Just recur incl/excl header, VS. loop each remain slot, apply recur(i+1);
+//   a. at each i, branch out actions/oneof value in prefix. recurDFS(i+1, prefix).
 //      we do not need incl/excl, so recur dfs at head good, like forEach child, dfs(child)
 //   b. DP[i,j], divide to dp[i,k] + dp[k,j]; 3 loops, gap, i, and k.
 
@@ -111,8 +116,8 @@
 // BFS/DFS recur search, permutation swap to get N^2. K-group, K-similar, etc.
 // Reduce to N or lgN, break into two segs, recur in each seg.
 // 0. MAP to track a[i] where, how many, aggregates, counts, prefix sum, radix rank, position/index. pos[a[i]] = i;
-// 1. Bucket sort / bucket merge.
-// 2. Merge sort, partition, divide and constant merge.
+// 1. Bucket sort / bucket merge. A[i] stores value = index value+1
+// 2. Merge/quick sort, partition, divide and constant merge.
 // 3. Union set to merge list in a bucket
 // 4. Stack push / pop when bigger than top. mono inc/desc.    
 //      Deque<Integer> stack = new ArrayDeque<Integer>();
@@ -407,7 +412,7 @@ def qsort(arr, lo, hi):
         wi += 1
     swap(arr, wi, r)
     return wi
-  if lo < hi:  // only recursion when lo < hi.
+  if lo < hi:  // recur only when lo and hi are diff ele.
     p = partition(arr, lo, hi)
     qsort(arr, lo, p-1)  // split into 3 segs, [0..p-1, p, p+1..n]
     qsort(arr, p+1, hi)
@@ -823,9 +828,43 @@ static boolean regmatch(char[] s, char[] p, int soff, int poff) {
     // pattern is wildcard, try each recursive
     while (s[soff] == p[poff] || p[poff] == '.') {
         if (regmatch(s, p, soff, poff+2)) { return true; }
-        soff += 1;
+        soff += 1;  // out-of-bound soff
     }
 }
+
+// Loop Range: idx[0..sz], idx=size, empty substr is valid input.
+bool IsMatch(std::string_view txt, int ti, std::string_view p, int pi) {
+  if (pi == p.size()) { return ti == txt.size(); }
+  if (pi + 1 == p.size()) {
+      return (ti + 1 == txt.size() && (p.at(pi) == '.' || txt.at(ti) == p.at(pi)));
+  }
+  if (p.at(pi+1) == '*') {
+      // can match head of s 0 or N. 
+      // if head not equal, consume p, match 0 times.
+      if (p.at(pi) != '.' && p.at(pi) != txt.at(ti)) {
+          return IsMatch(txt, ti, p, pi+2);
+      } else {
+          // Loop inv: inside loop body: ti+k points to repeated char. outside, k points to next or end;  
+          int k = 0;  // Loop Range
+          // while (ti + k < txt.size() && txt.at(ti+k) == txt.at(ti)) {
+          //     if (IsMatch(txt, ti+k, p, pi+2)) return true;
+          //     k++;
+          // }
+          for(; ti + k < txt.size() && txt.at(ti)==txt.at(ti+k); k++) {
+              if (IsMatch(txt, ti+k, p, pi+2)) return true;
+          }
+          // Exit: ti+k=size(); Edge case of empty substr[sz,sz]; empty substr is valid input to recur.  
+          if (IsMatch(txt, ti+k, p, pi+2)) return true;
+          return false;
+      }
+  } else {
+    // not repeat, match head and recur.
+    if (txt.at(ti) == p.at(pi) || p.at(pi) == '.') return IsMatch(txt, ti+1, p, pi+1);
+    return false;
+  }
+  return false;
+};
+
 
 public List<String> findRepeatedDnaSequences(String s) {
   Set<Integer> words = new HashSet<>();
@@ -993,7 +1032,7 @@ static int[] slidingWinMax(int[] arr, int k) {
     Stack<Integer> maxIdxStk = new Stack<>();
     int l = 0; int winsize = 0;
     for(int r=0; r<sz; r++) {  // always while loop to move left.
-        while (!maxStk.isEmpty() > 0 && arr[r] > maxStk.peek()) {  // cur > stk.peek(), no use to keep in stk, pop
+        while (!maxStk.isEmpty() && arr[r] > maxStk.peek()) {  // cur > stk.peek(), no use to keep in stk, pop
             maxStk.pop(); maxIdxStk.pop();
         }
         maxStk.add(arr[r]); maxIdxStk.add(r);
@@ -1626,13 +1665,13 @@ def firstMissing(L):
   def bucketsort(L):
     for i in xrange(len(L)):
       while L[i] > 0 and L[i] != i+1:
-        v = L[i]-1
-        if L[v] < 0:  # arr[i] is a DUP as already detected and toggled
+        vidx = L[i]-1
+        if L[vidx] < 0:  # arr[i] is a DUP as already detected and toggled
           L[i] = 0    # Li is a dup, can not swap anymore, set it to 0, skip
-          L[v] -= 1
+          L[vidx] -= 1
         else:         # L[v] >= 0: when dup, entry was set to 0, we still can swap to it.
-          L[i],L[v] = L[v],L[i]  # swap and mark the flag as already done.
-          L[v] = -1
+          L[i],L[vidx] = L[vidx],L[i]  # swap and mark the flag as already done.
+          L[vidx] = -1
       # natureally ordered, not even inot while loop, turn to -1
       if L[i] == i+1:
         L[i] = -1
@@ -1754,17 +1793,17 @@ def findDuplicate(arr):
 // # HIdx Ary[] whose idx is value of hIdx and value is citations; 
 // # Cap hIdx Ary[] at len of papers.
 static int hIndex(int[] arr) {
-  int sz = arr.length;
+  int mx = arr.length;
   // num of paper viewed as largest citation cap.
-  int[] citationPapersArr = new int[sz+1];  //
-  for (int i=0;i<sz;i++) {
+  int[] citationsMap = new int[mx+1];  //
+  for (int i=0;i<mx;i++) {
       int curCitation = arr[i];
-      if (curCitation > sz) { citationPapersArr[sz] += 1; } // cap
-      else {                  citationPapersArr[curCitation] += 1;  } // idx is citation, value is total papers in this cititation.
+      if (curCitation > mx) { citationsMap[mx] += 1; } // cap
+      else {                  citationsMap[curCitation] += 1;  } // idx is citation, value is total papers in this cititation.
   }
   int hIndex = 0, totPapers = 0;
-  for (int i=citationPapersArr.length-1;i>=0;i--) {
-      totPapers += citationPapersArr[i];
+  for (int i=citationsMap.length-1;i>=0;i--) {
+      totPapers += citationsMap[i];
       if (totPapers >= i) {
           hIndex = i;
           break;
@@ -2139,16 +2178,17 @@ class Node {
   Node left, rite;
   int value, rank;
 }
-static Node morris(Node root) {
+static Node morrisInOrder(Node root) {
   Node pre;
   Node cur = root;
   Stack<Node> output = new Stack<>();
   while (cur != null) {
-      if (cur.left == null) {
+      Node tmp = cur.left;
+      if (tmp == null) {
           pre = cur;
           cur = cur.rite;
       } else {
-          Node tmp = cur.left;
+          // before moving to cur_left, set up cur_left->right_most->next = cur
           while (tmp.rite != null && tmp.rite != cur) {
               tmp = tmp.rite;
           }
@@ -3343,7 +3383,7 @@ def minpath(G, src, dst, k):
 
 // first step to use topology sort prune, tab[i] = min cost to reach dst from i'''
 def minpath(G, src, dst):
-  def topsort(G, src, stk):  # sort result in a stk
+  def topsort(G, src, stk):  # dfs all children, then visit root by push to stk top.
     def dfs(s,G,stk):
       for v in neighbor(G,s):
         if not visited[v]:
@@ -3840,6 +3880,20 @@ def radixsort(arr):
   return arr
 print radixsort([170, 45, 75, 90, 802, 24, 2, 66])
 
+def bisect_left(arr, t):
+  b = 0
+  e = len(arr) # half close, [b, e) so single element can be included in the loop
+  ## loop invariant: arr.b shall strictly great than t, so b is the insertion point when out of loop.
+  while b < e:
+    mid = b + (e - b)/2
+    if arr[mid] < t:  # discard left when b strictly less
+      b = mid + 1
+    else
+      e = mid  # discard right include mid == t
+  # when outside loop, b is strictly > t, b is the left insertion point.
+  return b
+
+
 def longestIncreasingSequence(arr):
   def bisectUpdate(l, val):
     lo,hi = 0, len(l)-1
@@ -4066,6 +4120,11 @@ def profit_many_trans(arr):
 print profit_many_trans([2,4,3,5,4,2,8,10])
 
 """ FSM, 3 states, bot/sold/rest. Each state profit at arr[i], so bot[i]/sold[i]/rest[i].
+State transition to simulate bot->rest->sell cycle. Every constraint is a state.
+bot->bot_cooldown->sold->sold_cooldown, etc.
+
+Bot[i] can only from Rest[i-2] and sell[i] transition to rest[i]; 
+softmax to aggregate multiple options in each state. bot[i]=max(bot[i-1], Rest[i-1]-A[i])
 
 bot[i] = max(bot[i-1], rest[i-1]-arr[i]); not buy at i, or buy with rest money.
 sold[i] = max(sold[i-1], bot[i-1]+arr[i]), not sell, or sell
