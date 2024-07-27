@@ -29,10 +29,13 @@
 // dp[i,j], 3 loops, loop gap, loop i, and loop k or coin value between i..j.
 // dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
 
-// The difference between DFS(root) vs DP[i][j][k]
-// dfs only explore/recur to the undiscovered node. for cycled graph, dfs only gen simple cycle.
-// with DP[i,j,k]: work with negative edges and can find connected cycles.
-// for k-edge paths, use dp[i,j,k]
+// Graph Algorithms: a) dfs for 0 weight edges, b) Incremetal Greedy for weighted edges, c) DP[i,j,k] for uni-direction Graph.
+// dfs exploring, Recur only to __undiscovered__ nodes. Edge types(tree, back, forward), find connected component, cycles. 
+// Greedy expanding (shortest path, or union-find). no negative edges as the min of parent is used by subgraphs, no later update.
+// DAG always used DFS+memorize to find single src paths. 
+// DAG: order by topo sort, better than plain DFS, as avoid process common subgraph paths. DFS list all paths will re
+// DP[i,j,k]: work with unidirection with negative edges, k-edged paths. 
+// 
 
 // 1. Total number of ways, dp[i] += sum(dp[i-1][v])
 // 2. Expand. dp[i][j] = 1 + dp[i+1][j-1]
@@ -46,7 +49,7 @@
 //       dp(i) = ( dp(i-1) * ways(i) ) + ( dp(i-2) *ways(i-1, i) )
 //       tot = max(prepre + cur, pre)
 
-// 3. when left and rite segments both need to recur.  i->k, k->j, enum all 2 segs. 
+// 3. when both left,rite need to recur. i->k, k->j, enum all 2 segs. 
 // each segs recur divide to 2 segs. 
 //   for gap len range from i..n, for i range from 1..n. 
 //     dp[i,j] = min( dp[i, j-1] + dp[i+1, j] )
@@ -119,7 +122,7 @@
 //  1. dfs(child, path); start root, for each child, if child is dst, result.append(path)
 //  2. BFS(PQ); seed PQ(sort by weight) with root, poll PQ head, for each child of hd, relax. offer child.
 //  3. DP[src,dst] = DP[src,k] + DP[k, dst]; In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
-//        dp[i, j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
+//        dp[i,j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
 //        dp[i,j] = min(dp[i,j-1], dp[i-1,j]) + G[i,j];
 //  4. topsort(G, src, stk), start from any, dfs, carry stk.
 //  5. dfs(state) try each not visited child state, if (dfs(child) == true) ret true. DFS ALL DONE no found, ret false;
