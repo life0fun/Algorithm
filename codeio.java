@@ -1,41 +1,34 @@
 // # www.cnblogs.com/jcliBlogger/
 
-// DP steps: Expand Partial tree DFS recur next candidates.
+// DP steps: Expand Partial tree DFS recur next candidates. 
+// 1. discovered state update, boundary check, build candidates, recur, visited.
 // 1. Backtrack dfs search carrying partial tree at k, construct candidates k+1, loop recur each candidate.
-// 2. State tracking: DP[dimension + state1, state2, ...] = min/max value after i, j, k txns.
+// 2. State tracking: DP[dim + state1, state2, ...] = min/max value after i, j, k txns.
 // 3. Boundary condition check and state transtion aggregations. Dp[i,j,k] = max(DP[i-1,j-1,k-1]+cost, ...);
 // 4. Recur with local copy to each candidates, aggregate the result. dp[i]=max(dp[i-1][branch1], dp[i-1][branch2], ...)
 // 5. the optimal partial tree is transitive updated from subtree thus updates the global and carry on.
 // 5. Loop Range: A[i=size()], empty substr is a valid input. Recur to body to enforce Invariant. Loop Exit: i > j or i=size.
 // 4. Permutate and backtrack full state tree with Recur(i+1, prefix state).  
 
-// Backtracking with DFS search tree: construct candidates at next state k+1, Recur each candidate
+// Backtracking with DFS search: build candidates state k+1, Recur each candidate
 //  1. BFS with PQ sort by price, dist.
 //  2. DFS spread out with local copy and recur with backtrack and prune.
 //  3. Permutation, each offset as head, add hd to path, recur with new offset
 //  4. DP for each sub len/Layer, merge left / right.
 //  5. Recur Fn must Memoize intermediate result.
 
-// prepre, pre, cur, next
-//  ... [i-1] [i]        # only recur [0..i-1] seg, [i-1, i] is definite.
-//  ... [j] - [k] - [i]  # recur both segments, [j..k] and [k..i].
-//  ... [i] [i+1] - [k] - [j-1] [j]
+// dp[day_i][k_txn][1] = max(dp[i-1][k][1], dp[i-1][k-1][0] - prices[i])
+//                       max(   选择 rest  ,           选择 buy         )
 
-// dp[i,j] = Agg(dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]); Agg(left, upper_left, upper);
+// prepre, pre, cur, next
+//  [0, i-1], [i, n]        # only recur [0..i-1] seg, [i-1, i] is definite.
+//  [j=0,k], [k..i]  # recur both segments, [j..k] and [k..i].
+//  [0,i] [i+1, k], [j-1,j]
+
+// dp[i,j] = Max(dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]); Max(left, upper_left, upper);
 // reuse row i, a.i is the prev for a[i+1]. use cur store [j], set to pre after each j; 
 //   cur = dp[j]; dp[j] += dp[j-1] + pre; pre = cur;
 
-// dp[i], two loops, outer expand top elements, i->n; inner recur partial tree of cur node with next value set.
-// dp[i,j], 3 loops, loop gap, loop i, and loop k or coin value between i..j.
-// dp[i][j][k]: # of valid sequences of length i where: j As and k Ls, d[n][1][2]
-
-// Graph Algorithms: a) dfs for 0 weight edges, b) Incremetal Greedy for weighted edges, c) DP[i,j,k] for uni-direction Graph.
-// dfs exploring, Recur only to __undiscovered__ nodes. Edge types(tree, back, forward), find connected component, cycles. 
-// Greedy expanding (shortest path, or union-find). no negative edges as the min of parent is used by subgraphs, no later update.
-// DAG always used DFS+memorize to find single src paths. 
-// DAG: order by topo sort, better than plain DFS, as avoid process common subgraph paths. DFS list all paths will re
-// DP[i,j,k]: work with unidirection with negative edges, k-edged paths. 
-// 
 
 // 1. Total number of ways, dp[i] += sum(dp[i-1][v])
 // 2. Expand. dp[i][j] = 1 + dp[i+1][j-1]
@@ -57,15 +50,11 @@
 //     dp[i,j,k] = for m in i..j: max(dp[i+1,m-1,0] + dp[m,j,k+1]) when a[i]=a[m]
 //     dp[i,j,k] = max(dp[i+m, j, k-1]+(arr[i+m]-arr[i]))
 
-// dp[day_i][k_txn][1] = max(dp[i-1][k][1], dp[i-1][k-1][0] - prices[i])
-//                       max(   选择 rest  ,           选择 buy         )
+// 4. Recur(i, prefix) VS. Tab[i,j]: two ways of thinkings.
+//   Loop each next=i+1 -> N, swap(i, next), incl/excl current i, carrying [prefix + i], recur(i+1, prefix+i).
+//   or just process head_i, Recur(i+1, prefix + incl_excl_i)
+// DP[i,j], intermediate gap=1..n, dp[i,gap] + dp[gap,j]; 3 loops, gap, i, j.
 
-// 4. DFSRecur(i, prefix_path_context) VS. DP[i,j]. two ways of thinkings.
-//   Recur element i -> N, carrying all prefix path context.
-//   Just recur incl/excl header, VS. loop each remain slot, apply recur(i+1);
-//   a. at each i, branch out actions/oneof value in prefix. recurDFS(i+1, prefix).
-//      we do not need incl/excl, so recur dfs at head good, like forEach child, dfs(child)
-//   b. DP[i,j], divide to dp[i,k] + dp[k,j]; 3 loops, gap, i, and k.
 
 // 1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
 // dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
@@ -76,6 +65,10 @@
 // 4. loop gap=1,2.., start = i, end = i+gap.
 // 5. dp[i,j,val] = dp[i-1,j-1,val=0..v]
 // 6. BFS with priorityqueue, topsort
+
+// Merge sort and AVL tree, riteSmaller, Stack.push(TreeMap for sort String, index, ) 
+// Recursive, pass in the parent node and fill null inside recur. left = insert(left, val);
+// https://leetcode.com/problems/reverse-pairs/discuss/97268/General-principles-behind-problems-similar-to-%22Reverse-Pairs%22
 
 // BFS/DFS recur search, permutation swap to get N^2. K-group, K-similar, etc.
 // Reduce to N or lgN, break into two segs, recur in each seg.
@@ -114,24 +107,21 @@
 // ExamRoom: PQ compare segment size. poll largest segment. Break into 2, recur.
 // """
 
-// """ Graph of Nodes, Edges. DFS/BFS + PQ<int[]>. Edge = LinkedList<Set<Node>>
-// Start Seed(root ? each in Forest), End condition. For each direction/neight, recur DFS(new state, path)
-//   DFS(state, l,r, path) { cache[l][r] = min(for each nb (dfs(l+1,r+1)))
-// - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
-// From src -> dst, min path  dp[src][1111111]   bitmask as path.
-//  1. dfs(child, path); start root, for each child, if child is dst, result.append(path)
-//  2. BFS(PQ); seed PQ(sort by weight) with root, poll PQ head, for each child of hd, relax. offer child.
-//  3. DP[src,dst] = DP[src,k] + DP[k, dst]; In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
-//        dp[i,j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
-//        dp[i,j] = min(dp[i,j-1], dp[i-1,j]) + G[i,j];
-//  4. topsort(G, src, stk), start from any, dfs, carry stk.
-//  5. dfs(state) try each not visited child state, if (dfs(child) == true) ret true. DFS ALL DONE no found, ret false;
-//  6. node in path repr as a bit. END path is (111). Now enum all path values, and check from each head, the min.
+// """ Graph: Adj edge list: Map<Node, LinkedList<Set<Node>>, sweep thru all edges by DFS or BFS.
+// Shortest Path or MST_prim: PQ<[dist, node, ...]>. 
+// DFS(cur, prefix): !directed edges: one is discovred_by_parent_dfs_in, else either processed_by_my_dfs_out or !discovered.
+// DFS Recur only __undiscovered__. When dfs done, memorize subpaths, path[cur]. Connected component, Artificial Nodes, cycles.
+// Process edge(cur,nb) exactly once. when !direct, me->nb, By parent dfs to me, or by my dfs nb circle back(nb-me), thus !processed(nb);
 // - - - - -
 
-// Merge sort and AVL tree, riteSmaller, Stack.push(TreeMap for sort String, index, ) 
-// Recursive, pass in the parent node and fill null inside recur. left = insert(left, val);
-// https://leetcode.com/problems/reverse-pairs/discuss/97268/General-principles-behind-problems-similar-to-%22Reverse-Pairs%22
+// Graph Types: Directed/Acyclic/Negative Wegithed. Edge Types: Tree, Back, Forward, 
+// a) dfs for 0 weight edges, b) Incremetal Greedy Shortest path for weighted edges, c) DP[i,j,k] all pairs paths.
+// Shortest path(union-find) no negative edges as the min of parent must be fixed for subgraphs, no later update.
+// DAG acyclic: DFS+memorize all subpaths, or topo sort first to freeze parents min before expanding subgraph.   
+// All paths: BFS flooding, (exactly) k hops cycles. DFS(cur, prefix) recur nb not in prefix or !discovered. 
+// Edge/Path process/Memorize: Exactly once, By Parent Dfs to me, or By my dfs nb circle back. NO nb is neither discovered nor processed.
+// MST: incremental. extra edge creates a cycle. Shortest path is multihops. path changes when inc all edges.
+// All Pairs Paths: DP[i,j,k] = d[i,u, k-1]+e(u,j), or d[i,j]=d[i,k]+d[k,j] unidirection with negative edges.
 
 // Weighted Edges Graph: Max Matching(Disjoint Edges), BFS, Increase Reduce Residual/Flow of Forward Reverse path edges.
 Max Flow: each bfs path Reduce Increase forward and reverse edge Residual Flow. 
@@ -144,7 +134,7 @@ Max Matching: Max Disjoint Edges(worker-job) no vertex sharing. Max disjoint wor
 Max Matching in a Tree: same as Independent Set. Min(1+sum(recur(grandchild)), sum(recur(child)))
 https://www.geeksforgeeks.org/find-maximum-matching-in-a-given-binary-tree/
 
-Independent Set, Scheduling: max vertex set not sharing edges. NP-Hard. Heuristic: start with leaves, remove, repeat.
+Independent Set, Scheduling: max vertex set not edges sharing. NP-Hard. Heuristic: start with leaves, remove, repeat.
 no two vertex in the set connect/share/conflicts with all G edges. edge(x-y) means x connect/conflicts with y.
 Scheduling/Clique: conflicting schedules has an edge, reduced to Vertex cover. Sorted by End time.
 
