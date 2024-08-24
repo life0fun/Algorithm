@@ -7,7 +7,8 @@
 // 3. Boundary condition check and state transtion aggregations. Dp[i,j,k] = max(DP[i-1,j-1,k-1]+cost, ...);
 // 4. Recur with local copy to each candidates, aggregate the result. dp[i]=max(dp[i-1][branch1], dp[i-1][branch2], ...)
 // 5. the optimal partial tree is transitive updated from subtree thus updates the global and carry on.
-// 5. Loop Range: A[i=size()], empty substr is a valid input. Recur to body to enforce Invariant. Loop Exit: i > j or i=size.
+// 6. The first thing in Recur(A, i, B, j) is Exition boundary checks. return A.size()==i.
+// 5. Loop Init/Range/Exit: RegMatch, Invar Setup/Enforce/Break. Loop exit index=size(). Recur to let Recursion exition check.
 // 4. Permutate and backtrack full state tree with Recur(i+1, prefix state).  
 
 // Backtracking with DFS search: build candidates state k+1, Recur each candidate
@@ -108,20 +109,21 @@
 // """
 
 // """ Graph: Adj edge list: Map<Node, LinkedList<Set<Node>>, sweep thru all edges by DFS or BFS.
-// Shortest Path or MST_prim: PQ<[dist, node, ...]>. 
-// DFS(cur, prefix): !directed edges: one is discovred_by_parent_dfs_in, else either processed_by_my_dfs_out or !discovered.
-// DFS Recur only __undiscovered__. When dfs done, memorize subpaths, path[cur]. Connected component, Artificial Nodes, cycles.
-// Process edge(cur,nb) exactly once. when !direct, me->nb, By parent dfs to me, or by my dfs nb circle back(nb-me), thus !processed(nb);
+// Shortest Path or MST_prim: PQ<[dist, node, ...]> sorted by dist. incremental greedy. 
+// DFS(cur, prefix): Recur only __undiscovered__. DFS done, all child visited, memorize path[cur]. 
+// DFS !directed: one nb is discovred_parent_dfs_in, others either !discovered or processed_by_my_dfs_down cycle back to me.
+// Process edge(cur,nb) exactly once. !direct, by parent when dfs to me, or processed by my dfs down circle back(nb-me), !processed(nb);
+// List All paths: DFS(cur, prefix) recur undiscovered. BFS(cur,prefix): no enqueue when nb in prefix. 
 // - - - - -
-
 // Graph Types: Directed/Acyclic/Negative Wegithed. Edge Types: Tree, Back, Forward, 
-// a) dfs for 0 weight edges, b) Incremetal Greedy Shortest path for weighted edges, c) DP[i,j,k] all pairs paths.
+// a) dfs for 0 weight edges, b) Incremetal Greedy Shortest path for weighted, c) DP[i,k,j] all pairs paths.
 // Shortest path(union-find) no negative edges as the min of parent must be fixed for subgraphs, no later update.
-// DAG acyclic: DFS+memorize all subpaths, or topo sort first to freeze parents min before expanding subgraph.   
-// All paths: BFS flooding, (exactly) k hops cycles. DFS(cur, prefix) recur nb not in prefix or !discovered. 
-// Edge/Path process/Memorize: Exactly once, By Parent Dfs to me, or By my dfs nb circle back. NO nb is neither discovered nor processed.
+// DAG acyclic: topsort first. DFS+memorize all subpaths, freeze parents min before expanding subgraph.   
+// Edge/Path types and process: Exactly once, when Parent Dfs to me, or when my dfs down circle back. 
+// !directed, Nb either discovered or processed. Directed, Tree(undiscovered), Back(discovred), Forward(processed).
 // MST: incremental. extra edge creates a cycle. Shortest path is multihops. path changes when inc all edges.
-// All Pairs Paths: DP[i,j,k] = d[i,u, k-1]+e(u,j), or d[i,j]=d[i,k]+d[k,j] unidirection with negative edges.
+// All paths: BFS flooding, (exactly) k hops cycles. no cycle, nb not in prefix. DFS(cur, prefix) recur nb !discovered. 
+// All Pairs: DP[i,j,k] = d[i,u, k-1]+e(u,j), or d[i,j]=d[i,k]+d[k,j]. Directed, Path[i,k,j] != Path[j,k,i]. List Paths
 
 // Weighted Edges Graph: Max Matching(Disjoint Edges), BFS, Increase Reduce Residual/Flow of Forward Reverse path edges.
 Max Flow: each bfs path Reduce Increase forward and reverse edge Residual Flow. 
@@ -798,35 +800,33 @@ static boolean regmatch(char[] s, char[] p, int soff, int poff) {
 // Loop Range: idx[0..sz], idx=size, empty substr is valid input.
 // Loop body applies to range; ensure idx valid when loop ends.
 bool RegMatch(std::string_view txt, int ti, std::string_view p, int pi) {
+  // Check Exit boundary first.
   if (pi == p.size()) { return ti == txt.size(); }
   if (pi + 1 == p.size()) {  // last item to match.
       return (ti + 1 == txt.size() && (p.at(pi) == '.' || txt.at(ti) == p.at(pi)));
   }
-  if (p.at(pi+1) == '*') {
-      // can match head of s 0 or N. 
+  if (p.at(pi+1)) != '*') {
+    return (txt.at(ti) == p.at(pi) || p.at(pi) == '.') && RegMatch(txt, ti+1, p, pi+1)
+  } else {  // pattern is X*, * match head [0..N] times.
       // if head not equal, consume p, match 0 times.
       if (p.at(pi) != '.' && p.at(pi) != txt.at(ti)) {
           return RegMatch(txt, ti, p, pi+2);
-      } else {
-          // Loop inv: inside loop body: ti+k points to repeated char. outside, k points to next or end;  
-          int k = 0;  // Loop Range [ti+k, ti+k < size] 
-          // while (ti + k < txt.size() && txt.at(ti+k) == txt.at(ti)) {
-          //     if (RegMatch(txt, ti+k, p, pi+2)) return true;
-          //     k++;
-          // }
-          for(; ti+k < txt.size() && txt.at(ti)==txt.at(ti+k); k++) {
-              if (RegMatch(txt, ti+k, p, pi+2)) return true;
-          }
-          // Exit: ti+k=size(); Edge case: empty substr[sz,sz] still valid input to recur.  
-          if (RegMatch(txt, ti+k, p, pi+2)) return true;
-          return false;
       }
-  } else {
-    // not repeat, match head and recur.
-    if (txt.at(ti) == p.at(pi) || p.at(pi) == '.') return RegMatch(txt, ti+1, p, pi+1);
-    return false;
+      // Loop inv: inside loop body: ti+k points to repeated char. outside, k points to next or end;  
+      int k = 0;  // Loop Range [ti+k, ti+k < size] 
+      // while (ti + k < txt.size() && txt.at(ti+k) == txt.at(ti)) {
+      //     if (RegMatch(txt, ti+k, p, pi+2)) return true;
+      //     k++;
+      // }
+      for(int k=0; ti+k < txt.size() && txt.at(ti)==txt.at(ti+k); k++) {
+          if (RegMatch(txt, ti+k, p, pi+2)) return true;
+      }
+      for(int repeat_idx=ti; repeat_idx < txt.size() && txt.at(repeat_idx) == txt.at(ti); repeat_idx++) {
+        if (RegMatch(txt, repeat_idx, p, pi+1)) return true;
+      }
+      // Loop Exit: head not repeat, or the end of txt. repeat_idx= next_head || txt.size(); 
+      return (RegMatch(txt, repeat_idx, p, pi+2));
   }
-  return false;
 };
 
 
