@@ -1,25 +1,27 @@
 // # www.cnblogs.com/jcliBlogger/
 
 // DP steps: Expand Partial tree DFS recur next candidates. 
-// 1. discovered state update, boundary check, build candidates, recur, visited.
+// 1. discovered state update, boundary check, build candidates, recur, visited aggregation.
 // 1. Backtrack dfs search carrying partial tree at k, construct candidates k+1, loop recur each candidate.
-// 2. State tracking: DP[dim + state1, state2, ...] = min/max value after i, j, k txns.
-// 3. Boundary condition check and state transtion aggregations. Dp[i,j,k] = max(DP[i-1,j-1,k-1]+cost, ...);
+// 2. The first thing in Recur(A, i, B, j) is Exition boundary checks. return A.size()==i.
+// 3. Boundary check and state track aggregations. Dp[i,j,k] = min/max(DP[i-1,j-1,k-1]+cost, ...);
 // 4. Recur with local copy to each candidates, aggregate the result. dp[i]=max(dp[i-1][branch1], dp[i-1][branch2], ...)
 // 5. the optimal partial tree is transitive updated from subtree thus updates the global and carry on.
-// 6. The first thing in Recur(A, i, B, j) is Exition boundary checks. return A.size()==i.
+
 // 5. Loop Init/Range/Exit: RegMatch, Invar Setup/Enforce/Break. Loop exit index=size(). Recur to let Recursion exition check.
 // 4. Permutate and backtrack full state tree with Recur(i+1, prefix state).  
 
-// Backtracking with DFS search: build candidates state k+1, Recur each candidate
-//  1. BFS with PQ sort by price, dist.
+// Backtracking: for each next candidates, recur DFS search each branch(incl/excl); End state picking max.
+//  1. BFS with PQ sort by price, dist. BellFord, shortest path.
 //  2. DFS spread out with local copy and recur with backtrack and prune.
-//  3. Permutation, each offset as head, add hd to path, recur with new offset
+//  3. Permutation, at each offset, swap suffix to offset as prefix for next candidate. recur with new offset
 //  4. DP for each sub len/Layer, merge left / right.
 //  5. Recur Fn must Memoize intermediate result.
 
-// dp[day_i][k_txn][1] = max(dp[i-1][k][1], dp[i-1][k-1][0] - prices[i])
-//                       max(   选择 rest  ,           选择 buy         )
+// Prev state is transitive down in each state(buy/sell/rest)
+// dp[day_i][k_txn][buy|sell|rest] = Max(val[d_i-1], price[i], [buy, sell, rest]) 
+//     max(dp[i-1][k][1], max(dp[i-1][k-1][0] - prices[i])
+//     max(  选择 rest  ,   max of 选择 buy if not hold | Sell if hold )
 
 // prepre, pre, cur, next
 //  [0, i-1], [i, n]        # only recur [0..i-1] seg, [i-1, i] is definite.
@@ -29,7 +31,6 @@
 // dp[i,j] = Max(dp[i-1,j-1] + dp[i,j-1] + dp[i, j-1]); Max(left, upper_left, upper);
 // reuse row i, a.i is the prev for a[i+1]. use cur store [j], set to pre after each j; 
 //   cur = dp[j]; dp[j] += dp[j-1] + pre; pre = cur;
-
 
 // 1. Total number of ways, dp[i] += sum(dp[i-1][v])
 // 2. Expand. dp[i][j] = 1 + dp[i+1][j-1]
@@ -51,22 +52,24 @@
 //     dp[i,j,k] = for m in i..j: max(dp[i+1,m-1,0] + dp[m,j,k+1]) when a[i]=a[m]
 //     dp[i,j,k] = max(dp[i+m, j, k-1]+(arr[i+m]-arr[i]))
 
-// 4. Recur(i, prefix) VS. Tab[i,j]: two ways of thinkings.
+// 4. Recur(i, prefix) VS. Tab[i,j]: two ways of thinkings. how prepare candidates for next step.
 //   Loop each next=i+1 -> N, swap(i, next), incl/excl current i, carrying [prefix + i], recur(i+1, prefix+i).
 //   or just process head_i, Recur(i+1, prefix + incl_excl_i)
 // DP[i,j], intermediate gap=1..n, dp[i,gap] + dp[gap,j]; 3 loops, gap, i, j.
 
+// knapsack: one bin, iter add item_i once a time, loop each w to W, max of incl/excl item_i. dp[i][w]=max(dp[i-1][w-w_i]+v_i, dp[i-1][w])
+// binpacking: NP hard. multiple bin. First fit, first unfit, best fit. etc.
 
 // 1. subsetSum, combinSum, coinChange, dup allowed, reduce to dp[v] += dp[v-vi]
 // dup not allowed, track 2 rows, dp[i][v] = (dp[i-1][v] + dp[i-1][v-vi])
 
-// 1. for tree, recur with context, or iterate with root and stk.
-// 2. for ary, loop recur on each element.
-// 3. search, dfs or bfs.
+// 1. Tree, recur with prefix context, or iterate with root and stk.
+// 2. Ary, recur cur+1, prepare next candidates.
 // 4. loop gap=1,2.., start = i, end = i+gap.
 // 5. dp[i,j,val] = dp[i-1,j-1,val=0..v]
 // 6. BFS with priorityqueue, topsort
 
+// Tree build Recur(RMQ, kd). recur(): root.left = recur(); root.rite=recur(); ret root;
 // Merge sort and AVL tree, riteSmaller, Stack.push(TreeMap for sort String, index, ) 
 // Recursive, pass in the parent node and fill null inside recur. left = insert(left, val);
 // https://leetcode.com/problems/reverse-pairs/discuss/97268/General-principles-behind-problems-similar-to-%22Reverse-Pairs%22
@@ -99,7 +102,7 @@
 
 // """ Intervals scheduling, TreeMap, Segment(st,ed) is interval.
 // Sort by start, use stk to filter overlap. Greedy can work.
-// sort by finish(start is less than finish). no stk needed. just one end/minRite var to track end. if iv.start > end, end = iv.end.
+// sort by finish(start<finish). no stk. track global end. end=max(iv.end).
 // Interval Array, add/remove range all needs consolidate new range.
 // TreeMap to record each st/ed, slide in start, val+=1, slide out end, val-=1. sum. find max overlap.
 // Interval Tree, find all overlapping intervals. floorKey/ceilingKey/submap/remove on add and delete.
@@ -108,84 +111,53 @@
 // ExamRoom: PQ compare segment size. poll largest segment. Break into 2, recur.
 // """
 
-// """ Graph: Adj edge list: Map<Node, LinkedList<Set<Node>>, sweep thru all edges by DFS or BFS.
-// Shortest Path or MST_prim: PQ<[dist, node, ...]> sorted by dist. incremental greedy. 
-// DFS(cur, prefix): Recur only __undiscovered__. DFS done, all child visited, memorize path[cur]. 
-// DFS !directed: one nb is discovred_parent_dfs_in, others either !discovered or processed_by_my_dfs_down cycle back to me.
-// Process edge(cur,nb) exactly once. !direct, by parent when dfs to me, or processed by my dfs down circle back(nb-me), !processed(nb);
-// List All paths: DFS(cur, prefix) recur undiscovered. BFS(cur,prefix): no enqueue when nb in prefix. 
+// """ Graph: Adj edge list: Map<Node, LinkedList<Set<Node>>, sweep thru all edges quick when visiting nodes.
+// DFS(root, prefix): Recur only __undisc__. when DFS recur done, all child visited, memorize path[cur]. 
+// DFS Edge: Tree: !discovered, Back: !processed anecestors in stk excl parent. Forward: Reverse Back. Cross: Directed to already traversed component.
+// Edge exact once: dfs(parent,me), dfs(me, !discovered); Back:(in stk !processed, excl parent). processed_me is done when node is processed.  
+// Strong Connected Component(SCC): DFS Back-edge earliest, or two-DFS: label vertex by completion. DFS reversed G from highest unvisited. each dfs run finds a component.
+// List All paths: DFS(v, prefix). ret paths or collect at leaves. BFS(v,prefix): no enqueue traverse when nb in prefix. 
 // - - - - -
-// Graph Types: Directed/Acyclic/Negative Wegithed. Edge Types: Tree, Back, Forward, 
-// a) dfs for 0 weight edges, b) Incremetal Greedy Shortest path for weighted, c) DP[i,k,j] all pairs paths.
-// Shortest path(union-find) no negative edges as the min of parent must be fixed for subgraphs, no later update.
-// DAG acyclic: topsort first. DFS+memorize all subpaths, freeze parents min before expanding subgraph.   
-// Edge/Path types and process: Exactly once, when Parent Dfs to me, or when my dfs down circle back. 
-// !directed, Nb either discovered or processed. Directed, Tree(undiscovered), Back(discovred), Forward(processed).
-// MST: incremental. extra edge creates a cycle. Shortest path is multihops. path changes when inc all edges.
-// All paths: BFS flooding, (exactly) k hops cycles. no cycle, nb not in prefix. DFS(cur, prefix) recur nb !discovered. 
-// All Pairs: DP[i,j,k] = d[i,u, k-1]+e(u,j), or d[i,j]=d[i,k]+d[k,j]. Directed, Path[i,k,j] != Path[j,k,i]. List Paths
+// Graph Types: Directed/Acyclic/Wegithed(negative). Edge Types: Tree, Back, Forward, Cross(back_to_prev_dfs_traversed_component) 
+// a) DFS/BFS un-weighted edges, b) Relaxation Greedy for weighted, c) DP[i,k,j] all pairs paths.
+// Shortest Path or MST_prim: PQ<[sort_by_dist, node, ...]> sorted by dist. relaxation greedy. 
+// Shortest path: dijkstra no negative edges. d[parent] no longer min if (parent-child) < 0. Bellman: negative edges ok but not cycles(sum(e) <0).
+// DAG: topsort. linear dijkstra. DFS+memorize all subpaths, parent is frozen by order. parents min before expanding subgraph.   
+// MST(union-find): relaxation. add edge forms a cycle. Shortest path changes when each weight+delta as the path is multihops.
+// All paths: BFS(prefix), (exactly) k hops. nb not in prefix, or DFS(cur, prefix), or DP[i,j,k] = d[i,u,k-1]+e(u,j);
+// All Pairs: all i,j pair via each intermeidate k, d[i,j]=d[i,k]+d[k,j]. Directed, Path[i,k,j] != Path[j,k,i]. List Paths
+// Shortest cycle(girth): all pair shortest path(i,j),(j,i);
+// - - - - -
+// DP vs DFS. for k=1..N, foreach edge(u,v), DP[v,k]=DP[u,k-1]+(u,v). 
+// From a starting node, DFS(v, prefix) {dfs(nb, prefix+v)} recur nb collecting. BFS(v) {while [v, path] = Q.pop() {Q.enq(nb, path+v)}}
+// 
 
-// Weighted Edges Graph: Max Matching(Disjoint Edges), BFS, Increase Reduce Residual/Flow of Forward Reverse path edges.
-Max Flow: each bfs path Reduce Increase forward and reverse edge Residual Flow. 
-  rGraph: add reverse edges(j,i) of each (i,j). each edge has residual/flow. init (i,j) residual/flow=cap/0, (j,i)=0/0
-  BFSs(st, ed, parent) a path with edges residual>0; min path vol; Reduce forward residul but Increase reverse residual.
-  Augment_path(s, e, vol) { (i,j)=residual-vol/flow+vol; (j,i)=residual+vol/0), recur(s, parent[e], vol)
-Max Matching: Max Disjoint Edges(worker-job) no vertex sharing. Max disjoint worker-job edges.
-  Reduce to Max Flow: When a reverse edge is used, remove its forward edge found in prev BFSs from the matching edge sets.
+Matching Edge: parallel/no_crossing edges. Max IndepSet. Nodes of edges are related, No conflict/mutual exclusion in IndepSet, Color. 
+Independent Set: no edge relates. Backtracking(incl, excl, recur)/Greedy. Tree DP: stripping off leaf nodes, every other level.
+Vertex Cover: min vertex cover all edges complement Max(IndepSet). start highest-degree, delete adjs, repeat. lgN worse than optimal.
+Bipartite max Matching: max paralle edges no common vertex. sizeof (max matching) = min(vertex cover),
+Max matching edge to kill off as many other edges to reduce pairs in cover. Repeat.
+Vertex Color: 4-color thereom. Backtracking. start lowest-degree node, delete adjs. Repeat. 
+Chromatic number: min(vertex color), Min(# of IndepSet), NP-Complete. construct graph from 3-SAT set, reduce to 3-SAT(each clause=true in a set), NP-Hard.
+Workers-Jobs Scheduling: max pairs set not vertex sharing edges. NP-Hard. Heuristic: start with leaves, remove, repeat.
+Scheduling/Clique/Vertex color: conflicting nodes have edges, Sorted by End time.
+Edge color: no two same color edges share a vertex. A person can not talk to two others at the same time.
+All NP-hard solved by backtracking, dfs each candidates carry down or ret partial results. 
 
-Max Matching in a Tree: same as Independent Set. Min(1+sum(recur(grandchild)), sum(recur(child)))
+Max Matching paths: Max Edges(worker-job) not sharing vertex. Bipartite, Reduce to Max flow by adding start and sink nodes.
+  Max Flow: When a reverse edge is used, remove its forward edge found in prev BFSs from the matching edge sets.
+Tree Max Matching: same as Independent Set. Min(1+sum(recur(grandchild)), sum(recur(child))), linear.
 https://www.geeksforgeeks.org/find-maximum-matching-in-a-given-binary-tree/
 
-Independent Set, Scheduling: max vertex set not edges sharing. NP-Hard. Heuristic: start with leaves, remove, repeat.
-no two vertex in the set connect/share/conflicts with all G edges. edge(x-y) means x connect/conflicts with y.
-Scheduling/Clique: conflicting schedules has an edge, reduced to Vertex cover. Sorted by End time.
+// Weighted Edges Graph: Max Matching(Disjoint Edges), BFS, Increase Reduce Residual/Flow of Forward Reverse path edges.
+Max Matching Flow: each bfs path Reduces edges Forward flow and Increases reverse edges Residual flow. 
+  rGraph: add reverse edges(j,i) of each (i,j). each edge has residual/flow. init (i,j) residual/flow=cap/0, (j,i)=0/0
+  BFSs(st, ed, parent): a path with edges residual>0; min path vol; A reverse edge can be used as its residue can > 0.
+  Augment_path(st, ed, vol) { parent(ed)->ed: residual-vol/flow+vol; ed->parent(ed): residual+vol/0), recur(st, parent[ed], vol)
 
-Vertex Cover: (at_least_one vertex) of every edge; touch all edges. Opposite of Independent Set.
-min(V-S) = max(independent set); linear in a tree. Recur or DP. 
-dfs(graph, dp, src, parent):
-  for child in node.children:
-    dfs(graph, dp, child, src) if child != parent and !discovered[child]
-  
-  for child in node.children:
-    dp[src][incl] += dp[child][excl]
-    dp[src][excl] += min(dp[child][incl], dp[child][excl])
-
-dfs(g, dp, root, -1)
-return min(dp[root][incl], dp[root][excl])
-
-Graph Color Chromatic number is NP-Complete. construct graph from 3-SAT set, reduce to 3-SAT(each clause=true in a set), NP-Hard.
-Vertex color: edge vertice have diff color. 
-Edge color: no two same color edges share a vertex. A person can not talk to two others at the same time.
-
-// K-dimension Tree, a binary tree to hierarchically decomposes space into 2 partition along each node. R-Tree
-def KdTree(pointList, depth):
-    let cur_dim = depth % K
-    sort(pointList, cur_dim)
-    pivot = median(pointList)
-    root = Node(pivot)
-    root.left = kdTree(pointList[0..pivot), k+1)
-    root.rite = kdTree(pointList[pivot+1,), k+1)
-    return root
-def search(kdtree_root, point, depth = 0):
-    cur_dim = depth % K
-    if point[cur_dim] < root.point[cur_dim]:  // euclidian_dist(point, root.point) < dist(root.point, root.rite)
-      return search(root.left, point, depth+1)
-    else
-      return search(root.rite, point, depth+1)
-// track closest point and min_dist, prune sub-tree when dist to bounding box/rectange > min_dist.
-def closest(kdtree_root, point, depth = 0):
-      min_dist = euclidian_dist(root.point, point);
-      cur_dim = depth % K
-      if (dist[point, bouning_box_corner of root]) > min_dist)
-        return // prune the subtree totally
-      if point[cur_dim] < root.point[cur_dim]
-        closest(root.left, point, depth+1)
-      closest(root.rite, point, depth+1)
-
-// Integer Programming: Combinatorial Optimization.
+// Integer Programming: Combinatorial Optimization, Bin packing
 3. MailBox in K-V store. Push / Pull / Hybrid.
   https://www.slideshare.net/nkallen/q-con-3770885
-4. NewSql: share nothing, POD base, In memory.
 
 1. https://github.com/checkcheckzz/system-design-interview
 2. Graph Search, index ranking, typeAhead, table both forward/reverse relation. Vertical Aggregator.
@@ -310,16 +282,6 @@ from department d left outer join student s on d.id = s.dept_id
 group by d.id, d.name
 order by cnt desc, d.name;
 
-select id, case
-    when p_id is null then 'ROOT'
-    when id not in (select p_id
-                    from tree
-                    where p_id is not null) then 'LEAF'
-    else 'INNER'
-end
-from tree
-order by id;
-
 // subquery to create a table to join.
 SELECT salesperson_id, Salesperson.Name, Number AS OrderNumber, Amount
 FROM Orders JOIN Salesperson ON Salesperson.ID = Orders.salesperson_id
@@ -346,18 +308,34 @@ on i1.lat = i3.lat and i1.lon = i3.lon;
 // recur with boundary, recur(head, tail)
 def list2BST(head, tail):
     mid = len(tail-head)/2
-    mergesort(head)
-    mergesort(mid)
-    mergeListInPlace(head, mid)  # ref to wip/pydev/sort.py for sort two list in-place.
-
-    if head is tail:
-        head.prev = head.next = None
-        return head
-
-    mid = len(tail-head)/2
     mid.prev = list2BST(head, mid.prev)
     mid.next = list2BST(mid.next, tail)
     return mid
+
+// a binary tree with height to decomposes space into 2 partition along each dim. R-Tree
+def KdTree(pointList, height):
+  cur_dim = height % K
+  sort(pointList, (first, second) {first[cur_dim] < second[cur_dim]} )
+  pivot = median(pointList)
+  root = Node(pivot)
+  root.left = kdTree(pointList[0..pivot), k+1)
+  root.rite = kdTree(pointList[pivot+1,), k+1)
+  return root
+def search(kdtree_root, point, height = 0):
+  cur_dim = height % K
+  if point[cur_dim] < root.point[cur_dim]:  // euclidian_dist(point, root.point) < dist(root.point, root.rite)
+    return search(root.left, point, height+1)
+  else
+    return search(root.rite, point, height+1)
+// track closest point and min_dist, prune sub-tree when dist to bounding box/rectange > min_dist.
+def closest(kdtree_root, point, height = 0):
+  min_dist = euclidian_dist(root.point, point);
+  cur_dim = height % K
+  if (dist[point, bouning_box_corner of root]) > min_dist)
+    return // prune the subtree totally
+  if point[cur_dim] < root.point[cur_dim]
+    closest(root.left, point, height+1)
+  closest(root.rite, point, height+1)
 
 // 1. pick a pivot, put to end
 // 2. start j one idx less than pivot, which is end-1.
@@ -556,7 +534,7 @@ print merge([9,8,3], [6,5])
 // linear
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 static int kadan(int[] arr) {
-  int maxSoFar = 0, spanSum = 0;  // consume first
+  int maxSoFar = 0, spanSum = 0;  // global states
   int spanStart = 0, spanEnd = 0;
   int maxStart = 0, maxEnd = 0;
   // Loop Invar: curMax tracks local max. cur either adds to local, or restart its own.
@@ -829,6 +807,37 @@ bool RegMatch(std::string_view txt, int ti, std::string_view p, int pi) {
   }
 };
 
+static boolean match(char[] arr, int i, char[] pat, int j) {
+  if ( i == arr.length) {
+    if (j == pat.length || (j+2 == pat.length && pat[j+1] == '*')) {
+      return true;
+    }
+    return false;
+  } else if ( j == pat.length) {
+    return false;
+  }
+
+  // both i and j are valid
+  if (j+1 < pat.length && pat[j+1] == '*') {
+    if (pat[j] == '.' || arr[i] == pat[j]) {
+      int k = i;
+      for(; k < arr.length && arr[i] == arr[k]; k++) {
+        if (match(arr, k, pat, j+2))
+          return true;
+      }
+      // when out, k == arr.length or arr[k] != arr[i]
+      return match(arr, k, pat, j+2);
+    }
+    return match(arr, i, pat, j+2);
+  } else {
+    if (pat[j] == '.' || arr[i] == pat[j]) {
+      return match(arr, i+1, pat, j+1);
+    } else {
+      return false;
+    }
+  }
+}
+
 
 public List<String> findRepeatedDnaSequences(String s) {
   Set<Integer> words = new HashSet<>();
@@ -971,23 +980,6 @@ int minSwap(int[] A, int[] B) {
     return Math.min(n1, s1);
 }    
 
-// track all char cnts. update topCharCnts. when sliding in and out. Upbeat top char cnt in the window
-static int maxLenKRepeat(char[] arr, int k) {
-    int sz = arr.length;
-    int l = 0; r = 0;
-    int[] counts = new int[26];
-    int topCharCnts = 0;
-    int maxLen = 0;
-    for (r=0; r<sz; r++) {
-        counts[arr[r] - 'A'] += 1;          // LoopInvar: add cnt when slide in.
-        topCharCnts = Math.max(topCharCnts, counts[arr[r] - 'A']);
-        while (r - l + 1 - topCharCnts > k) {
-            counts[arr[l] - 'A'] -= 1;     // reduce cnt when slide out
-            l += 1;
-        }
-        maxLen = Math.max(maxLen, r - l + 1);
-    }
-}
 
 // LoopInvar: 2 stks, tracks max values and index.
 static int[] slidingWinMax(int[] arr, int k) {
@@ -1065,6 +1057,36 @@ static int minWinString(String s, String t) {
 }
 print minwin("azcaaxbb", "aab")
 print minwin("ADOBECODEBANC", "ABC")
+
+static int MinWin(String arr, String pat) {
+  int minWin = Integer.MAX_VALUE, matches = 0;
+  Map<Character, Integer> expects = new HashMap<>();
+  for (char c : pat.toCharArray()) {  expects.put(c, expects.getOrDefault(c, 0) + 1);  }
+  int l=0,r=0;
+  for(;r<arr.length();r++) {
+    char rc = arr.charAt(r);
+    if (expects.containsKey(rc)) {  // in scope
+      expects.put(rc, expects.get(rc) - 1);
+      if (expects.get(rc) >= 0) {
+        matches++;  // effective match
+      }
+    }
+    if (matches == pat.length()) {
+      while (l <= r) {
+        char lc = arr.charAt(l);
+        if (expects.containsKey(lc) && expects.get(lc) == 0) {
+          break;  // stop moving as no extra l
+        }
+        if (expects.containsKey(lc)) { // has extra l, move
+          expects.put(lc, expects.get(lc) + 1);
+        }
+        l++;
+      }
+      minWin = Math.min(minWin, r-l+1); 
+    }
+  }  
+  return minWin;
+}
 
 // longest non repeat substring. sliding window(locate left/rite). when match, need to mov l = pre+1.
 static String maxNoRepeat(String s) {
@@ -3060,59 +3082,87 @@ static List<Integer> mergeSortInverse(int[] arr, int beg, int end, int[] rank, i
   recur(arr, mid+1, end, rank, inverseCount);
   // merge sorted two segs,[beg..mid] and [mid+1..end] => sortedSeg, and count inverse while processing.
   int[] segRank = new int[eng-beg+1];
-  for(int i=0, x=beg, y=mid+1; x<=mid,y<=end; i++) {
-    if (x > mid) { segRank[i] = rank[y++];}
-    else if (y > end) { segRank[i] = rank[x++];}
-    // getIth() from left sorted segRank and right sorted segRank.
-    else if (arr[rank[x]] > arr[rank[y]] ) {
-      inverseCount[rank[x]] += end - y + 1;
-      segRank[i] = rank[x++];
+  {
+    for(int i=0,x=beg,y=mid+1; x<=mid,y<=end; i++) {
+      if (arr[rank[x]] > arr[rank[y]] ) {
+        inverseCount[rank[x]] += end - y + 1;
+        segRank[i] = rank[x++];
+      } else {
+        segRank[i] = rank[y++];
+      }
     }
-    else {
-      segRank[i] = rank[y++];
+    if (x==mid+1) { while (y < end) {segRank[i++] = rank[y++];} }
+    else { while (x < mid+1) {segRank[i++] = rank[x++];} } 
+  } { // or a For loop exactly defines how many steps
+    for(i=0,x=beg,y=mid+1; i<end-beg+1; i++) {
+      if (x==mid+1) { segRank[i] = rank[y++];}
+      else if (y==end) { segRank[i] = rank[x++];}
+      else if (arr[rank[x]] > arr[rank[y]]) { segRank[i] = rank[x++]; inverseCount[rank[x]] += end-y+1;}
+      else segRank[i] = rank[y++];
     }
-    for(int i=0;i<end-beg+1;++i) { // restore rank after sorted in segRank[].
-      rank[beg+i] = segRank[i];
-    }
+  }
+
+  for(int i=0;i<end-beg+1;++i) { // restore rank after sorted in segRank[].
+    rank[beg+i] = segRank[i];
   }
   return inverseCount;
 }
 
-""" rite smaller with merge sort, when merging left and rite,
-left[l] > rite[0..r-1], so rank[l]+= r, or rank[l]+=end-r+1 if sort decreasing.
-"""
-def riteSmaller(arr):
-  def merge(left, rite):
-    ''' left rite ary is sorted and contains idx of ary '''
-    out = []
-    l,r = 0,0
-    while l < len(left) and r < len(rite):
-      lidx,ridx = left[l], rite[r]
-      if arr[lidx] < arr[ridx]:  # left < rite, then rite side, [0..r] is inverse. no inverse, r=0;
-        rank[lidx] += r
-        out.append(left[lidx])
-        l += 1
-      else:
-        out.append(rite[ridx])
-        r += 1
-    for i in xrange(l, len(left)):
-      out.append(left[i])
-      rank[left[i]] += r
-    for i in xrange(r, len(rite)):
-      out.append(rite[i])
-    return out  
+static int Merge(int[] arr, int l, int r, int[] sorted, int[] inverses) {
+  if (l == r) return 0;
+  int mid = (l + r) / 2;
+  Merge(arr, l, mid, sorted, inverses);
+  Merge(arr, mid + 1, r, sorted, inverses);
+  int[] segSorted = new int[r - l + 1];
+  // Precond: arr[sorted[l]] < arr[sorted[mid]] < arr[sorted[r].
+  // sorted[0] = arr[idx] of the smallest.
+  // Loop as long as there is a not finished ary.
+  for (int i = 0, x = l, y = mid + 1; x < mid + 1 || y < r + 1; i++) {
+    if (x > mid) {
+      segSorted[i] = sorted[y];
+      y++;
+    } else if (y > r) {
+      segSorted[i] = sorted[x];
+      inverses[sorted[x]] += i - (x-l);  // add ele from left, inverse = total_eles - eles_from_left
+      x++;
+    } else if (arr[sorted[x]] > arr[sorted[y]]) {
+      segSorted[i] = sorted[y];
+      y++;
+    } else {
+      segSorted[i] = sorted[x];
+      inverses[sorted[x]] += i - (x-l); // add ele from left, inverse = total_eles - eles_from_left
+      x++;
+    }
+  }
+  // update total sorted
+  for (int i = l; i <= r; i++) { sorted[i] = segSorted[i - l]; }
+  return 0;
+}
 
-  def mergesort(arr, l, r):
-    if l == r:    return [l]
-    m = (l+r)/2
-    left = mergesort(arr, l, m)    # ret ary of idx of origin arr
-    rite = mergesort(arr, m+1, r)
-    return merge(left,rite)
 
-  rank = [0]*len(arr)
-  mergesort(arr, 0, len(arr)-1)
-  return rank
-print riteSmaller([5, 4, 7, 6, 5, 1])
+
+// nums[rank[0]] < nums[rank[1]]
+void merge(const vector& nums, int from, into to, vector&rank, vector& rite_small) {
+  if (from >= to) return;
+  mid = from + (to-from)/2;
+  merge(num, from, mid, &rank, out);
+  merge(num, mid+1, to, &rank, out);
+  vector from_to_rank(to-from+1);
+  for(x=from, y=mid+1, i=0; i<to-from+1; i++) {
+    if(x > mid) { from_to_rank[i] = rank[y++];} 
+    else if (y > to) { from_to_rank[i] = rank[x++]; }
+    else if(nums[rank[x]] > nums[rank[y]]) {
+      // update rank y's rite smaller as [from till x-1] all smaller than y. 
+      rite_small[rank[y]] += x-from;
+      from_to_rank[i] = rank[y++];
+    } else {  // rank[x] == rank[y]
+      from_to_rank[i] = pos[x++];
+    }
+  }
+  for(i=0;i<to-from+1;i++) {rank[from+i] = from_to_rank[i];}
+}
+
+
 
 ''' tab[i] = num of bst for ary 1..i, tab[i] += tab[k]*tab[i-k] '''
 def numBST(n):
@@ -4274,18 +4324,16 @@ Boundary condition: check when i/j=0 can not i/j-1.
 v[i, w] is max value for each weight with items from 0 expand to item i, v[i,w] based on f(v[i-1, w]).
 v[i, w] = max(v[i-1, w], v[i-1, w-W[i]]+V[i]) 
 '''
-def knapsack(arr, varr, W):
-  prerow, row = [0]*(W+1), [0]*(W+1)
-  for i in xrange(len(arr)):
+def knapsack(warr, varr, totalW):
+  prerow, row = [0]*(totalW+1), [0]*(totalW+1)
+  for i in xrange(len(warr)):
     row = prerow[:]
-    w,v = arr[i], varr[i]
-    for ww in xrange(w, W+1):
+    w_i,v_i = warr[i], varr[i]
+    for w in xrange(w_i, totalW+1):
       if i == 0:     # init boundary, first 
         row[w] = v
       else:
-        prev = prerow[ww-w]
-        if prev+v > row[ww]:
-          row[ww] = max(row[ww], prev+v)
+        row[w] = max(prerow[w-w_i]+v_i, prerow[w])
     prerow = row[:]
   return row[W]
 print knapsack([2, 3, 5, 7], [1, 5, 2, 9], 18)
@@ -5881,10 +5929,6 @@ public void put (T t) {
         lock.unlock();
     }
  }
-
-
-
-
 
 Improve code and design
 1. Modularity design, Visitor pattern vs Type. More types Vs. More Ops.
