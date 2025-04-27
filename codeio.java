@@ -2716,56 +2716,55 @@ public void dfsClone(Node node, Node parent, Map<Node, Node> clone) {
   }
 }
 
-
 public List<Integer> rightSideView(TreeNode root) {
   List<Integer> view = new ArrayList<>();
-if (root == null) return view;
-Deque<TreeNode> deq = new ArrayDeque();
-TreeNode level_head = root; // set to null when pop. reset when enq if it is null.
-deq.addLast(level_head);
-TreeNode last = null;  // invariance: updated every pop. add to view when level head polled.
-while(!deq.isEmpty()) {
-    TreeNode cur = deq.pollFirst();
-    if (cur == level_head) {
-        level_head = null;
-        if (last != null) view.add(last.val);
-    }
-    last = cur;
-    if (cur.left != null) { deq.addLast(cur.left); }
-    if (cur.right!= null) { deq.addLast(cur.right);}
-    if (level_head == null) { if (cur.left != null) level_head = cur.left; else level_head=cur.right;}
-}
-view.add(last.val);
-return view;
+  if (root == null) return view;
+  Deque<TreeNode> deq = new ArrayDeque();
+  TreeNode level_head = root; // set to null when pop. reset when enq if it is null.
+  deq.addLast(level_head);
+  TreeNode last = null;  // invariance: updated every pop. add to view when level head polled.
+  while(!deq.isEmpty()) {
+      TreeNode cur = deq.pollFirst();
+      if (cur == level_head) {
+          level_head = null;
+          if (last != null) view.add(last.val);
+      }
+      last = cur;
+      if (cur.left != null) { deq.addLast(cur.left); }
+      if (cur.right!= null) { deq.addLast(cur.right);}
+      if (level_head == null) { if (cur.left != null) level_head = cur.left; else level_head=cur.right;}
+  }
+  view.add(last.val);
+  return view;
 }
 
 // find the root of a Min Heigth Tree. Remove leaves layer by layer.
 // MHT can only have at most 2 roots. 3 roots folds to 1 root.
 public List<Integer> MinHeightTreeBfsRemoveLeaves(Map<Integer, Node> nodes) {
-Deque<Node> q = new ArrayDeque<>();
-int remains = nodes.size();
-while(remains > 2) { // MinHeightTree can only have at most 2 root. 3 roots will fold to 1 root.
-  for(Node n : nodes.values()) {
-    if(!n.visited && n.removedChildren.size()+1==n.children.size()) {
-      q.addLast(n);
+  Deque<Node> q = new ArrayDeque<>();
+  int remains = nodes.size();
+  while(remains > 2) { // MinHeightTree can only have at most 2 root. 3 roots will fold to 1 root.
+    for(Node n : nodes.values()) {
+      if(!n.visited && n.removedChildren.size()+1==n.children.size()) {
+        q.addLast(n);
+      }
     }
-  }
-  while(q.size() > 0) {
-    Node hd = q.removeFirst();
-    hd.visited = true;
-    remains--;
-    for(Node c : hd.children) {
-      if(!c.visited) {
-        c.removedChildren.add(hd);
+    while(q.size() > 0) {
+      Node hd = q.removeFirst();
+      hd.visited = true;
+      remains--;
+      for(Node c : hd.children) {
+        if(!c.visited) {
+          c.removedChildren.add(hd);
+        }
       }
     }
   }
-}
-List<Integer> roots = new ArrayList<>();
-for(Node n : nodes.values()) {
-  if(!n.visited) roots.add(n.id);
-}
-return roots;
+  List<Integer> roots = new ArrayList<>();
+  for(Node n : nodes.values()) {
+    if(!n.visited) roots.add(n.id);
+  }
+  return roots;
 }
 
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
