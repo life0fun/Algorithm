@@ -1,10 +1,11 @@
 // Think clear and enum edge cases before rushing to code. Easily panic when edge case messed up.
 // # www.cnblogs.com/jcliBlogger/ 
-// 1. Invariants abstraction to the simplest boundary. Reduce, Tracking.
-// 2. Recursion prefix + collector, DFS state, edge class, parent context, leaf return update collector and parent;
-// 3. Bisect interval index wrangling. bucket.
+// 1. Invariants abstraction to the simplest boundary. Reduce, Search, Tracking.
+// 2. Recursion(root, parent, prefix, collector); avoid repeative with state, edge class; leaf recur done update collector and parent; parent aggregates all children and update up again.
+// 3. Bisect: l: first bigger(>target) and safely discard the left smaller; bucket. arr[i] vs arr[arr[i]];
 // 4. K lists processing. merge, priority q. reasoning by add one upon simple A=[min/max], B=[min, min+1, min+k...] 
-// 5. DP boundary rows. Dep pass aggregated state across.
+// 5. Tree: recur(root, parent, prefix, collector) || while(cur!=null||stk.emptry), update state upon popping from stk. parent aggreg all children and updates up.
+// 6. DP: when asked tot/min of a ary, DP for the aggregation ! store the aggregated state and pass forward. Setup boundary rows!!
 
 // Loop move edges ? Recur subset offset ? DP new offset ? Check Boundary and End state First !!!
 // Recursion: take start and exit args, ret Agg of sub states. recur(start_idx, exit_args). Pratt(cur_idx, _parent_min_bp_); 
@@ -330,42 +331,56 @@ def list2BST(head, tail):
     mid.next = list2BST(mid.next, tail)
     return mid
 
-// a binary tree with height to decomposes space into 2 partition along each dim. R-Tree
+Node build(List<Object> arr, int depth) {
+  int dim = depth % DIMS;
+  sort(arr, dim);
+  median = arr.get(arr.size()/2);
+  Node root = new Node(median);
+  root.left = build(arr[0, sz/2], depth+1);
+  root.rite = build(arr[sz/2:], depth+1);
+  return root;
+}
+Nodee query(Node root, query, best_node, best_dist) {
+
+}
+
+// sort the list by x dim. recur left, right.  
 def KdTree(pointList, height):
   // Node {point, left, rite}
-  cur_dim = height % K
+  cur_dim = height % DIMS
   sort(pointList, (a, b) {a[cur_dim] < b[cur_dim]} )
-  pivot = median(pointList)
-  root = Node(pivot)
+  split_median = median(pointList)
+  root = Node(split_median)
   root.left = kdTree(pointList[0..pivot), k+1)
   root.rite = kdTree(pointList[pivot+1,), k+1)
   return root
-def search(root, target, height = 0):
-  cur_dim = height % K
-  if target[cur_dim] < root.point[cur_dim]:  // euclidian_dist(target, root.point) < dist(root.point, root.rite)
-    next = root.left;
-    alter_next = root.rite;
-  else
-    next = root.rite;
-    alter = root.left;
-  Node subtree_best = search(next, target, height+1)
-  Node best = closet(target, subtree_best, root)
-  to_best_dist = dist(target, best.point)
-  if (to_best_dist > (target[cur_dim] - root.point[cur_dim])):
-    alter_best = search(alert, target, height+1)
-    best = closet(target, best, alter_best)
-  return best
 
-// track closest point and min_dist, prune sub-tree when dist to bounding box/rectange > min_dist.
-def closest(kdtree_root, point, height = 0):
-  min_dist = euclidian_dist(root.point, point);
-  cur_dim = height % K
-  if (dist[point, bouning_box_corner of root]) > min_dist)
-    return // prune the subtree totally
-  if point[cur_dim] < root.point[cur_dim]
-    closest(root.left, point, height+1)
-  closest(root.rite, point, height+1)
+def find_nearest(root, query_point, best=None, best_distance=float('inf'), depth=0):
+  if root is None: return best, best_distance
 
+  dim = depth % 2
+  current_point = Point(*root.point)
+  current_distance = euclidean_distance(query_point, current_point)
+
+  if best is None or current_distance < best_distance:
+      best = current_point
+      best_distance = current_distance
+
+  if query_point[dim] < root.point[dim]: // recur down to left plan
+      child_branch = root.left
+      opposite_branch = root.right
+  else:
+      next_branch = root.right
+      opposite_branch = root.left
+
+  best, best_distance = find_nearest(child_branch, query_point, best, best_distance, depth + 1)
+
+  // If query point is closer to plane other plan. A dim plane is split by root in the median.
+  if abs(query_point[dim] - root.point[dim]) < best_distance:
+      best, best_distance = find_nearest(opposite_branch, query_point, best, best_distance, depth + 1)
+
+  return best, best_distance
+  
 // 1. pick a pivot, put to end
 // 2. start j one idx less than pivot, which is end-1.
 // 3. park i,j, i to first > pivot(i++ if l.i <= pivot), j to first <pivot(j-- if l.j > pivot)
@@ -493,64 +508,36 @@ def productExcl(arr):
   return prod
 
 ''' track max[i]/min[i] up to a/i, swap max/min when a/i < 0; this handles 0 gracefully.
-mx[i] = max(mx/i-1 * a/i,  mn/i-1 * a/i, a/i); always include a[i] when comparing max.
-at each idx, either it starts a new seq, or it join prev sum
+always include a[i] to decide max/min at each idx; either it starts a new seq, or it join prev sum
 '''
 int maxProduct(int[] arr) {
-  int gmax = arr[0];
-  // imax/imin stores the max/min product up to i;
-  for (int i = 1, prefixmax = gmax, prefixmin = gmax; i < arr.length; ++i) {
-      if (arr[i] < 0) { int tmp = prefixmax; prefixmax = prefixmin; prefixmin = tmp; }
-      // the key poinit is arr[i] can be a new start.
-      prefixmax = Math.max(prefixmax * arr[i], arr[i]);  // <-- always include a[i] when comparing max.
-      prefixmin = Math.min(prefixmin * arr[i], arr[i]);
-      // the newly computed max value is a candidate for our global result
-      gmax = Math.max(gmax, prefixmax);
-  }
-  return gmax;
-}
-// track prefix Max/Min. Prefix min shall include arr/i; Math.max(arr/i, prefixMin).
-public int maxProductWithNegatives(int[] arr) {
-  int gmax = arr[0], prefixmax = arr[0], prefixmin = arr[0];
-  for(int i=1;i<arr.length;++i) {
-    if(arr[i] > 0) {
-        prefixmax = Math.max(prefixmax*arr[i], arr[i]);
-        prefixmin = Math.min(prefixmin*arr[i], arr[i]);
-    } else { // a/i < 0, reset prefixmin
-        int tmpmin = prefixmin;  // stage prefixmin as it is updated and  used to calculate imax.
-        prefixmin = Math.min(prefixmax*arr[i], arr[i]);
-        prefixmax = Math.max(tmpmin*arr[i], arr[i]);
-    }
-    gmax = Math.max(gmax, prefixmax);
-  }
-  return gmax;
-}
-// Prefix sum, as prod always increase, track first neg prefix, cur_prefix/first_neg_prefix.
-public int maxProduct(int[] nums) {
-  int firstNegPrefixProd = 0, curPrefixProd = 1, maxProd = Integer.MIN_VALUE;
-  if (nums.length==1) { return nums[0];}
-  for(int i=0;i<nums.length;++i) {
-      int cur = nums[i];
-      if(cur == 0) {
-          maxProd = Math.max(0, maxProd);
-          firstNegPrefixProd = 0;
-          curPrefixProd = 1;
-          continue;
-      }
-      curPrefixProd *= cur;
-      if (curPrefixProd < 0 && firstNegPrefixProd == 0) { 
-          firstNegPrefixProd = curPrefixProd; 
-          if(maxProd == Integer.MIN_VALUE ) { maxProd = curPrefixProd;}
-          continue;
-      }
-      if (curPrefixProd < 0) {
-          int segProd = curPrefixProd / firstNegPrefixProd;
-          maxProd = Math.max(maxProd, segProd);
+  int curmax=arr[0], curmin=arr[0], gmax=arr[0];
+  {
+    for(int i=1;i<arr.length;++i){
+      if(arr[i] < 0) {
+        int tmpmax = curmax; // <-- stash curmax before update it.
+        curmax = Math.max(curmin*arr[i], arr[i]);
+        curmin = Math.min(tmpmax*arr[i], arr[i]);
       } else {
-          maxProd = Math.max(maxProd, curPrefixProd);
+        curmax = Math.max(curmax*arr[i], arr[i]);
+        curmin = Math.min(curmin*arr[i], arr[i]);  // consider arr[i] regardless.
       }
+      gmax=Math.max(gmax, curmax);
+    }
   }
-  return maxProd;
+  {
+    for(int i=1;i<arr.length;++i){
+      if(arr[i] < 0) {  // just swap max min upon negative.
+        int tmp = curmax;
+        curmax = curmin;
+        curmin = tmp;
+      }
+      curmax = Math.max(curmax*arr[i], arr[i]);
+      curmin = Math.min(curmin*arr[i], arr[i]);
+      gmax=Math.max(gmax, curmax);
+    }
+  }
+  return gmax;
 }
 print maxProduct([-2, -3, -4])
 print maxProduct([2,0,-4, 3, 2])
@@ -608,7 +595,6 @@ static int BisectClosest(int[] arr, int l, int r, int target) {
   else { if(arr[i-1], target, arr[i])} { return i-1; } else return i;
 }
 
-
 """ Loop Invar: arr[l..r] sorted and contains v; 
  only check arr/m with target and discard the half if it is sorted and target not in it!!
  target can be in either left/rite, deps on whether m is peak or valley, ensure [l,m] or[m,r] are sorted.
@@ -617,12 +603,13 @@ static int bsearchRotate(int[] nums, int target) {
   while(l <= r) {
     int m = l + (r-l)/2;
     if(nums[m] == target) return m;
+    // bfs first, divide into two cases, find left or rite sorted. DFS within each case.
     if(nums[l] <= nums[m]) {  // <=, ortherwise, [4,2] will fail as [4,4] is sorted but [4,2] is not sorted.
-        if(nums[l] <= target && target < nums[m]) { r = m-1;}
-        else {l = m+1;}
+      if(nums[l] <= target && target < nums[m]) { r = m-1;}
+      else {l = m+1;}
     } else if (nums[m] <= nums[r]) {
-        if(nums[m] < target && target <= nums[r]) { l = m+1;}
-        else {r = m-1;}
+      if(nums[m] < target && target <= nums[r]) { l = m+1;}
+      else {r = m-1;}
     }
   }
   return -1;  
@@ -631,24 +618,30 @@ assert bsearchRotate(new int[]{3, 4, 5, 1, 2}, 2) == 5;
 assert bsearchRotate(new int[]{4,5,6,7,8,1,2,3}, 8) == 4
 assert bsearchRotate(new int[]{8,4,5,6,7}, 4) == 1
 
+// for any rotated min/max, check [l..r] is sorted first !!
+public int rotatedMin(int[] arr, int l, int r) {
+  while(l<=r) {
+    int m=l+(r-l)/2;
+    if(arr[l] <= arr[m] && arr[m] <= arr[r]) return arr[l];
+    if(arr[l] == arr[m]) { return Math.min(arr[l], arr[r]); } // l=m, bisect down to either 1 or 2 elements.
+    if(arr[l] < arr[m]) { l = m+1; }  // l=m+1 is correct as rotate point is after peak. Only valid when l..r is rotated.
+    else if(arr[m] <= arr[r]) { r=m; } // r=m-1 is wrong as rotate point can be m. [3,1,2]
+  }
+  return arr[l];
+}
 """ find min in rotated. / / with dup, advance mid, and check on each mov """
 static int rotatedMin(int[] arr) {
-    int l = 0;
-    int r = arr.length-1;
-    while (l < r) {
-        while (l < r && arr[l] == arr[l+1]) l += 1;  // <-- !!!
-        while (l < r && arr[r] == arr[r-1]) r -= 1;
-        int m = (l+r)/2;
-        if (m < r && arr[m] > arr[m+1]) {   // inverse, m > m+1
-            return arr[m+1];
-        }  // l and m in the same segment.
-        if (arr[l] <= arr[m]) {    // because when dup, u moved l/r
-            l = m+1;     // m must less than r.
-        } else {
-            r = m;
-        }
-    }
-    return l;
+  int l = 0, r = arr.length-1;
+  while (l < r) {
+    while (l < r && arr[l] == arr[l+1]) l += 1;
+    while (l < r && arr[r] == arr[r-1]) r -= 1;
+    int m = (l+r)/2;
+    if(arr[l] <= arr[m] && arr[m] <= arr[r]) return arr[l];
+    if (arr[m] > arr[m+1]) { return arr[m+1]; }  // check m, m+1
+    if (arr[l] <= arr[m]) {  l = m+1; }  // rotate point must in the right. 
+    } else { r = m; }  //  not m-1, [3,1,2]
+  }
+  return l;
 }
 System.out.println(rotateMin(new int[]{4,5,0,1,2,3}));
 rotatedMin(new int[]{2,2,1,2,2,2,2,2})
@@ -656,14 +649,14 @@ rotatedMin(new int[]{2,2,2,2,2,2,1,2})
 
 """ find the max in a ^ ary,  m < m+1 """
 static int rotatedMax(int[] arr) {
-    int l = 0;
-    int r = arr.length-1;
-    while (l < r) {  // l and r wont be the same, m+1 always valid.
-        int m = (l+r)/2;
-        if (arr[m] < arr[m+1]) { l = m+1; }
-        else if (arr[m] > arr[m+1]) { r = m; }
-    }
-    return l;
+  int l = 0, r = arr.length-1;
+  while (l < r) {  // l and r wont be the same, m+1 always valid.
+    int m = (l+r)/2;
+    if(arr[l] <= arr[m] && arr[m] <= arr[r]) return arr[r];
+    if (arr[m] < arr[m+1]) { l = m+1; }
+    else if (arr[m] > arr[m+1]) { r = m; }
+  }
+  return l;
 }
 print rotatedMax([8, 10, 20, 80, 100, 200, 400, 500, 3, 2, 1])
 print rotatedMax([10, 20, 30, 40, 50])
@@ -689,12 +682,12 @@ static int maxDist(int[] arr) {
   int l = 0, r = 0, maxdist = 0;   // two counters to break while loop.
   // stretch r as r from left to rite is mono decrease.
   while (l < sz && r < sz) {
-      if (ritemax[r] >= leftmin[l]) {
-          maxdist = Math.max(maxdist, r-l+1);  // calculate first, mov left second.
-          r += 1;
-      } else {
-          l += 1;
-      }
+    if (ritemax[r] >= leftmin[l]) {
+        maxdist = Math.max(maxdist, r-l+1);  // calculate first, mov left second.
+        r += 1;
+    } else {
+        l += 1;
+    }
   }
   return maxdist;
 }
@@ -707,6 +700,7 @@ public int maxArea(int[] arr) {
   int l = 0, r=arr.length-1, maxw = 0;
   while(l<r) {
       maxw = Math.max(maxw, (r-l) * (arr[l] <= arr[r] ? arr[l] : arr[r]));
+      // stretch L or R to bigger area.
       if(arr[l] <= arr[r]) l++; else r--;
   }
   return maxw;
@@ -716,12 +710,12 @@ public int largestRectangleArea(int[] arr) {
   Deque<Integer> stk = new ArrayDeque<>();
   int[] leftedge = new int[arr.length], riteedge = new int[arr.length];
   for(int i=0;i<arr.length;++i) {
-      while(stk.size() > 0 && arr[i] < arr[stk.peekLast()]) { // left's rite edge fixed. done with it. pop. 
-          riteedge[stk.peekLast()] = i;
-          stk.removeLast();  // out of stk, rite edge.
-      }
-      leftedge[i] = stk.size() > 0 ? stk.peekLast() : -1; // after popping, cur's left edge fixed.
-      stk.addLast(i);
+    while(stk.size() > 0 && arr[i] < arr[stk.peekLast()]) { // left's rite edge is found. pop it. No need to track it. 
+        riteedge[stk.peekLast()] = i;
+        stk.removeLast();  // out of stk, rite edge.
+    }
+    leftedge[i] = stk.size() > 0 ? stk.peekLast() : -1; // after popping, cur's left edge fixed.
+    stk.addLast(i);
   }
   // fix the rite edges of all bins in stk to the end.
   while(stk.size() > 0) {
@@ -754,17 +748,14 @@ public int trap(int[] arr) {
 
 """ put 0 at head, 2 at tail, 1 in the middle, wr+1/wb-1 """
 void swap(int[] arr, int i, int j) { int tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; }
-int[] sortColor(int[] arr) {
-  int first = 0, last = nums.length-1;
-  for(int i=0;i<nums.length;) {
-      if (i > last) break;
-      if(nums[i] == 0) { swap(nums, i, first); first++; i++;} // advance i
-      else if(nums[i] == 2 && i<last) { 
-        swap(nums, i, last); 
-        last--;} // note no advance of i as want to reprocess I again !!
-      else {i++;}
+public int[] sortColors(int[] arr) {
+  int lidx=0,ridx=arr.length-1,i=0;
+  while(i<=ridx) {
+    if(arr[i] == 0) { swap(arr, i, lidx); lidx++; i++; continue;}
+    if(arr[i] == 2) {swap(arr, i, ridx); ridx--;} // no move off i. recheck arr/i again.
+    else {i++;}  // arr[i]==1, no move around.
   }
-    return arr;
+  return arr;
 }
 sortColor([2,0,1])
 sortColor([1,2,1,0,1,2,0,1,2,0,1])
@@ -1832,9 +1823,27 @@ def firstMissing(L):
 print firstMissing([4,2,5,2,1])
 
 public int firstMissingPositive(int[] arr) {
-  int iv;
-  for(int i=0;i<arr.length;++i){
-      iv = arr[i];
+  {
+    // preprocessing zero out all negatives.
+    for(int i=0;i<arr.length;++i) { if(arr[i] < 0) arr[i]=0; }
+
+    for(int i=0;i<arr.length;++i) {
+      int iv = arr[i];
+      if(iv < 0) iv=-iv;  // !!! Math.abs(MIN_VALUE) = MIN_VALUE;      
+      if(iv == 0 || iv > arr.length) continue;
+      if(arr[iv-1] > 0) { 
+        arr[iv-1] = -arr[iv-1];
+      } else if(arr[iv-1] == 0) { // mark slot value as negative to indicate slot is processed.
+        arr[iv-1] = -2*arr.length;  // Integer.MIN_VALUE; Note Math.abs(MIN_VALUE) = MIN_VALUE;
+      } else {
+        // can not be negative as preprocessing turn neg to 0;
+        // or dup, already processed by a prev dups. no op.
+      }
+    }
+  }
+  {
+    for(int i=0;i<arr.length;++i) {
+      int iv = arr[i];
       while(iv != i+1) {
           if(iv <= 0 || iv > arr.length) break;
           if(arr[iv-1] != iv) {
@@ -1842,9 +1851,44 @@ public int firstMissingPositive(int[] arr) {
               iv = arr[i];
           } else { break;}
       }
+    }
   }
   for(int i=0;i<arr.length;++i) { if(arr[i] != i+1) return i+1;}
   return arr.length+1;
+}
+// arr[i] is the offset to arr[arr[i]]. arr[i] must be [0..n]; arr[arr[i]] can be anything.
+public int findDuplicate1(int[] nums) {
+  int rep = 0;
+  for(int i=0;i<nums.length;++i) {
+      int idx = Math.abs(nums[i]);
+      if (nums[idx] < 0) { rep = idx; break;}
+      nums[idx] = -nums[idx];            
+  }
+  for(int i=0;i<nums.length;++i) {
+      nums[i] = Math.abs(nums[i]);
+  }
+  return ret;
+}
+public int findDuplicate(int[] arr){
+  int stride = arr.length+10, rep = -1;
+  for(int i=0;i<arr.length;++i) {
+    int idx = arr[i] > stride ? arr[i]-1-stride : arr[i]-1;
+    if(arr[idx] > stride) { rep = idx+1; break;}
+    arr[idx] += stride; 
+  }
+  for(int i=0;i<arr.length;++i) {
+    if(arr[i] > stride) arr[i] -= stride;
+  }
+  return rep;
+}
+
+for(int i=0;i<arr.length;i++) {
+  // differentiate missing vs dup. 
+  int idx = Math.abs(arr[i])-1;
+  // arr[i] = Math.abs(arr[i]);
+  arr[i] = arr[i] - n;
+}
+return rep;
 }
 
 """ max repetition num, bucket sort. change val to -1, dec on every reptition.
@@ -1953,15 +1997,14 @@ assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
 """ LoopInvar: track of 2 values for each ele, max of exclude this ele, and the
 max of no care of whether incl or excl cur ele. """
 public int CalPackRob(int[] nums) {
-  if(nums.length==0) return 0;
-  int prepre = 0, pre=nums[0];
-  int gmax = pre;
-  for(int i=1;i<nums.length;++i) {
-    gmax = Math.max(prepre + nums[i], pre);
+  int pre=0,prepre=0;  // boundary condition
+  for(int i=0;i<arr.length;++i) {
+    int incl = prepre+arr[i];
+    int excl = pre; // Math.max(prepre, pre);
     prepre = pre;
-    pre = gmax;
+    pre = Math.max(incl, excl);
   }
-  return gmax;
+  return pre;
 }
 
 // # tot = max(prepre + cur, pre)
@@ -2227,13 +2270,13 @@ public double medianOfTwoSorted(int[] A, int[] B) {
 public int[] bisectMedian(int[] arra, int al, int[] arrb, int bl, int discard) {
   int am=al,bm=bl;
   while(al < arra.length && bl < arrb.length && al+bl < discard) { // exclude al, bl, how many discarded
-    int remain = discard-(al+bl);
+    int remain = discard-(al+bl); // exclude al, bl;
     if(arra.length - al <= arrb.length-bl) {
       am = Math.min((al+arra.length-1)/2, al+remain-1);
-      bm = bl+(remain-1-(am-al));
+      bm = Math.max(bl, bl+(remain-1-(am-al+1))); // -1 to count bl, [al..am] inclusive can be discarded.
     } else {
       bm = Math.min((bl+arrb.length-1)/2, bl+remain-1);
-      am = al+(remain-1-(bm-bl));
+      am = Math.max(al, al+(remain-1-(bm-bl+1)));
     }
     //System.out.println(String.format("remain %d al %d am %d bl %d bm %d", remain, al, am, bl, bm));
     if(arra[am] <= arrb[bm]) {
@@ -2400,9 +2443,9 @@ public class MergeInverse {
   }
 }
 
-// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
-// Tree recur.
-// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - -------
+// Tree recur(root, parent, prefix, collector); or Tree iter while(cur != null || !stk.empty())
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - -------
 public boolean isValidBST(TreeNode cur, long lo, long hi) { // lo/hi replace the need to detect cur is left/rite.
   if(cur==null) return true;
   if(cur.val >= hi || cur.val <= lo) return false; // cur must between lo < cur < hi
@@ -2487,8 +2530,8 @@ static Node morrisInOrder(Node root) {
   }
   return output;
 }
-
-public int[] InOrderRecur(TreeNode root, int k) {
+// recur done collects # of nodes in subtrees. 
+public int[] kthSmallestRecur(TreeNode root, int k) {
   if(root == null) return new int[]{0, -1};
   int[] left = recur(root.left, k);
   if(left[1] >= 0) return left; // found
@@ -2497,7 +2540,7 @@ public int[] InOrderRecur(TreeNode root, int k) {
   if(rite[1] >= 0 ) return rite;
   else return new int[]{left[0]+rite[0]+1, -1}; // return pair [num_children, found]
 }
-public int kthSmallest(TreeNode root, int k) {
+public int kthSmallestLoop(TreeNode root, int k) {
   Deque<TreeNode> stk = new ArrayDeque<>();
   TreeNode cur = root;
   while(cur != null || stk.size() > 0) {
@@ -2552,12 +2595,12 @@ static Node flatten(Node root) {
   Stack<Node> stk = new Stack<>();
   // LoopInvar: stk left, rite <= left, mov to rite; if no rite, pop stk.
   while (root != null || stk.size() > 0 ) {
-      if (root != null) {
-          if (root.rite != null) { stk.add(root.rite); }   // set aside rite to stk, will come back later.
-          root.rite = root.left;
-          root = root.rite;           // descend
-      } 
-      else {  root = stk.pop(); }
+    if (root != null) {
+      if (root.rite != null) { stk.add(root.rite); }   // set aside rite to stk, will come back later.
+      root.rite = root.left;
+      root = root.rite;           // descend
+    } 
+    else {  root = stk.pop(); }
   }
   return root;
 }
@@ -2647,13 +2690,13 @@ def two_color(G, start):
  *    c) visited, must be directed graph, otherwise, cycle detected, not a DAG.
  * 5. variant: discoved/visited, earliest_back;
  */
-dfs(root, context):
+dfs(root, parent, colector):
   if not root: return
   process_vertex_dfs_enter(v) // { disved = true; entry_time=now}
   rank.root = gRanks++   // set rank global track.
   for c in root.children:
     if not discved[c]:
-      parent[c] = root
+      discved[c]=true; parent[c] = root; 
       process_edge(root, c, tree_edge)  // first, process edge forward edge
       dfs(c, parent=root)    // then recur dfs
     else if !visited[c] or directed:
@@ -2668,7 +2711,7 @@ def topology_sort(G):
   for v in g where visited[v] == false:
     dfs(v)
 
-  def process_vertex_post_children_done(v):
+  def process_vertex_post_children_recursion_done(v):
     sorted.append(v)
 
 def strong_component(g):
@@ -2681,8 +2724,8 @@ def strong_component(g):
       if (entry_time[y] < entry_time[ reachable_ancestor[x]]
         reachable_ancestor[x] = y;
 
-  // when finish all edges from node x
-  process_vertex_dfs_exit(v):
+  // all eddges done, recursion returns. update parent's states.
+  def process_vertex_dfs_exit(v):
     int time_v;    // earliest reachable time for v;
     int time_parent;  // earliest reachable time for parent[v]
     if (parent[v] < 1)   // no need post/late processing for root.
@@ -2891,6 +2934,10 @@ SExpr ParseInternal(src, idx, parent_op) {
 }
 
 class Solution {
+  public class Expr {
+    int val; int idx;  // idx to the op just after number token.
+    public Expr(int val, int idx) { this.val=val;this.idx=idx;}
+  }
   public int skipEmpty(char[] arr, int idx) {
     while(idx < arr.length && arr[idx] == ' ') idx++;
     return idx;
@@ -2924,35 +2971,21 @@ class Solution {
       }
       return -1;
   }
-  // when entering recur, pos points to the start of lhs, can be a num or an (; 
+  // when entering recur, pos points to the start number of lhs, can be a num or an (; 
   // return lhs and next operator pos.
-  public int[] pratt(char[] arr, int pos, int parent_bp) {
-    int lhs, rhs;
-    char op;
-    pos = skipEmpty(arr, pos);
-    if(pos < arr.length && arr[pos] == '(') {
-      int[] lhs_idx = pratt(arr, pos+1, bp('(')); // recur () with lowest binding power to eval entire ()
-      lhs = lhs_idx[0];
-      pos = lhs_idx[1];
-      if(arr[pos] == ')') { pos=skipEmpty(arr, pos+1);} // must skipping the closing ).
-    } else {
-      int[] lhs_idx = getNumAndNextOpIdx(arr, pos);
-      lhs = lhs_idx[0];
-      pos = lhs_idx[1]; // idx points to next op.
+  public Expr pratt(char[] arr, int pos, int parentOpBp) {
+    int[] numIdx = getNumAndNextOpIdx(arr, pos);
+    int lhs = numIdx[0], opidx=numIdx[1];
+    while(opidx < arr.length && opbp(arr[opidx]) > parentOpBp) {
+      Expr rhs = pratt(arr, opidx+1, opbp(arr[opidx]));
+      lhs = eval(lhs, arr[opidx], rhs.val);
+      opidx = rhs.idx;
     }
-    while(pos < arr.length && bp(arr[pos]) > parent_bp) {
-      op = arr[pos];
-      int[] rhs_idx = pratt(arr, pos+1, bp(op)); // recur
-      rhs = rhs_idx[0];
-      lhs = eval(lhs, op, rhs); // eval op with lhs instead of return lhs.
-      pos = rhs_idx[1]; 
-    }
-    // ret to parent recursion when the child recursion's op bp is greater than parent.
-    return new int[]{lhs, skipEmpty(arr, pos)}; // ret pos point to next op.
+    return new Expr(lhs, opidx);
   }
   public int calculate(String s) {
       char[] arr = s.toCharArray();
-      return pratt(arr, 0, -1)[0];
+      return pratt(arr, 0, -1).val;
   }
   public int calculate("(3-(5-(8)-(2+(9-(0-(8-(2))))-(4))))");
 }
@@ -2960,8 +2993,8 @@ class Solution {
 class Solution {
   public class ExpRes {
     String str_;
-    int closeidx_;
-    public ExpRes(String s, int i) { this.str_ = s; this.closeidx_=i;}
+    int edidx;
+    public ExpRes(String s, int i) { this.str_ = s; this.edidx=i;}
   }
   public int getNum(char i) {
     if(i >= '0' && i<='9') { return i-'0';}
@@ -2989,7 +3022,7 @@ class Solution {
       if(getNum(arr[i]) >= 0) {
         res = expand(arr, i);  // recur child inside outer while loop.
         sb.append(res.str_);
-        i = res.closeidx_ + 1;
+        i = res.edidx + 1;
       }
     }
     StringBuilder retsb = new StringBuilder();
@@ -3013,7 +3046,7 @@ class Solution {
       if(i<arr.length && getNum(arr[i]) >= 0) {
         res = expand(arr, i);  // expand child, recur.
         sb.append(res.str_);
-        i = res.closeidx_ + 1;
+        i = res.edidx + 1;
       }
     }
     return sb.toString();
@@ -4162,57 +4195,48 @@ def integer_partition(A, n, k):   //  dp[i, v] = dp[i-1,v] + dp[i-1, v-A.i]
 // Interval TreeMap Array and Interval Tree, segment
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 class Solution {
-  // bisect ret l that [0..l-1] left half (not include) can be safely discarded !!
-  // using start, compare to end, move to next as start > prev end, discard left;
-  // using end, compare to start, do not move to next as the cur can not be discarded.
-  public int[] bisect(int[][] arr, int start, int end) {
-      int stidx, edidx;
-      int l=0,r=arr.length-1;
-      // bisect start, compare to interval's end, start > prev end. cur is 
-      while(l<=r) {
-          int m = l+(r-l)/2;
-          int intv_end = arr[m][1];
-          // start=end, can not discard cur. merge cur.
-          if(intv_end == start) {l=m; break;} // start == m's ed. incl m.
-          if(intv_end < start) {l=m+1;} // discard m only when start abs > m's ed.
-          else{r=m-1;}
-      }
-      // l=0, check edidx. l=n, append at the end;
-      stidx = l; // start > l-1's end, [0..l-1] can be discarded.
-      
-      // bisect end, compare to interval's start.
-      l=0;r=arr.length-1;
-      while(l<=r) {
-          int m = l+(r-l)/2;
-          int intv_start = arr[m][0];
-          // end=start, merge the cur; discard m+1 to n.
-          if(intv_start == end) {l=m+1; break;} // will mov back when ret.
-          if(intv_start < end) {l=m+1;} // advance to next intv_start;
-          else{r=m-1;}
-      }
-      edidx = l-1; // ed < l's start. ret l-1. [ret+1..n] can be discarded.
-      return new int[]{stidx, edidx};
+  // bisect interval [l..r] to be merged. [0..l-1] left half exclude l can be safely discarded !!
+  // [r+1..end] can be safely merged. in between, [l..r] needs to merge.
+  // if l>=r, means insert at l. no touch of the interval.
+  // compare intv_ed < [start .. end] < intv_start
+  public int[] overlapIntervals(int[][] arr, int start, int end) {
+    int[] start_end = new int[2];
+    int l=0,r=arr.length-1;
+    while(l<=r) {
+      int m = l+(r-l)/2, m_end = arr[m][1];
+      if(m_end < start) { l = m+1; } else { r = m-1; } // l.end < start < m_end, 
+    }
+    start_end[0] = l;  // 0..l-1 is safe to discard. need merge intv from l, need merge.
+
+    l=0;r=arr.length-1;
+    while(l<=r) {
+      int m = l+(r-l)/2, m_start = arr[m][0];
+      // if(end >= m_start) { l=m+1; } else {r=m-1;}
+      if(m_start > end) { r=m-1; }  else { l=m+1; }// safely discard m to end;
+    }
+    start_end[1] = l-1;  // exlcude l as l is the first intv start > end.
+    return start_end; // all intervals need to be merged.
   }
   public int[][] insert(int[][] intervals, int[] newInterval) {
-      if(intervals.length ==0) { return new int[][]{newInterval};}
-      List<int[]> merged = new ArrayList<>();
-      int[] sted = bisect(intervals, newInterval[0], newInterval[1]);
-      int stidx = sted[0], edidx = sted[1], mst, med;
-      for(int i=0;i<stidx;++i) { // not incl 
-          merged.add(intervals[i]);
-      }
-      if(stidx > edidx) {
-          // no overlap, insert at stidx, e.g., after edidx, covers head and tail both.
-          merged.add(newInterval);
-      } else { // stidx must <= edidx, overlap with newInterval
-          mst = Math.min(newInterval[0], intervals[stidx][0]);
-          med = Math.max(newInterval[1], intervals[edidx][1]);
-          merged.add(new int[]{mst, med});
-      }
-      for(int i=edidx+1;i<intervals.length;++i) {
-          merged.add(intervals[i]);
-      }
-      return merged.toArray(new int[merged.size()][]);
+    if(intervals.length ==0) { return new int[][]{newInterval};}
+    int[] start_end = overlapIntervals(intervals, newInterval[0], newInterval[1]);
+    List<int[]> merged = new ArrayList<>();
+    for(int i=0;i<start_end[0];++i) { merged.add(intervals[i]); }
+    
+    if(start_end[0]>start_end[1]){
+      merged.add(newInterval);
+    } else {
+      int st_intv = start_end[0];
+      int ed_intv = start_end[1];
+      merged.add(new int[]{
+        Math.min(newInterval[0], intervals[st_intv][0]),
+        Math.max(newInterval[1], intervals[ed_intv][1])
+      });
+    }
+    for(int i=start_end[1]+1;i<intervals.length;++i) {
+      merged.add(intervals[i]);
+    }
+    return merged.toArray(new int[merged.size()][]);
   }
 }
 
@@ -4501,27 +4525,41 @@ public class Main {
       return max_profit;
   };
   
+  // static int MaxProfitDP(int[] arr, int txns) {
+  //   boolean debug = false;
+  //   int alen = arr.length; 
+  //   int[][] hold = new int[txns][alen], sold = new int[txns][alen];
+  //   hold[0][0] = -arr[0]; sold[0][0] = 0;
+  //   for(int i=1;i<alen;++i) {
+  //     hold[0][i] = Math.max(hold[0][i-1], -arr[i]);
+  //     sold[0][i] = Math.max(arr[i]+hold[0][i-1], sold[0][i-1]);
+  //   }
+  //   // previous round sold[t-1][i-1]-arr/i carries the accumulated profit to next round hold. 
+  //   for(int t=1;t<txns;++t) {
+  //     int t_start = 2*t;  // this is to show correctness based on boundary values. 
+  //     hold[t][t_start-1] = hold[t-1][t_start-1]; sold[t][t_start-1] = sold[t-1][t_start-1];
+  //     hold[t][0] = hold[t-1][0]; sold[t][0] = sold[t-1][0]; // start at 1 is ok, just some redundant.
+  //     for(int i=1/*t_start*/;i<alen;++i) { 
+  //       hold[t][i] = Math.max(hold[t][i-1], sold[t-1][i-1]-arr[i]);
+  //       sold[t][i] = Math.max(sold[t][i-1], arr[i] + hold[t][i-1]); 
+  //     }
+  //     if(debug) System.out.println("t="+ t + " sold = " + Arrays.toString(sold[t]));
+  //   }
+  //   return sold[txns-1][alen-1];
+  // }
   static int MaxProfitDP(int[] arr, int txns) {
-    boolean debug = false;
-    int alen = arr.length; 
-    int[][] hold = new int[txns][alen], sold = new int[txns][alen];
-    hold[0][0] = -arr[0]; sold[0][0] = 0;
-    for(int i=1;i<alen;++i) {
-      hold[0][i] = Math.max(hold[0][i-1], -arr[i]);
-      sold[0][i] = Math.max(arr[i]+hold[0][i-1], sold[0][i-1]);
-    }
-    // previous round sold[t-1][i-1]-arr/i carries the accumulated profit to next round hold. 
-    for(int t=1;t<txns;++t) {
-      int t_start = 2*t;  // this is to show correctness based on boundary values. 
-      hold[t][t_start-1] = hold[t-1][t_start-1]; sold[t][t_start-1] = sold[t-1][t_start-1];
-      hold[t][0] = hold[t-1][0]; sold[t][0] = sold[t-1][0]; // start at 1 is ok, just some redundant.
-      for(int i=1/*t_start*/;i<alen;++i) { 
-        hold[t][i] = Math.max(hold[t][i-1], sold[t-1][i-1]-arr[i]);
-        sold[t][i] = Math.max(sold[t][i-1], arr[i] + hold[t][i-1]); 
+    int[][] bot = new int[txns+1][arr.length];
+    int[][] sod = new int[txns+1][arr.length];
+    
+    for(int t=1;t<=txns;++t) {
+      bot[t][0]=-arr[0];sod[t][0]=0;  // as bot[t][0] is used for eval sod, can not be 0. must be -arr[i];
+      for(int i=1;i<arr.length;++i) {
+        bot[t][i] = Math.max(bot[t][i-1], sod[t-1][i-1]-arr[i]);
+        sod[t][i] = Math.max(bot[t][i-1] + arr[i], sod[t-1][i-1]);
       }
-      if(debug) System.out.println("t="+ t + " sold = " + Arrays.toString(sold[t]));
+      System.out.println(String.format("txn %d bot %s sod %s", t, Arrays.toString(bot[t]), Arrays.toString(sod[t])));
     }
-    return sold[txns-1][alen-1];
+    return sod[txns][arr.length-1];
   }
 
   static int MaxProfitWithRest(int[] arr, int txns, int gap) {
@@ -5089,24 +5127,37 @@ print noAdj("aabbc")
 // Graph
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 
-// A Reverse Tree, using parent[] to track component(i). Leaves to single root, vs. single root to leaves. 
+// A Leaf-Root Tree, using parent to track component of node. Leaves to single root, vs. single root to leaves. 
 class UnionFind {
   private int[] parent;   // value is the parent of arr[i]. idx is the same as original ary.
   public UnionFind(int n) {
       parent = new int[n];
-      for(int i=0; i<n; i++) { parent[i] = i; }
+      childrens = new int[n];
+      for(int i=0; i<n; i++) { parent[i] = i; chidrens[i] =1;}
   }
   private int findParent(int i) {
-      if (parent[i] != i) {  // recursion not ret in the middle. no need while loop.
-        parent[i] = findParent[parent[i]]; // long path reduction.
+    if (parent[i] != i) {  // recursion not ret in the middle. no need while loop.
+      parent[i] = findParent[parent[i]]; // long path reduction.
+    }
+    return parent[i];
+    {
+      while(parent[i] != i) {  
+        parent[i] = parent[parent[i]];
+        i = parent[i];
       }
-      return parent[i];
+    }
   }
   public boolean same_component(int i, int j) { return findParent(i) == findParent(j); }
   // union merge two groups into one.
   public void union(int p, int q){
     int i = findParent(p), j = findParent(q);
-    parent[i] = j;
+    if(childrens[i] >= childrens[j]) {
+      parent[j] = parent[i];
+      childrens[i] += childrens[j];
+    } else {
+      parent[i] = parent[j];
+      childrens[j] += childrens[i];
+    }
   }
   // returns the maxium size of union
   public int maxUnion(){ // O(n)
@@ -5717,42 +5768,47 @@ def addOperator(arr, l, r):
     dp[i][j] = out
   return dp[l][r]
 
-''' bottom up, loop i=1..n,  dp[i] = dp[j] + a[j..i] '''
-def wordbreak(word, dict):
-  dp = [None]*len(word)
-  for i in xrange(len(word)):
-    dp[i] = []   # init result for ith here
-    for j in xrange(i):
-      wd = word[j:i+1]
-      if wd in dict:
-        if j == 0:  # check j=0 to avoid dp[j-1] index out
-          dp[i].append([wd])
-        elif dp[j-1] != None:
-          for e in dp[j-1]:
-            tmp = e[:]
-            tmp.append(wd)
-            dp[i].append(tmp)
-  return dp[len(word)-1]
-#print wordbreak("leetcodegeekforgeek",["leet", "code", "for","geek"])
+public boolean wordBreak(String s, List<String> dict) {
+  Map<String, Integer> map = build(dict);
+  int[] dp = new int[s.length()];
+  for(int i=0;i<s.length();++i) {
+    // if(map.containsKey(s.substring(0, i+1))) { dp[i] = 1; }
+    for(int j=i;j>=0;--j) {
+      if(map.containsKey(s.substring(j,i+1))) {
+        // Math.max avoid a matching being overridden by a later dp[j-1].
+        dp[i] = Math.max(dp[i], (j == 0 ? 1 : dp[j-1])); 
+      }
+    }
+  }
+  return dp[s.length()-1]==1;
+}
+print wordbreak("leetcodegeekforgeek",["leet", "code", "for","geek"])
 print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
 
-''' dp[i]: [i..n] is breakable. dp[i] = dp[i+k] and arr[i:i+k] in dict '''
-def wordbreak(word, dict):
-  dp = [None]*len(word)
-  for i in xrange(len(word)-1, -1, -1):  // just linear loop, no recur inside loop
-    dp[i] = []
-    for j in xrange(i+1,len(word)):
-      wd = word[i:j+1]
-      if wd in dict:
-        if j == len(word)-1:
-          dp[i].append([wd])
-        elif dp[j+1] != None:
-          for e in dp[j+1]:
-            tmp = e[:]
-            tmp.append(wd)
-            dp[i].append(tmp)
-  return dp[0]
-print wordbreak("catsanddog",["cat", "cats", "and", "sand", "dog"])
+public boolean recurMatch(String s, int start, Map<String, Integer> dict) {
+  if(start == s.length()) return true;
+  int j = start;
+  while(j < s.length() && s.charAt(j) == s.charAt(start)) { ++j;} // skip dups
+  if(j-start > 4 && skipDups(s.charAt(start), j-start, dict)) {
+    System.out.println("skipping " + s.charAt(start) + " to " + j);
+    start = j;
+  }
+  if(start == s.length()) return true;
+  for(int k=start;k<=s.length();++k) {
+    if(dict.containsKey(s.substring(start, k))) {
+      if(recurMatch(s, k, dict)) return true;
+    }
+  }
+  // Map is not mean for iteration.
+  // for(Map.Entry<String, Integer> e : dict.entrySet()) {
+  //   if(start+e.getKey().length() <= s.length() && 
+  //       e.getKey().equals(s.substring(start, start+e.getKey().length()))) {
+  //     if(match(s, start+e.getKey().length(), dict)) return true;
+  //   }
+  // }
+  return false;
+}
+wordbreak("aaaaab",["a", "aa", "aaa"])
 
 """ dp[ia,ib] means the distance(difference) between a[0:ia] and b[0:ib] """
 def editDistance(a, b):
