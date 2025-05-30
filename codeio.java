@@ -1,22 +1,24 @@
 // Drain Pipeline: [arr | stk/queue/priority | aggregate]. while(idx<n || pq.size() > 0) {}
 // # www.cnblogs.com/jcliBlogger/ 
-// 1. Invariants abstraction to the simplest boundary. Reduce, Search, Tracking.
-// 2. Recursion(root, parent, prefix, collector); avoid repeative with state, edge class; leaf recur done update collector and parent; parent aggregates all children and update up again.
-// 3. for(i=0..n) { Recur(0..i), Recur(i+1...n); }
-// 4. Bisect: l: first bigger(>target) and safely discard the left smaller; bucket. arr[i] vs arr[arr[i]];
-// 5. two pointers ary: while(l<r){while(arr/l<minH){l++;r--} minH=min(l,r)};
-// 4. K lists processing. merge, priority q. reasoning by add one upon simple A=[min/max], B=[min, min+1, min+k...] 
-// 5. Tree: recur(root, parent, prefix, collector) || while(cur!=null||stk.emptry), update state upon popping from stk. parent aggreg all children and updates up.
-// 6. DP for aggregation pass down: Ary tot/min, word break/palind, DP stores aggregated state and pass forward. Boundary rows!!
-// 7. Search: Recur(off, prefix, coll), bfs/dfs, DP[i-1].
-// 8. MergeSort to turn N^2 to NlgN. all pairs(i, j) comp skipping some with sorted half during merge. Count of Range Sum within.
+// 1. State -> Invariants and dependencies; captured in PQ/Stk; Init boundary, Update logic. Loop, if/while to Reduce PQ states.
+// 2. Bisect: l: first bigger(>target) for safely discard the left smaller; bucket. arr[i] vs arr[arr[i]];
+// 3. Two pointers ary: Invariants. Update conditions. move smaller when <=; while(l<r){while(arr/l <= minH){l++;r--} minH=min(l,r)};
+// 4. Recursion(root, parent, prefix, collector); prune repeated state, edge class; leaf recur done update collector and parent; parent aggregates all children and update up again.
+// 5. Coin change order matters, dp[v]+=dp[v-a/i]; when order not matter, outer loop coin types, inner loop values. Recur(pos, prefix+a/pos, collector) not scale.
+// 6. K lists processing. merge, priority q. reasoning by add one upon simple A=[min/max], B=[min, min+1, min+k...] 
+// 7. Tree: recur(root, parent, prefix, collector) || while(cur!=null||stk.emptry), update state upon popping. parent aggreg all children and updates up.
+// 8. DP carry over aggregations: tot/min, word break/palind, DP stores aggregation and pass forward. Boundary rows!!
+// 9. Search: DFS/BFS vs. Recur(off, prefix, coll), DP[i-1] carry aggregation state down.
+// 10. BFS/DFS not scalable with edges. use PriorityQueue to sort min and prune.
+// 11. MergeSort: process each pair, turn N^2 to NlgN. all pairs(i, j) comp skipping some when merge sorted halves. Count of Range Sum within.
+// 12. i-j: dist(# of eles) between two ptrs. [i, j) exclude j; 0 when i==j; [j-i+1], [j-i), (j-i-2).
 
-// Loop move edges ? Recur subset offset ? DP new offset ? Check Boundary and End state First !!!
-// Recursion: take start and exit args, ret Agg of sub states. recur(start_idx, exit_args). Pratt(cur_idx, _parent_min_bp_); 
+// Loop move edges ? Recur subset offset ? DP new offset ? Check Boundary and End state First, move smaller edges !!!
+// Recursion: take boundary start and end as args, ret Agg of sub states. recur(start, end). Pratt(cur_idx, _parent_min_bp_as_stop_condition_); 
 // DP !! boundaries(i=1,j=head) !! as the partial val is carried to tree DFS recur next candidates. 
 // 1. discovered state update, boundary check, build candidates, recur, visited aggregation.
 // 1. Backtrack dfs search carrying partial tree at k, construct candidates k+1, loop recur each candidate.
-// 2. The first thing in Recur(A, i, B, j) is Exition end state boundary checks. return A.size()==i.
+// 2. The first thing in Recur(A, i, B, j) is exit end state boundary checks. return A.size()==i.
 // 3. Boundary check and state track aggregations. Dp[i,j,k] = min/max(DP[i-1,j-1,k-1]+cost, ...);
 // 4. Recur with local copy to each candidates, aggregate the result. dp[i]=max(dp[i-1][branch1], dp[i-1][branch2], ...)
 // 5. the optimal partial tree is transitive updated from subtree thus updates the global and carry on.
@@ -37,7 +39,7 @@
 // steps: dfs_enter(parent), [process_edge, recur(child) if !disc], dfs_exit_update(parent). 
 // Pratt: while(op.lbs > loop_stop_cond) { consume_op; recur(new_op); concat(rhs); peek(next_op)}
 
-// Accumulated state is carried down when round++ and day++. State(buy/sell/rest) is the max of all options. 
+// DP carries down Accumulated state and selections. State(buy/sell/rest) is the max of all options. 
 //  bot @ day_i is the max(bot/i-1/k, sod/k-1, rest/i-1/k-1). accumulated profit passed each round.
 //  rest/i/k is available from prev r days' sod/i-r/k;  
 //  bot/i/k = max(bot/i-1/k, sod/i-1/k-1 - a/i, rst/i-1/k-1 - a/i)
@@ -96,7 +98,7 @@
 // Recursion(prefix) fan out dup path to leaves. avoid double counting in each node, see PathSum. Restore Prefix each subtree recursion.
 
 // BFS/DFS recur search, permutation swap to get N^2. K-group, K-similar, etc.
-// Reduce to N or lgN, break into two segs, recur in each seg.
+// Merge sort to Reduce to N2 comparsions or lgN, break into two segs, recur in each seg.
 // 0. MAP to track a[i] where, how many, aggregates, counts, prefix sum, radix rank, position/index. pos[a[i]] = i;
 // 1. Bucket sort / bucket merge. A[i] stores value = index value+1
 // 2. Merge/quick sort, partition, divide and constant merge.
@@ -134,15 +136,15 @@
 
 // """ Graph: Adj edge list: Map<Node, LinkedList<Set<Node>>, recur thru all edges visiting nodes.
 // DFS(root, prefix, collector): Recur only __undisc__. DFS done, all child visited, memorize path[cur]. 
-// DFS Edge: Tree: !discovered, Back: !processed anecestors in stk excl parent. Forward: Reverse Back. Cross: Directed to already traversed component.
+// DFS Edge: Tree: !discovered, Back: !processed anecestors in stk. Forward: already found by. Cross: Directed to already traversed component.
 // Edge exact once: dfs(parent,me), dfs(me, !discovered); Back:(in stk !processed, excl parent). processed_me is done when node is processed.  
 // Strong Connected Component(SCC): DFS Back-edge earliest, or two-DFS: label vertex by completion. DFS reversed G from highest unvisited. each dfs run finds a component.
 // List All paths: DFS(v, prefix, collector). ret paths or collect at leaves. BFS(v,prefix): no enqueue traverse when nb in prefix. 
 // - - - - -
 // Graph Types: Directed/Acyclic/Wegithed(negative). Edge Types: Tree, Back, Forward, Cross(back_to_dfs-ed_component) 
 // a) DFS/BFS un-weighted, b) Relaxation Greedy for weighted, c) DP[i,k,j] all pairs paths.
-// Shortest Path or MST_prim: PQ<[sort_by_dist, node, ...]> sorted by dist. relaxation greedy. 
-// Dijkstra no negative edges. d[parent] no longer min if (parent-child) < 0. 
+// Dijkstra/MST_prim: pick a root, PQ<[sort_by_dist, node, ...]>; shortest path to all. Kruskal. UnionFind shortest edges.
+// Dijkstra no negative edges. dist[parent] no longer min if (parent-child) < 0 reduce weights. 
 // Single src Shortest path to all dst, Bellman: loop |v| times { for each edge(u,v,e), d[v] = min(d[u] + e)}
 // DAG: topsort. linear dijkstra. DFS+memorize all subpaths, parent is frozen by order. parents min before expanding subgraph.   
 // MST(union-find): relaxation.. Shortest path changes when each weight+delta as the path is multihops.
@@ -155,8 +157,8 @@
 // BFS(v) {while [v, path] = Q.pop() {Q.enq(nb, path+v)}}
 // 
 
-Matching Edge: pairing vertex. polynomial. some indepset NP-hard problems can be reduced to it.
-Bipartite Matching: max pairs no vertex pair >1 peers. sizeof (max matching) = min(vertex cover),
+(max) Matching Edge: max set of edges no share vertdx. pairing vertex. polynomial. some indepset NP-hard problems can be reduced to it.
+Bipartite Matching: max edges/pairs no sharing vertex. sizeof (max matching) = min(vertex cover),
 IndepSet. vertices No conflicting, vertex Color. Backtracking(incl, excl, recur)/Greedy. Tree Heuristic: leaf nodes, repeat.
 Vertex Color: no conflicting. 4-color thereom. Backtracking. start lowest-degree node, delete adjs. Repeat. 
 Vertex Cover: min vertex cover all edges complement Max(IndepSet). start highest-degree, delete adjs, repeat. lgN worse than optimal.
@@ -556,11 +558,9 @@ int maxProduct(int[] arr) {
   {
     for(int i=1;i<arr.length;++i){
       if(arr[i] < 0) {  // just swap max min upon negative.
-        int tmp = curmax;
-        curmax = curmin;
-        curmin = tmp;
+        int tmp = curmax;  curmax = curmin;   curmin = tmp;
       }
-      curmax = Math.max(curmax*arr[i], arr[i]);
+      curmax = Math.max(curmax*arr[i], arr[i]); // always include arr/i as it can be a max ending at i;
       curmin = Math.min(curmin*arr[i], arr[i]);
       gmax=Math.max(gmax, curmax);
     }
@@ -693,7 +693,7 @@ print rotatedMax([10, 20, 30, 40, 50])
 print rotatedMax([120, 100, 80, 20, 0])
 
 """
-max distance between two items where left < right. LIS.
+max distance between two items where arr/left < arr/right. LIS.
 http://www.geeksforgeeks.org/given-an-array-arr-find-the-maximum-j-i-such-that-arrj-arri/
 leftmin[0..n] store min 0..n, desc to valley.
 ritemax[n-1..0] climb to max from end. so ritemax[0..n] desc from max.
@@ -791,9 +791,9 @@ public int trapWater(int[] arr) {
   }
   return tot;
 }
-public int trapWater(int[] arr) {
+public int trapWater(int[] arr) {   // [6,1,5,2]
   int l=0,r=arr.length-1,minH=0,water=0;
-  while(l<r) {
+  while(l<r) {  // move smaller edge; less or equal. when arr[l] <= minH, move l.
     while(l<r && arr[l] <= minH) { water += minH-arr[l++];}
     while(l<r && arr[r] <= minH) { water += minH-arr[r--];}
     minH=Math.min(arr[l],arr[r])
@@ -1442,6 +1442,24 @@ int[] nextGreater(int[] arr) {
     nextGreater[i] = stk.isEmpty() ? -1 : arr[stk.peekLast()];
   }
 }
+
+// cut a line cross least brick.
+// map key=rite_edge_width, value=num_layers has that edge. edge with max layers is where cut line cross least.
+int leastBricks(List<List<Integer>> wall) {
+  Map</*x=*/Integer, /*bricks=*/Integer> xcuts = new HashMap();
+  int count = 0;
+  for (List<Integer> row : wall) {
+      int rowWidth = 0;   // when start a new row, init counter
+      for (int i = 0; i < row.size() - 1; i++) {   
+          rowWidth += row.get(i);     // grow rowWidth for each brick in the row.
+          //map.compute(rowWidth, (k, v) -> v += 1);
+          xcuts.put(rowWidth, xcuts.getOrDefault(rowWidth, 0) + 1);
+          count = Math.max(count, xcuts.get(rowWidth));
+      }
+  }
+  return wall.size() - count;
+}
+
 // Track incoming block's X with PQ's X while consuming each block.
 public List<List<Integer>> getSkyline(int[][] arr) {
   PriorityQueue<int[]> pq = new PriorityQueue<>((a,b) -> b[1]-a[1]);
@@ -1508,6 +1526,32 @@ public int characterReplacement(String s, int w) {
       maxlen = Math.max(maxlen, r-l+1);
       r++;
   }
+  return maxlen;
+}
+// State: maxlen = [l..r], maxdups + k diffs. maxdups+k;
+public int characterReplacement(String s, int win) {
+  char[] arr = s.toCharArray();
+  int[] map = new int[26];
+  int maxlen=0, maxdups=0, l=0,r=0;
+  while(r<arr.length) {
+    map[arr[r]-'A']++;
+    maxdups = Math.max(maxdups, map[arr[r]-'A']);
+    if(r-l+1-maxdups <= win) {
+      maxlen = Math.max(maxlen, r-l+1);
+    } else {
+      int i=l+1;
+      // while(arr[i]==arr[l]) { i++; }
+      map[arr[l]-'A'] -= (i-l);
+      l = i;
+    }
+    maxlen = Math.max(maxlen, r-l+1); // shall always update maxlen upon each ele processing.
+    r++;        
+  }
+  // after all ele processed, r parked at arr.length, exclude r;
+  // if(r-l-maxdups < win) {
+  //   int delta = Math.min(l, win-(r-l-maxdups));
+  //   maxlen = Math.max(maxlen, r-l+delta);
+  // }
   return maxlen;
 }
 
@@ -1918,12 +1962,12 @@ public int firstMissingPositive(int[] arr) {  // arr[i] == i+1, arr[arr[i]-1]=ar
   {
     for(int i=0;i<arr.length;++i) {
       int iv = arr[i];
-      while(iv != i+1) {  // while loop at slot i to sawp arr[arr[i]-1]==arr[i]
-          if(iv <= 0 || iv > arr.length) break;
-          if(arr[iv-1] != iv) {
-              swap(arr, /*index*/i, /*arr[i]*/iv-1);
-              iv = arr[i];
-          } else { break;}
+      while(arr[i] != i+1) {  // while loop at slot i to sawp arr[arr[i]-1]==arr[i]
+        if(iv <= 0 || iv > arr.length) break;
+        if(arr[arr[i]-1] != arr[i]) {
+            swap(arr, /*index*/i, /*arr[i]*/iv-1);
+            iv = arr[i];
+        } else { break;}
       }
     }
     for(int i=0;i<arr.length;++i) { if(arr[i] != i+1) return i+1;}
@@ -2293,7 +2337,7 @@ static int kth(int[] arr, int[] brr, int k) {
 
 double findMedianSortedArrays(vector<int> A, vector<int> B) {
   int m = A.size(), n = B.size();
-  if (m > n) return findMedianSortedArrays(B, A);
+  if (A.size() > B.size()) return findMedianSortedArrays(B, A);
   int imin = 0, imax = m, half = (m + n + 1) / 2, i, j, num1, num2;
   while (imin <= imax) {
     i = (imin + imax) / 2;
@@ -2983,12 +3027,12 @@ class MapSum {
 //     
 SExpr ParseInternal(src, idx, parent_op) {
   lhs = src.charAt(idx);  // lexer.pop();
-  op = l.peek();
+  op = src[idx];
   while (op.lbp < parent_op.rbp)) { /* loop stop when top op < parent_op, then all prefix can bind to lhs */
     op = l.pop();
-    rhs = parseInternal(src, idx, op);
+    rhs,nextidx = parseInternal(src, idx, op);
     lhs = (op, lhs, rhs); // update lhs to contain consumed parts.
-    op = l.peek();
+    op = src[nextidx];
   }
   return lhs;
 }
@@ -3063,7 +3107,7 @@ class Solution {
   public boolean isLetter(char c) {
     return c >= 'a' && c <= 'z';
   }
-  // Expand recursively. a n[] entry. begin with num, recursion ends with ].
+  // Expand recursively. a top level n[] entry that begin with a num, recursion ends with ].
   public ExpRes expand(char[] arr, int numidx) {
     ExpRes res = null;
     int i=numidx, repn=0;
@@ -3074,7 +3118,7 @@ class Solution {
     i++; // skip [
     String reps = "";
     StringBuilder sb = new StringBuilder();
-    // recursion until hitting the end ]
+    // recursion start with a `num[`, recursion until hitting the end ]
     while(arr[i] != ']') {
       while(i<arr.length && isLetter(arr[i])) {
         sb.append(arr[i]); i++;
@@ -3086,10 +3130,8 @@ class Solution {
       }
     }
     StringBuilder retsb = new StringBuilder();
-    for(int k=0;k<repn;k++) {
-      retsb.append(sb);
-    }
-    // out of loop, arr/i is ]
+    for(int k=0;k<repn;k++) {  retsb.append(sb); }
+    // out of loop, i parked at post ]
     return new ExpRes(retsb.toString(), i);
   }
 
@@ -3098,13 +3140,13 @@ class Solution {
     ExpRes res = null;
     int i = 0;
     StringBuilder sb = new StringBuilder();
-    // consume each head, when seeing n[], recursive expand and append to ret;
+    // Main loop consumes token stream. when seeing n[], expand it and append res;
     while(i < arr.length) {
       while(i<arr.length && isLetter(arr[i])) {
         sb.append(arr[i]); i++;
       }
       if(i<arr.length && getNum(arr[i]) >= 0) {
-        res = expand(arr, i);  // expand child, recur.
+        res = expand(arr, i);  // expand one top [] entry. 
         sb.append(res.str_);
         i = res.edidx + 1;
       }
@@ -3112,6 +3154,95 @@ class Solution {
     return sb.toString();
   }
   public String decodeString("2[abc]3[cd]ef");
+}
+class Solution {
+  // one Expansion is the expansion of {}, union items separated by comma. 
+  public class Expansion {
+    int start; int end;
+    List<Expansion> childexps;
+    boolean combination;
+    List<String> expanded;
+    Expansion parent;
+
+    public Expansion(int start) { 
+      this.childexps=new ArrayList<>(); this.expanded=new ArrayList<>(); 
+      this.start=start;this.combination=true;
+    }
+    public void add(Expansion sube) { this.childexps.add(sube);}
+    public List<String> expand() {
+      if(expanded.size() > 0) return expanded;
+      if(!combination) {
+        Set<String> set = new TreeSet<>();
+        for(Expansion e : childexps) {
+          for(String s : e.expand()) { set.add(s); }
+        }
+        expanded.clear();
+        for(String s : set) { expanded.add(s); }
+      } else {
+        expand(0, "", expanded);
+      }
+      return expanded;
+    }
+    public void expand(int off, String prefix, List<String> out) {
+      if(off >= this.childexps.size()) return;
+      List<String> curexp = this.childexps.get(off).expand();
+      if(off==this.childexps.size()-1) {
+        for(String s : curexp) { out.add(prefix+s);  }
+        return;
+      }
+      for(String s : curexp) { expand(off+1, prefix+s, out); }
+    }
+    public String toString() { return String.format("Expansion from %d %d subexps %d comb ? %b expanded %s", start, end, childexps.size(), combination, String.join(",", expanded));}
+  }
+  
+  // Each token belongs to the current expansion; A child exp starts at { or letter, ends at , or }; 
+  // recur {}; stk child exps, {}a{}e; merge child exp upon , or };
+  public int parse(char[] arr, int off, Expansion curexp) { // curexp starts at offset. root starts at -1 to include {}{} 
+    Deque<Expansion> stk = new ArrayDeque<>();  // stk stores child expansion of curexp;
+    int idx = off+1;  // consume the next token of curexp.
+    while(idx < arr.length) {
+      if(arr[idx] == '{') {  // child expansion with recursion {};
+        Expansion parenexp = new Expansion(idx);
+        idx = parse(arr, idx, parenexp); // recur child exp of curexp, start at {  till the closing }.
+        stk.addLast(parenexp); // child recursion done, stash to the curexp's stk until closing } to trigger consolidate.
+        continue;
+      } 
+      // cur expansion done, merge all child exps by combine or union; {{},a{b,c}} or {{},a{b,c}d,{}}
+      if(arr[idx] == '}' || arr[idx] == ',') { // comma trigger consolidate. { trigger recursion.
+        if(stk.size() > 1) { // {a{},{}e}
+          // create a new parent expansion to merge all in stk exps. The new parent is a child of the current expansion that the , } belongs to.
+          Expansion merge = new Expansion(stk.peekFirst().start); 
+          while(stk.size()>0) { merge.add(stk.pollFirst());}
+          merge.end = idx;
+          curexp.add(merge);
+        } else {
+          curexp.add(stk.pollFirst()); // add child expansion in stk to cur exp as , } are tokens of cur exp;
+        }
+        curexp.end = idx;
+        if(arr[idx] == '}') { // close child {}, recursion done; return;
+          return idx+1; 
+        } else {   // comma, continue consuming inner expansion of the current expansion this comma beongs to.
+          curexp.combination = false;
+          idx++; continue;
+        }
+      }
+      // child expansion with letters;
+      Expansion letterexp = new Expansion(idx);
+      String s = "";
+      while(idx < arr.length && arr[idx] >='a' && arr[idx]<='z') { s += arr[idx++];}
+      letterexp.expanded.add(s);
+      stk.addLast(letterexp);
+    }
+    while(stk.size()>0) { curexp.add(stk.pollFirst());}
+    return idx+1;
+  }
+  public List<String> braceExpansionII(String expression) {
+    char[] arr = expression.toCharArray();
+    Expansion exp = new Expansion(-1);
+    // the expansion rules(comb, union) is the same for outer and inner, hence consolidate into one parse fn.
+    parse(arr, -1, exp);
+    return exp.expand();
+  }
 }
 
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
@@ -4224,7 +4355,7 @@ def integer_partition(A, n, k):   //  dp[i, v] = dp[i-1,v] + dp[i-1, v-A.i]
 
 
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
-// Interval Merge 
+// Merge Interval
 // Interval TreeMap Array and Interval Tree, segment
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 class Solution {
@@ -4345,23 +4476,6 @@ static int findMinArrowBurstBallon(int[][] points) {
   return count + 1;
 }
 
-// cut a line cross least brick.
-// map key=rite_edge_width, value=num_layers has that edge. edge with max layers is where cut line cross least.
-int leastBricks(List<List<Integer>> wall) {
-  Map</*x=*/Integer, /*bricks=*/Integer> xcuts = new HashMap();
-  int count = 0;
-  for (List<Integer> row : wall) {
-      int rowWidth = 0;   // when start a new row, init counter
-      for (int i = 0; i < row.size() - 1; i++) {   
-          rowWidth += row.get(i);     // grow rowWidth for each brick in the row.
-          //map.compute(rowWidth, (k, v) -> v += 1);
-          xcuts.put(rowWidth, xcuts.getOrDefault(rowWidth, 0) + 1);
-          count = Math.max(count, xcuts.get(rowWidth));
-      }
-  }
-  return wall.size() - count;
-}
-
 // Range is Interval Array, TreeMap<StartIdx, EndIdx> represents intervals. on overlap intervals exist in the map.
 class RangeModule {
   TreeMap<Integer, Integer> map;  // key is start, val is end.
@@ -4437,38 +4551,32 @@ static int scheduleWithCoolingInterval(char[] tasks, int coolInterval) {
   return timespan;
 }
 
-public Job bisectEndTime(Job[] jobs, int start) {
+int bisect(Job[] jobs, int start) {
   int l=0,r=jobs.length-1;
-  while(l<=r){
-      int m=l+(r-l)/2;
-      if(jobs[m].ed == start) { return jobs[m]; }
-      else if(jobs[m].ed < start) { l=m+1;}
-      else{r=m-1;}
+  while(l<=r) {
+    int m = l+(r-l)/2;
+    if(jobs[m].ed <= start) { l=m+1; } 
+    else { r=m-1; }
   }
-  // l is the first job ed > start. [l-1.ed <= target < l.ed]
-  if(l==0) { return null;}
-  return jobs[l-1];
+  return l-1;  //  l-1 is the first job whose end < start, ret back to process.
 }
+
 public int jobScheduling(int[] startTime, int[] endTime, int[] profit) {
   Job[] jobs = new Job[profit.length];
   for(int i=0;i<profit.length;++i) {
       jobs[i] = new Job(startTime[i], endTime[i], profit[i]);
   }
   Arrays.sort(jobs, (a, b) -> a.ed - b.ed); // sort with job's end time; leverage start < end.
-  // map to track max profit at any end time.
-  Map<Integer, Integer> endprofit = new HashMap<>();
-  for(int i=0;i<jobs.length;++i) {
-      Job prev = bisectEndTime(jobs, jobs[i].st);
-      int curprofit = jobs[i].profit + (prev == null ? 0 : endprofit.get(prev.ed)); 
-      // at any endtime, always take the max before.
-      int max_profit_till_ed = Math.max(curprofit, i > 0 ? endprofit.get(jobs[i-1].ed) : 0);
-      endprofit.compute(jobs[i].ed, (k,v) -> v==null ? max_profit_till_ed : Math.max(v, max_profit_till_ed));
+  int maxp=0, sz=profit.length;
+  int[] dp = new int[sz];  // the max profit of each job.
+  for(int i=0;i<sz;++i) {
+    int prejob = bisect(jobs, jobs[i].st);
+    int prevprofit = prejob==-1 ? 0 : dp[prejob];
+    // the profit at job i is the max of all prev jobs.
+    dp[i] = Math.max(maxp, prevprofit+jobs[i].profit);
+    maxp = Math.max(maxp, dp[i]);
   }
-  int gmax = 0;
-  for(int i=jobs.length-1;i>=0;--i) {
-      gmax = Math.max(gmax, endprofit.get(jobs[i].ed));
-  }
-  return gmax;
+  return maxp;
 }
 
 class Solution { // Task Scheduler.
@@ -5158,10 +5266,10 @@ print noAdj("abacbcdc")
 print noAdj("aabbc")
 
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
-// Graph
+// Graph, Edge types.
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 
-// A Leaf-Root Tree, using parent to track component of node. Leaves to single root, vs. single root to leaves. 
+// A Leaf-Root Tree, using parent to track same component. Leaves to single root, vs. single root to leaves. 
 class UnionFind {
   private int[] parent;   // value is the parent of arr[i]. idx is the same as original ary.
   public UnionFind(int n) {
@@ -5169,39 +5277,43 @@ class UnionFind {
       childrens = new int[n];
       for(int i=0; i<n; i++) { parent[i] = i; chidrens[i] =1;}
   }
-  private int findParent(int i) {
+  private int findParent(int i) { 
     if (parent[i] != i) {  // recursion not ret in the middle. no need while loop.
-      parent[i] = findParent[parent[i]]; // long path reduction.
+      parent[i] = findParent[parent[i]]; // update the parent, flatten, reduct long path.
     }
     return parent[i];
     {
       while(parent[i] != i) {  
         parent[i] = parent[parent[i]];
-        i = parent[i];
+        i = parent[i];  // re-assign i to loop back check parent[i];
       }
     }
   }
   public boolean same_component(int i, int j) { return findParent(i) == findParent(j); }
-  // union merge two groups into one.
-  public void union(int p, int q){
-    int i = findParent(p), j = findParent(q);
-    if(childrens[i] >= childrens[j]) {
-      parent[j] = parent[i];
-      childrens[i] += childrens[j];
-    } else {
-      parent[i] = parent[j];
-      childrens[j] += childrens[i];
+  // union merge two groups into one if not the same. return true. If already same, no merge, ret false;
+  public boolean union(int x, int y){ 
+    int xr = findParent(x), yr = findParent(y);
+    if(xr != yr) {
+      if(childrens[xr] >= childrens[yr]) {
+        parent[yr] = xr;  // next findParent will flatten the children of yr.
+        childrens[xr] += childrens[yr];
+      } else {
+        parent[xr] = yr;
+        childrens[yr] += childrens[xr];
+      }
+      return true;
     }
+    return false;
   }
   // returns the maxium size of union
   public int maxUnion(){ // O(n)
-      int[] count = new int[parent.length];
-      int max = 0;
-      for(int i=0; i<parent.length; i++){
-          count[root(i)] ++;
-          max = Math.max(max, count[root(i)]);
-      }
-      return max;
+    int[] count = new int[parent.length];
+    int max = 0;
+    for(int i=0; i<parent.length; i++){
+        count[root(i)] ++;
+        max = Math.max(max, count[root(i)]);
+    }
+    return max;
   }
 }
 
@@ -5211,25 +5323,23 @@ public int longestConsecutive(int[] nums) {
   UnionFind uf = new UnionFind(nums.length); // use a parent ary to track and merge slots of nums[i].
   Map<Integer,Integer> map = new HashMap<Integer,Integer>(); // <value,index>
   for(int i=0; i<nums.length; i++) {
-      if (map.containsKey(nums[i])){ continue; }
-      map.put(nums[i], i); // <value, index>
-      // looking for its neighbors, union i and x into one bucket
-      if (map.containsKey(nums[i]+1)) { uf.union(i, map.get(nums[i]+1)); }  // union index i, and k
-      if (map.containsKey(nums[i]-1)) { uf.union(i, map.get(nums[i]-1)); }
+    if (map.containsKey(nums[i])){ continue; }
+    map.put(nums[i], i); // <value, index>
+    // looking for its neighbors, union i and x into one bucket
+    if (map.containsKey(nums[i]+1)) { uf.union(i, map.get(nums[i]+1)); }  // union index i, and k
+    if (map.containsKey(nums[i]-1)) { uf.union(i, map.get(nums[i]-1)); }
   }
   return uf.maxUnion();
 }
 
-
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
 // From src -> dst, min path dp[src][1111111]   bitmask as path.
-//  1. dfs(child, path); start root, for each child, if child is dst, result.append(path)
+//  1. DFS(root, prefix); From root, for each child, if child is dst, result.append(path)
 //  2. BFS(PQ); PQ(sort by weight), poll PQ head, for each child of hd, relax by offering child.
 //  3. DP[src,dst] = DP[src,k] + DP[k, dst]; In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
-//        dp[i, j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
-//        dp[i,j] = min(dp[i,j-1], dp[i-1,j]) + G[i,j];
-//  4. topsort(G, src, stk), start from any, carry stk.
-//  5. dfs(state) try each not visited child state, if (dfs(child) == true) ret true. DFS ALL DONE no found, ret false;
+//      dp[i,j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
+//      dp[i,j] = min(dp[i,j-1], dp[i-1,j]) + G[i,j];
+//  4. Topsort(G, src, stk), back-edge.
 //  6. node in path repr as a bit. END path is (111). Now enum all path values, and check from each head, the min.
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
 // For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]
@@ -5275,9 +5385,6 @@ def minpath(G, src, dst, k):
             dp[s][d][gap] = min(dp[k][d][gap-1]+G[src][k])
   return dp[src][dst][k]
 
-// topsort for course schedule, topology sort dfs dependencies
-// the other ways is like min span tree. Remove in bounds.
-
 // first step to use topology sort prune, tab[i] = min cost to reach dst from i'''
 def minpath(G, src, dst):
   def topsort(G, src, stk):  # dfs all children, then visit root by push to stk top.
@@ -5312,46 +5419,51 @@ int cutOffTree(List<List<Integer>> forest, int sr, int sc, int tr, int tc) {
   cost.put(sr * C + sc, 0);
 
   while (!heap.isEmpty()) {
-      int[] cur = heap.poll();
-      int g = cur[1], r = cur[2], c = cur[3];
-      if (r == tr && c == tc) return g;
-      for (int di = 0; di < 4; ++di) {
-          int nr = r + dr[di], nc = c + dc[di];
-          if (0 <= nr && nr < R && 0 <= nc && nc < C && forest.get(nr).get(nc) > 0) {
-              int ncost = g + 1 + Math.abs(nr-tr) + Math.abs(nc-tr);
-              if (ncost < cost.getOrDefault(nr * C + nc, 9999)) {
-                  cost.put(nr * C + nc, ncost);
-                  heap.offer(new int[]{ncost, g+1, nr, nc});
-              }
+    int[] cur = heap.poll();
+    int g = cur[1], r = cur[2], c = cur[3];
+    if (r == tr && c == tc) return g;
+    for (int di = 0; di < 4; ++di) {
+      int nr = r + dr[di], nc = c + dc[di];
+      if (0 <= nr && nr < R && 0 <= nc && nc < C && forest.get(nr).get(nc) > 0) {
+          int ncost = g + 1 + Math.abs(nr-tr) + Math.abs(nc-tr);
+          if (ncost < cost.getOrDefault(nr * C + nc, 9999)) {
+              cost.put(nr * C + nc, ncost);
+              heap.offer(new int[]{ncost, g+1, nr, nc});
           }
       }
+    }
   }
   return -1;
 }
 
-// BFS with PQ sorted by price. Queue<int[]> pq. poll, add nb, relax with reduced stops.
-int cheapestPriceWithKStops(int[][] flights, int src, int dst, int k) {
-    int sz = flights.length;
-    Map<Integer, HashMap<Integer, Integer>> pricesGraph = new HashMap<>();
-    for (int[] f : flights) {  
-        // f[0] = src, f[1] = dst, f[2] = price
-        pricesGraph.computeIfAbsent(f[0], new HashMap<>()).put(f[1], f[2]);
+// PQ edges sorted by dist. poll, add nb, relax with reduced stops. DP[to][k]=min(dp[from][k-1]+(from,to))
+public int findCheapestPrice(int n, int[][] flights, int src, int dst, int k) {
+  int[][] dp = new int[n][k+1];
+  int[][] prices = new int[n][n];
+  PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0]-b[0]);
+  for(int i=0;i<flights.length;++i) {
+    int[] f = flights[i];
+    prices[f[0]][f[1]] = f[2];
+    if(f[0]==src) { pq.offer(new int[]{f[2], f[1], 0}); }
+  }
+  while(pq.size() > 0) {
+    int[] e = pq.poll();
+    int totprice=e[0], to=e[1], hops=e[2]; //, totprice=e[3];
+    dp[to][hops] = dp[to][hops] > 0 ? Math.min(dp[to][hops], totprice) : totprice;
+    if(to==dst) return totprice;
+    if(hops == k || totprice > dp[to][hops]) continue;
+    for(int i=0;i<n;++i) {
+      if(prices[to][i] > 0 && i != src && (dp[i][hops] == 0 || prices[to][i] < dp[i][hops])) {
+        pq.offer(new int[]{totprice+prices[to][i], i, hops+1}); 
+      }
     }
-    // pq order by price, e[0], entry is ary of [price, src, stops].
-    Queue<int[/* price, src, stop */]> pq = new PriorityQueue<>((a,b) -> Integer.compare(a[0], b[0]));
-    pq.offer(new int[]{0, src, k+1});   // seed PQ with start and k steps, reduce it on each step.
-    while (!pq.isEmpty()) {
-        int[] hd = pq.poll();
-        int price = hd[0], city = hd[1], stops = hd[2];
-        if (hd[1] == dst) { return price; }
-        if (stops > 0) {  // when still within k stops, enum all hd's neighbor
-            Map<Integer, Integer> adj = pricesGraph.getOrDefault(city, new HashMap<>());
-            for (int nb : adj.keySet()) {     // sort by price, we do not filter unseen neighbors ?
-                pq.add(new int[]{price + adj.get(nb), nb, stops-1});   # reduce stop when adding.
-            }
-        }
-    }
-    return -1;
+  }
+  int mincost = Integer.MAX_VALUE;
+  for(int i=0;i<=k;i++) {
+    if(dp[dst][i] > 0)
+      mincost = Math.min(mincost, dp[dst][i]);
+  }
+  return mincost == Integer.MAX_VALUE ? -1 : mincost;
 }
 
 // seed pq with src, edges repr by G Map<Integer, List<int[]>>,  for each nb edge, relax dist
