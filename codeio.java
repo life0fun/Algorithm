@@ -1,10 +1,11 @@
 // Drain Pipeline: [arr | stk/queue/priority | aggregate]. while(idx<n || pq.size() > 0) {}
 // # www.cnblogs.com/jcliBlogger/ 
-// 1. State -> Invariants and dependencies; captured in PQ/Stk; Init boundary, Update logic. Loop, if/while to Reduce PQ states.
+// 1) what state/dependencies need to track, 2) what data structure. 3) consume a/i, how to update. 4) boundary/exit.
+// 1. State -> Invariants and dependencies; Data structure, PQ/Stk; Boundary/Exist, Update condition. Loop, if/while.
 // 2. Bisect: l: first bigger(>target) for safely discard the left smaller; bucket. arr[i] vs arr[arr[i]];
 // 3. Two pointers ary: Invariants. Update conditions. move smaller when <=; while(l<r){while(arr/l <= minH){l++;r--} minH=min(l,r)};
 // 4. Recursion(root, parent, prefix, collector); prune repeated state, edge class; leaf recur done update collector and parent; parent aggregates all children and update up again.
-// 5. Coin change order matters, dp[v]+=dp[v-a/i]; when order not matter, outer loop coin types, inner loop values. Recur(pos, prefix+a/pos, collector) not scale.
+// 5. Coin change order matters, outer loop v, dp[v]+=dp[v-a/i]; order not matter, outer loop coin types. Recur(coins, prefix+a/pos) not scale.
 // 6. K lists processing. merge, priority q. reasoning by add one upon simple A=[min/max], B=[min, min+1, min+k...] 
 // 7. Tree: recur(root, parent, prefix, collector) || while(cur!=null||stk.emptry), update state upon popping. parent aggreg all children and updates up.
 // 8. DP carry over aggregations: tot/min, word break/palind, DP stores aggregation and pass forward. Boundary rows!!
@@ -12,6 +13,8 @@
 // 10. BFS/DFS not scalable with edges. use PriorityQueue to sort min and prune.
 // 11. MergeSort: process each pair, turn N^2 to NlgN. all pairs(i, j) comp skipping some when merge sorted halves. Count of Range Sum within.
 // 12. i-j: dist(# of eles) between two ptrs. [i, j) exclude j; 0 when i==j; [j-i+1], [j-i), (j-i-2).
+// 13. Recur(arr,off,prefix) {for(i=off;++i){recur(off+1, prefix+arr[i]}}, for each arr/i after off, add it as partial solution, prefix[pos], into sub-recur; incl arr/i, excl all others.
+// 14. TreeMap/TreeSet(balance rotate) to sort a dynamic win of arr updated add r remove l; MergeSort when arr is fixed.   
 
 // Loop move edges ? Recur subset offset ? DP new offset ? Check Boundary and End state First, move smaller edges !!!
 // Recursion: take boundary start and end as args, ret Agg of sub states. recur(start, end). Pratt(cur_idx, _parent_min_bp_as_stop_condition_); 
@@ -1921,7 +1924,7 @@ static int[] buckesort(int[] arr) {
 def firstMissing(L):
   def bucketsort(L):
     for i in xrange(len(L)):
-      while L[i] > 0 and L[i] != i+1:
+      while L[i] > 0 and L[i] != i+1: // ensure arr[i]==i+1; if not, swap
         vidx = L[i]-1
         if L[vidx] < 0:  # arr[i] is a DUP as already detected and toggled
           L[i] = 0    # Li is a dup, can not swap anymore, set it to 0, skip
@@ -1962,13 +1965,12 @@ public int firstMissingPositive(int[] arr) {  // arr[i] == i+1, arr[arr[i]-1]=ar
   {
     for(int i=0;i<arr.length;++i) {
       int iv = arr[i];
-      while(arr[i] != i+1) {  // while loop at slot i to sawp arr[arr[i]-1]==arr[i]
-        if(iv <= 0 || iv > arr.length) break;
-        if(arr[arr[i]-1] != arr[i]) {
-            swap(arr, /*index*/i, /*arr[i]*/iv-1);
-            iv = arr[i];
-        } else { break;}
-      }
+      if(arr[i] > 0 && arr[i] <= arr.length) {
+          while(arr[i] > 0 && arr[i] <= arr.length && arr[i] != i+1 && arr[arr[i]-1] != arr[i]) {
+            swap(arr, i, arr[i]-1);
+          }
+        }
+      
     }
     for(int i=0;i<arr.length;++i) { if(arr[i] != i+1) return i+1;}
   }
@@ -2122,6 +2124,15 @@ int[] robSub(TreeNode root) {
   return res;
 }
 
+public boolean canJump(int[] arr) {
+  int r=0,maxr=0;
+  while(r<=maxr) {
+    maxr = Math.max(maxr, r+arr[r]);
+    if(maxr+1 >= arr.length) return true;
+    r++;
+  }
+  return false;
+}
 // Track the step k when reaching A[i], so next steps is k-1,k,k+1. stones[i] value is idx that has a stone. 
 // Map<Integer, Set<Integer>> and branch next jumps.
 boolean canCross(int[] stones) {
@@ -2435,6 +2446,12 @@ public class MergeInverse {
 
       int[] interval_sorted = new int[rite-left+1];
       int lidx = left, ridx = mid+1, k = 0;
+      // 3 while loop is better
+      while(lidx <= mid && ridx <= rite) {
+      }
+      while(lidx <= mid) {}
+      while(ridx <= rite) {}
+      //
       while(lidx < mid+1 || ridx < rite+1) {
           if (lidx == mid+1) {
               interval_sorted[k++] = ridx++;
@@ -2535,7 +2552,7 @@ public int mergeSort(long[] prefix, int l, int r, int lo, int up) {
     tot += rr-rl; // after loop break, rr parked over up, pointed to the end, not inclusive.
     // System.out.println(String.format("prefix %s i %d rl:rr %d %d Tot %d ", Arrays.toString(prefix), i, rl, rr, tot));
   }
-  merge(prefix, l, m+1, r, staging);
+  merge(prefix, l, m+1, r, staging); // shall populate staging during the merge loop.
   for(int i=l;i<=r;i++) { prefix[i] = staging[i-l]; }
   return tot;
 }
@@ -3207,13 +3224,14 @@ class Solution {
         stk.addLast(parenexp); // child recursion done, stash to the curexp's stk until closing } to trigger consolidate.
         continue;
       } 
-      // cur expansion done, merge all child exps by combine or union; {{},a{b,c}} or {{},a{b,c}d,{}}
+      // upon closing symbols, merge expansion in stk as a single expansion to parent. 
       if(arr[idx] == '}' || arr[idx] == ',') { // comma trigger consolidate. { trigger recursion.
         if(stk.size() > 1) { // {a{},{}e}
-          // create a new parent expansion to merge all in stk exps. The new parent is a child of the current expansion that the , } belongs to.
+          // A new parent expansion to merge in stk exps. The new parent is a child of the current expansion that the , } belongs to.
           Expansion merge = new Expansion(stk.peekFirst().start); 
-          while(stk.size()>0) { merge.add(stk.pollFirst());}
+          while(stk.size()>0) { merge.add(stk.pollFirst()); }
           merge.end = idx;
+          merge.expand();
           curexp.add(merge);
         } else {
           curexp.add(stk.pollFirst()); // add child expansion in stk to cur exp as , } are tokens of cur exp;
@@ -3221,7 +3239,7 @@ class Solution {
         curexp.end = idx;
         if(arr[idx] == '}') { // close child {}, recursion done; return;
           return idx+1; 
-        } else {   // comma, continue consuming inner expansion of the current expansion this comma beongs to.
+        } else {   // cur expansion not ended. continue consuming inner expansion of the current expansion this comma beongs to.
           curexp.combination = false;
           idx++; continue;
         }
@@ -3247,8 +3265,8 @@ class Solution {
 
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 // Sub Ary, SubSequence, K groups
+// recur: fill the partial result exhaust arr/i for each of [i+1..n] coins, recur i+1, not pos+1 to next pos.
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
-// Loop Invar: prefix tracks up to offset, size k.
 // Loop invoked from two recursions, instead of iter/for.
 def combination(arr, prefix, remain, pos, result):
   if remain == 0:
@@ -3264,8 +3282,8 @@ def combination(arr, prefix, remain, pos, result):
   recur(arr, prefix,   remain, pos+1, result)
   return
 
-""" Loop Invar: prefix track up to offset, 
-iter/for loop each pos[offset..end], recur [offset+1:end] smaller with prefix.
+""" 
+off is the coin index after which arr/i form the partial solution prefix into recusion.
 recur with partial prefix, for loop each, as incl/excl 
 """
 def comb(arr, off, remain, prefix, res):
@@ -3273,9 +3291,9 @@ def comb(arr, off, remain, prefix, res):
     cp = prefix[:]
     res.append(cp)
     return res
-  for i in range(off, len(arr)-remain+1):  # can be [off..n]
+  for i in range(off, len(arr)-remain+1): # each arr/i contributes partial solution recursion.
     prefix.append(arr[i])
-    recur(arr, i+1, remain-1, prefix, res)  // <-- next from idx+1 
+    recur(arr, /*recur pass current i*/i+1, remain-1, prefix, res)  // <-- recur after coin i; no consider i any more.
     prefix.pop()   # deep copy prefix or pop
   return res
 res=[];comb([1,2,3,4],0,2,[],res);print(res);
@@ -3286,224 +3304,11 @@ def comb(arr, hdpos, prefixlist, reslist):
   // construct candidates with rest everybody as header, Loop each candidate and recur.
   for i in xrange(hdpos, arr.length):
     curPrefixlist = prefixlist[:]
-    swap(arr, hdpos, i)
+    swap(arr, hdpos, i) // swap, so hd can still be included in the rest candidates.
     curPrefixlist.append(arr[hdpos])
     comb(arr, hdpos+1, curPrefixlist, reslist) // <-- next is hdpos+1
     swap(arr, i, hdpos)
 res=[];comb([1,2,3,4],0,[],res);print res;
-
-""" incl offset into path, recur. skip ith of this path, next 
-recur fn params must be subproblem with offset and partial result.
-# [a, ..] [b, ...], [c, ...]
-# [a [ab [abc]] [ac]] , [b [bc]] , [c]
-"""
-def powerset(arr, offset, path, result):
-  ''' subproblem with partial result, incl all interim results. '''
-  result.append(path)
-  processResult(path)   # optional process result for the path.
-  // within cur subproblem, for loop to incl/excl for next level.
-  for i in xrange(offset, len(arr)):
-    # compare i to i-1 !!! not i to offset, as list is sorted.
-    if i > offset and arr[i-1] == arr[i]:  continue # not arr[offset]
-    l = path[:]
-    l.append(arr[i])
-    powerset(arr, i+1, l, result)   # recur with i+1, not offset+1
-path=[];result=[];powerset([1,2,2], 0, path, result);print result;
-
-public static void powerset(List<Integer> arr, int offset, Set<Set<Integer>> prefix, Set<Set<Integer>> result) {
-    if (offset == arr.size()) {
-        result.addAll(prefix);
-        return;
-    }
-    int cur = arr.get(offset);
-    Set<Set<Integer>> cpPrefix = new HashSet<Set<Integer>>();
-    for (Set<Integer> e : prefix) {
-        cpPrefix.add(new HashSet<>(e));
-          e.add(cur);  // local copy each pref result so form new set by adding cur to it.
-        cpPrefix.add(e);
-    }
-    HashSet<Integer> me = new HashSet<>();
-    me.add(cur);
-    cpPrefix.add(me);
-    powerset(arr, offset+1, cpPrefix, result);
-}
-
-""" m faces, n dices, total num of ways to get value target.
-bottom up, 1 dice, 2 dices,..., 3 dices, n dices. Last dice take face value 1..m.
-[[v1,v2,...], [v1,v2,...], d2, d3, ...], each v1 column is cnt of face 1..m
-tab[d,v] += tab[d-1,v-[1..m]]. Outer loop is enum dices, so it's like incl/excl.
-"""
-def dice(m,n,target):
-  dp[n, v] = [[0]*n for i in xrange(target+1)]
-  // init bottom, one coin only
-  for f in xrange(m):
-    dp[1][f] = 1
-  for i in xrange(1, n):      # bottom up coins, 1 coin, 2 coin
-    for v in xrange(target):  # bottom up each value to target
-      for f in xrange(m,v):   # iterate each face value within each tab[dice, V]
-        dp[i][v] += dp[i-1][v-f]  or dp[i][v] += dp[i][v-f]
-  return dp[n,x]
-
-// dp[i][v] = dp[i-1][v-slot_face(1..6)]; n slots. sample each slot only once with 6 face values; max N slots.
-// as each slot sampled once, prefix slot/i/face5 is a different prefix than slot/i/face3. hence two dim dp[i][v]
-static int combsumTotalWays(int slots, int target) {
-  int[][] dp = new int[slots][target+1];
-  for (int i=0;i<n;i++) { Arrays.fill(dp[i], 0); }
-  for (int i=0;i<n;i++) {    // loop each slots
-    for (int f=0;f<10;f++) { // sample one face value at slot i;
-        for (int v=Math.max(1,f);v<target;v++) { // update sum to v.
-            if (f == v) { dp[i][v] += 1;}
-            dp[i][v] += dp[i-1][v-f];
-        }
-    }
-  }
-  return dp[n-1][target];
-}
-System.out.println(combsumWays(3,7));
-
-""" tab[i,v] = tot non descreasing at ith digit, end with value v
-Expand each slot at row i, each digit as v
-tab[n,d] = sum(tab[n-1,k] for k enum value[0..9]
-Total count = ∑ count(n-1, d) where d varies from 0 to n-1
-"""
-def nonDecreasingCount(slots):
-  tab = [[0]*10 for i in xrange(slots)]
-  for v in xrange(10):
-    tab[0][v] = 1
-  for i in xrange(1, slots):
-    for val in xrange(10):  // single digit value 0-9
-      for k in xrange(val+1):  # k is capped by prev digit v
-        tab[i][val] += tab[i-1][k]
-  tot = 0
-  for v in xrange(10):
-    tot += tab[n-1][v]  // collect all 0-9 digits
-  return tot
-assert(nonDecreasingCount(2), 55)
-assert(nonDecreasingCount(3), 220)
-
-"""
-count tot num of N digit with sum of even digits 1 more than sum of odds
-n=2, [10,21,32,43...] n=3,[100,111,122,...980]
-track odd[i,v] and even[i,v] use 2 tables
-"""
-def digitSumDiffOne(n):
-  odd = [[0]*18 for i in xrange(n)]
-  even = [[0]*18 for i in xrange(n)]
-  for l in xrange(n):
-    for k in xrange(2*9):
-      for d in xrange(9):
-        if l%2 == 0:
-          even[l][k] += odd[l-1][k-d]
-        else:
-          odd[l][k] += even[l-1][k-d]
-
-""" odd[i,s] is up to ith odd digit, total sum of 1,3,ith digit sum to s.
-for digit xyzw, odd digits, y,w; sum to 4 has[1,3;2,2;3,1], even digit, sum to 5 is
-[1,4;2,3;3,2;4,1], so tot 3*4=12, [1143, 2133, ...]
-so diff by one is odd[i][s]*even[i][s+1]
-"""
-def diffone(n):
-  odd = [[0]*10*n for i in xrange(n)]
-  even = [[0]*10*n for i in xrange(n)]
-  for k in xrange(1,10):
-    even[0][k] = 1
-    odd[1][k] = 1
-  odd[1][0] = 1
-  for i in xrange(2,n):
-    for s in xrange((i+1)*10):
-      for v in xrange(min(s,10)):
-        if i%2 == 0:
-          even[i][s] += even[i-2][s-v]
-        if i%2 == 1:
-          odd[i][s] += odd[i-2][s-v]
-  cnt = 0
-  for s in xrange((n-1)*10):
-    if (n-1)%2 == 0:
-      cnt += odd[n-2][s] * even[n-1][s+1]
-    else:
-      cnt += odd[n-1][s] * even[n-2][s+1]
-  return cnt
-print diffone(3)
-
-// dup allowed, stay on row i from smaller value. item row i inheriates from item row i-1.
-static int combsumTotWays(int[] arr, int target) {
-  // dp[i][v] = dp[i-1][v-slot_face(1..6)]; each slot i can only once with 6 face values; max N slots.
-  int[] dp = new int[target+1];   // each option can have k dups that generate different prefix values.
-  dp[0] = 1;   // when slot value = target, count single item 1.
-  { // loop slots first, result slot order always incr, not perm possible [2,1], hence no dup. [1,2]
-    for (int i=0;i<arr.length;i++) { // for each option a/i, sample k times.
-      for (int v=arr[i]; v<=target; v++) {
-        // no need loop k. K dups is carried over built up from ((v-a/i)-a/i)-a/i
-        dp[v] += dp[v-arr[i]]; // can take multiple a/i, += sum up. = will over-write.
-      }
-    }
-  }
-  { // loop value first, at each v, branch n options, result order random. [1,2] != [1,2]
-    for(int v=1;v<=target;++v) {
-      for(int i=0;i<nums.length;++i) {
-          if(v >= arr[i]) {
-              dp[v] += dp[v-arr[i]];
-          }
-      }
-    }  
-  }
-  System.out.println("comb sum " + dp[target]);
-  return dp[target];
-}
-combsumTotWays(new int[]{1,2,3}, 4);
-combsumTotWays(new int[]{2,3,6,7}, 9);
-
-// Min coins, not tot # of ways; Loop value first or coin first is the same.
-public int coinChangeMin(int[] coins, int amt) {
-  Arrays.sort(coins);
-  int[] dp = new int[amt+1];
-  for(int i=1;i<=amt;++i) { dp[i] = Integer.MAX_VALUE;} // track Min, not total. sentinel.
-  dp[0] = 0;  // <-- dp[v-c=0] + 1;
-  {
-      for(int v=1;v<=amt;++v) {
-          for(int i=0;i<coins.length;++i) {
-              if(v >= coins[i] && dp[v-coins[i]] != Integer.MAX_VALUE) {
-                  dp[v] = Math.min(dp[v], dp[v-coins[i]] + 1);
-              }
-          }
-      }
-  }
-  {
-      for(int i=0;i<coins.length;++i) {
-          for(int v=coins[i];v<=amt;++v) {
-              if(dp[v-coins[i]] != Integer.MAX_VALUE) {
-                  dp[v] = Math.min(dp[v], dp[v-coins[i]]+1);
-              }
-          }
-      }
-  }
-  return dp[amt] == Integer.MAX_VALUE ? -1 : dp[amt];
-}
-
-// recur with prefix to arr[pos], the prefix is diff from upper layer. recur next is pos+1
-static List<List<Integer>> combinSumTotalWays(int[] arr, int pos, int remain, List<Integer> prefix, List<List<Integer>> res) {
-  if (remain == 0) { result.add(prefix.stream().collect(Collectors.toList())); return result; }
-  { // Loop each i from pos, recur i+1, not pos+1;
-    for (int i=pos;i<arr.length;i++) {
-      for(int k=1;k<=remain/arr[i];++k) {  // multiple arr/i allowed.
-        for(int j=0;j<k;j++) { prefix.add(arr[i]); } // <-- prefix is changed when recur down. restore it after recursion.
-        recur(arr, i+1, remain-k*arr[i], prefix, res); // <-- recur i+1
-        for(int j=0;j<k;j++) { prefix.remove(prefix.size()-1); }
-      }   
-    }
-  }
-  { // consume pos, incl/excl pos, recur pos+1. start with k=0, exclude arr[pos]
-    for(int k=0;k<=remain/arr[i];++k) {
-      for(int j=0;j<k;j++) { prefix.add(arr[i]); } // All dups of a/i as prefix before recur pass a/i
-      recur(arr, pos+1, remain-k*arr[i], prefix, res); // <-- recur pos+1 after head.
-      for(int j=0;j<k;j++) { prefix.remove(prefix.size()-1); }
-    }
-  }
-  return result;
-}
-List<Integer> path = new List<>();
-List<List<Integer>> result = new List<>();
-System.out.println(combinSumTotalWays(new int[]{2,3,6,7}, 9, 0, path, result));
 
 """  dp[i][v] = dp[i-1][v-face_value]. means 1) Each slot i sampled only once with diff face values, different prefix at i-1/face_i. 
 track each fan out recur prefix at each slot. hence dp[i][v]=dp[i-1][v-f]. can have 9 face values. hence
@@ -3528,39 +3333,68 @@ def combinationSum(n, target, distinct=False):  # n slots, sum to sm.
   return dp[n-1][target]
 print(combinationSum(3,7,False))
 
-// Loop coin first, no perm dups. [1,2], not possible [2,1], hence no dup.
-public List<List<Integer>> combinationSum(int[] arr, int target) {
-  List<List<Integer>>[] dp = new ArrayList[target+1];
-  // Arrays.sort(arr);
-  dp[0] = new ArrayList<>();
-  dp[0].add(new ArrayList<>());
+// when dup allowed and order matters, recur each coin, not off in params. Recur is slow, use dp !
+public void combRecur(int[] arr, int prefix, int target, int[] res) {
+  // on each recursion, all coins are considered to next recur(dup allowed and order matters).
   for(int i=0;i<arr.length;++i) {
-      for(int v=arr[i];v<=target;++v) {
-          if(dp[v-arr[i]] != null) {
-              for(List<Integer> l : dp[v-arr[i]]) {
-                  List<Integer> vl = new ArrayList<>(l);
-                  vl.add(arr[i]);
-                  if (dp[v] == null) { dp[v] = new ArrayList<>();}
-                  dp[v].add(vl);
-              }
-          }
-      }
+    if(prefix+arr[i] == target) res[0]++;
+    else if(prefix+arr[i] < target) {
+      combRecur(arr, prefix+arr[i], target, res);
+    }
   }
-  return dp[target] == null ? new ArrayList<>() : dp[target];
+}
+public int combinationSum4(int[] nums, int target){
+  int[] res = new int[1];
+  combRecur(nums, 0, target, res);
+  return res[0];
 }
 
-void PermSkipDup(int[] arr, int pos, List<Integer> prefix, List<List<Integer>> res) {
-  if(pos == arr.length) { res.add(new ArrayList<>(prefix)); return res;}
-  for(int i=pos;i<arr.length;++i) {
-    if(i != pos && arr[i] == arr[pos]) continue;  // A.A,B = A,A.B
-    if(i-1 > pos && arr[i] == arr[i-1]) continue; // ABB only needs swap BAB, as BBA is the next of BAB
-    swap(arr, pos, i);
-    prefix.add(arr[pos]);
-      PermSkipDup(arr, pos+1, prefix, res);
-    prefix.remove(prefix.size()-1);
-    swap(arr, pos, i);
+""" incl offset into path, recur. skip ith of this path, next 
+recur fn params must be subproblem with offset and partial result.
+# [a, ..] [b, ...], [c, ...]
+# [a [ab [abc]] [ac]] , [b [bc]] , [c]
+"""
+def powerset(arr, offset, path, result):
+  ''' subproblem with partial result, incl all interim results. '''
+  result.append(path)
+  processResult(path)   # optional process result for the path.
+  // within cur subproblem, for loop to incl/excl for next level.
+  for i in xrange(offset, len(arr)):
+    # compare i to i-1 !!! not i to offset, as list is sorted.
+    if i > offset and arr[i-1] == arr[i]:  continue # not arr[offset]
+    l = path[:]
+    l.append(arr[i])
+    powerset(arr, i+1, l, result)   # recur with i+1, not offset+1
+path=[];result=[];powerset([1,2,2], 0, path, result);print result;
+
+public static void powerset(List<Integer> arr, int offset, Set<Set<Integer>> prefix, Set<Set<Integer>> result) {
+  if (offset == arr.size()) { result.addAll(prefix); return; }
+  Set<Set<Integer>> cpPrefix = new HashSet<Set<Integer>>();
+  for (Set<Integer> e : prefix) {
+    cpPrefix.add(new HashSet<>(e));
+      e.add(arr.get(offset));  // local copy each pref result so form new set by adding cur to it.
+    cpPrefix.add(e);
   }
+  HashSet<Integer> me = new HashSet<>();
+  me.add(cur);
+  cpPrefix.add(me);
+  powerset(arr, offset+1, cpPrefix, result);
 }
+
+""" m faces, n dices, total num of ways to get value target.
+bottom up, 1 dice, 2 dices,..., 3 dices, n dices. Last dice take face value 1..m.
+[[v1,v2,...], [v1,v2,...], d2, d3, ...], each v1 column is cnt of face 1..m
+tab[d,v] += tab[d-1,v-[1..m]]. Outer loop is enum dices, so it's like incl/excl.
+"""
+def dice(m,n,target):
+  dp[n, v] = [[0]*n for i in xrange(target+1)]
+  // init bottom, one coin only
+  for f in xrange(m):  dp[1][f] = 1
+  for i in xrange(1, n):      # bottom up coins, 1 coin, 2 coin
+    for v in xrange(target):  # bottom up each value to target
+      for f in xrange(m,v):   # iterate each face value within each tab[dice, V]
+        dp[i][v] += dp[i-1][v-f]  or dp[i][v] += dp[i][v-f]
+  return dp[n,x]
 
 """ from L <- R, find first a[i] < a[i+1] = pivot.
 then swap with first rite larger, and reverse right part.
@@ -3633,7 +3467,7 @@ def permRankDup(arr):
   for i in range(len(arr)-1,-1,-1):
     e = arr[i]
     counter[e] += 1
-    # tot perms i..n. arr[i]'s rank
+    // tot perms i..n. arr[i] rank
     tot = permTotal(len(arr)-i-1, counter)
     for k,v in counter.items():
       if e > k:  # arr[i] > k at rite, sum up v dups of k.
@@ -3670,6 +3504,227 @@ def alterComb(a,b):
       alterCombRecur(a,b,ai,bi,True,path,out)
   return out
 print alterComb([10, 15, 25], [1,5,20,30])
+
+// dp[i][v] = dp[i-1][v-slot_face(1..6)]; n slots. fill partial result slot i with 6 val; max N slots.
+// as each slot sampled once, prefix slot/i/face5 is a different prefix than slot/i/face3. hence two dim dp[i][v]
+static int combsumTotalWays(int slots, int target) {
+  int[][] dp = new int[slots][target+1];
+  for (int i=0;i<n;i++) { Arrays.fill(dp[i], 0); }
+  for (int i=0;i<n;i++) {    // loop each slots
+    for (int f=0;f<10;f++) { // one face value at slot i;
+        for (int v=Math.max(1,f);v<target;v++) { // update sum to v.
+            if (f == v) { dp[i][v] += 1;}
+            dp[i][v] += dp[i-1][v-f];
+        }
+    }
+  }
+  return dp[n-1][target];
+}
+System.out.println(combsumWays(3,7));
+
+""" tab[i,v] = tot non descreasing at ith digit, end with value v
+dp[i,v]=sum(dp[i-1, v-k]) for k in 1..10;
+Total count = ∑ count(n-1, d) where d varies from 0 to n-1
+"""
+def nonDecreasingCount(slots):
+  tab = [[0]*10 for i in xrange(slots)]
+  for v in xrange(10): tab[0][v] = 1
+  for i in xrange(1, slots):
+    for val in xrange(10):  // single digit value 0-9
+      for k in xrange(val+1):  // k is capped by prev digit v
+        tab[i][val] += tab[i-1][k]
+  tot = 0
+  for v in xrange(10):
+    tot += tab[n-1][v]  // collect all 0-9 digits
+  return tot
+assert(nonDecreasingCount(2), 55)
+assert(nonDecreasingCount(3), 220)
+
+"""
+count tot num of N digit with sum of even digits 1 more than sum of odds
+n=2, [10,21,32,43...] n=3,[100,111,122,...980]
+track odd[i,v] and even[i,v] use 2 tables
+"""
+def digitSumDiffOne(n):
+  odd = [[0]*18 for i in xrange(n)]
+  even = [[0]*18 for i in xrange(n)]
+  for l in xrange(n):
+    for k in xrange(2*9):
+      for d in xrange(9):
+        if l%2 == 0:
+          even[l][k] += odd[l-1][k-d]
+        else:
+          odd[l][k] += even[l-1][k-d]
+
+""" odd[i,s] is up to ith odd digit, total sum of 1,3,ith digit sum to s.
+for digit xyzw, odd digits, y,w; sum to 4 has[1,3;2,2;3,1], even digit, sum to 5 is
+[1,4;2,3;3,2;4,1], so tot 3*4=12, [1143, 2133, ...]
+so diff by one is odd[i][s]*even[i][s+1]
+"""
+def diffone(n):
+  odd = [[0]*10*n for i in xrange(n)]
+  even = [[0]*10*n for i in xrange(n)]
+  for k in xrange(1,10):
+    even[0][k] = 1
+    odd[1][k] = 1
+  odd[1][0] = 1
+  for i in xrange(2,n):
+    for s in xrange((i+1)*10):
+      for v in xrange(min(s,10)):
+        if i%2 == 0:
+          even[i][s] += even[i-2][s-v]
+        if i%2 == 1:
+          odd[i][s] += odd[i-2][s-v]
+  cnt = 0
+  for s in xrange((n-1)*10):
+    if (n-1)%2 == 0:
+      cnt += odd[n-2][s] * even[n-1][s+1]
+    else:
+      cnt += odd[n-1][s] * even[n-2][s+1]
+  return cnt
+print diffone(3)
+
+// Min coins, not tot # of ways; Loop value first or coin first is the same.
+public int coinChangeMin(int[] coins, int amt) {
+  Arrays.sort(coins);
+  int[] dp = new int[amt+1];
+  for(int i=1;i<=amt;++i) { dp[i] = Integer.MAX_VALUE;} // track Min, not total. sentinel.
+  dp[0] = 0;  // <-- dp[v-c=0] + 1;
+  {
+    for(int v=1;v<=amt;++v) {
+      for(int i=0;i<coins.length;++i) {
+          if(v >= coins[i] && dp[v-coins[i]] != Integer.MAX_VALUE) {
+              dp[v] = Math.min(dp[v], dp[v-coins[i]] + 1);
+          }
+      }
+    }
+  }
+  {
+    for(int i=0;i<coins.length;++i) {
+      for(int v=coins[i];v<=amt;++v) {
+          if(dp[v-coins[i]] != Integer.MAX_VALUE) {
+              dp[v] = Math.min(dp[v], dp[v-coins[i]]+1);
+          }
+      }
+    }
+  }
+  return dp[amt] == Integer.MAX_VALUE ? -1 : dp[amt];
+}
+
+// outer loop values, inner loop coins, [1,2] != [2,1];
+// outer loop coins, inner loop value, [2,1] not possible. order does not matter.
+static int combsumTotWays(int[] arr, int target) {
+  // dp[i][v] = dp[i-1][v-slot_face(1..6)]; each slot i can only once with 6 face values; max N slots.
+  int[] dp = new int[target+1];   // each option can have k dups that generate different prefix values.
+  dp[0] = 1;   // when slot value = target, count single item 1.
+  { // outer loop exhaust each coin ordered one by one, order not matter, [2,1] not possible, [1,2]
+    for (int i=0;i<arr.length;i++) { // for each coin a/i, loop all values, hence k copies of a coin is considered.
+      for (int v=arr[i]; v<=target; v++) {
+        // no need loop k. K dups is carried over built up from ((v-a/i)-a/i)-a/i
+        dp[v] += dp[v-arr[i]]; // can take multiple a/i, += sum up. = will over-write.
+      }
+    }
+  }
+  { // outer loop values, at each v, all coins are considered. order matters. [1,2] != [1,2]
+    for(int v=1;v<=target;++v) {
+      for(int i=0;i<nums.length;++i) {
+          if(v >= arr[i]) {
+              dp[v] += dp[v-arr[i]];
+          }
+      }
+    }  
+  }
+  return dp[target];
+}
+combsumTotWays(new int[]{1,2,3}, 4);
+combsumTotWays(new int[]{2,3,6,7}, 9);
+
+public void combSumRecur(int[] arr, int coinidx, int remain, int[] prefix, List<List<Integer>> gret) {
+  if(remain == 0) {
+      List<Integer> l = new ArrayList<>();
+      for(int i=0;i<prefix.length;++i) {
+          for(int j=0;j<prefix[i];++j) {
+              l.add(arr[i]);
+          }
+      }
+      gret.add(l);
+      return;
+  }
+  if(coinidx >= arr.length) return;  // after checking remain == 0
+  for(int k=0;k<=remain/arr[coinidx];++k) {  // k <= floor div.
+      prefix[coinidx] += k;  // exhaust all possible of coin i before moving next.
+      combSumRecur(arr, coinidx+1, remain-arr[coinidx]*k, prefix, gret);
+      prefix[coinidx] -= k;
+  }
+  return;
+}
+public List<List<Integer>> combinationSum(int[] arr, int target) {
+  List<List<Integer>> ret = new ArrayList<>();
+  Arrays.sort(arr);
+  int[] prefix = new int[arr.length];
+  search(arr, 0, target, prefix, ret);
+  return ret;
+}
+
+// recur with prefix to arr[pos], the prefix is diff from upper layer. recur next is pos+1
+// shall use dp, dp is for aggregation.
+static List<List<Integer>> combinSumTotalWays(int[] arr, int pos, int remain, List<Integer> prefix, List<List<Integer>> res) {
+  if (remain == 0) { result.add(prefix.stream().collect(Collectors.toList())); return result; }
+  { // Loop each i from pos, recur i+1, not pos+1;
+    for (int i=pos;i<arr.length;i++) {
+      for(int k=1;k<=remain/arr[i];++k) {  // multiple arr/i allowed.
+        for(int j=0;j<k;j++) { prefix.add(arr[i]); } // <-- prefix is changed when recur down. restore it after recursion.
+        recur(arr, /* next of coin i, not pos*/i+1, remain-k*arr[i], prefix, res); // <-- recur i+1
+        for(int j=0;j<k;j++) { prefix.remove(prefix.size()-1); }
+      }   
+    }
+  }
+  { // consume pos, incl/excl pos, recur pos+1. start with k=0, exclude arr[pos]
+    for(int k=0;k<=remain/arr[i];++k) { // k=0 is recur with excl arr/i.
+      for(int j=0;j<k;j++) { prefix.add(arr[i]); } // All dups of a/i as prefix before recur pass a/i
+      recur(arr, pos+1, remain-k*arr[i], prefix, res); // <-- recur pos+1 after head.
+      for(int j=0;j<k;j++) { prefix.remove(prefix.size()-1); }
+    }
+  }
+  return result;
+}
+List<Integer> path = new List<>();
+List<List<Integer>> result = new List<>();
+System.out.println(combinSumTotalWays(new int[]{2,3,6,7}, 9, 0, path, result));
+
+// Loop coin first, no perm dups. [1,2], not possible [2,1], hence no dup.
+public List<List<Integer>> combinationSum(int[] arr, int target) {
+  List<List<Integer>>[] dp = new ArrayList[target+1];
+  // Arrays.sort(arr);
+  dp[0] = new ArrayList<>();
+  dp[0].add(new ArrayList<>());
+  for(int i=0;i<arr.length;++i) {
+    for(int v=arr[i];v<=target;++v) {
+        if(dp[v-arr[i]] != null) {
+            for(List<Integer> l : dp[v-arr[i]]) {
+                List<Integer> vl = new ArrayList<>(l);
+                vl.add(arr[i]);
+                if (dp[v] == null) { dp[v] = new ArrayList<>();}
+                dp[v].add(vl);
+            }
+        }
+    }
+  }
+  return dp[target] == null ? new ArrayList<>() : dp[target];
+}
+
+void PermSkipDup(int[] arr, int pos, List<Integer> prefix, List<List<Integer>> res) {
+  if(pos == arr.length) { res.add(new ArrayList<>(prefix)); return res;}
+  for(int i=pos;i<arr.length;++i) {
+    if(i != pos && arr[i] == arr[pos]) continue;  // A.A,B = A,A.B
+    if(i-1 > pos && arr[i] == arr[i-1]) continue; // ABB only needs swap BAB, as BBA is the next of BAB
+    swap(arr, pos, i);
+    prefix.add(arr[pos]);
+      PermSkipDup(arr, pos+1, prefix, res);
+    prefix.remove(prefix.size()-1);
+    swap(arr, pos, i);
+  }
+}
 
 
 """ knapsack, track item list at each item and value iteration. 
@@ -3769,42 +3824,6 @@ int findTargetSumWays(int[] nums, int target) {
     int sum = 0;
     for (int n : nums) sum += n;
     return sum < target || (target + sum) % 2 > 0 ? 0 : combinationSum(nums, (target + sum) >> 1); 
-}
-// this is dup allowed, not correct. here we do not allow dup. Need two arry i-1, i;
-static int combinationSum(int[] arr, int target) {
-  int[] dp = new int[target+1];
-  dp[0] = 1;
-  for(int i=0;i<arr.length;i++) {
-    for(int s=arr[i]; s<=target; s++) {   // enum each value at each slot
-      dp[s] += dp[s-arr[i]];
-    }
-  }
-}
-public void combSumRecur(int[] arr, int coinidx, int remain, int[] prefix, List<List<Integer>> gret) {
-  if(remain == 0) {
-      List<Integer> l = new ArrayList<>();
-      for(int i=0;i<prefix.length;++i) {
-          for(int j=0;j<prefix[i];++j) {
-              l.add(arr[i]);
-          }
-      }
-      gret.add(l);
-      return;
-  }
-  if(coinidx >= arr.length) return;  // after checking remain == 0
-  for(int k=0;k<=remain/arr[coinidx];++k) {  // k <= floor div.
-      prefix[coinidx] += k;  // exhaust all possible of coin i before moving next.
-      combSumRecur(arr, coinidx+1, remain-arr[coinidx]*k, prefix, gret);
-      prefix[coinidx] -= k;
-  }
-  return;
-}
-public List<List<Integer>> combinationSum(int[] arr, int target) {
-  List<List<Integer>> ret = new ArrayList<>();
-  Arrays.sort(arr);
-  int[] prefix = new int[arr.length];
-  search(arr, 0, target, prefix, ret);
-  return ret;
 }
 
 // # Partition to K groups, Equal Sum Subsets, Permutation search Recur.
@@ -4803,6 +4822,9 @@ inner is fn need to apply to nested form. outer is fn apply to non-nest form
   (walk (partial prewalk f) identity (f form)))
 
 
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
+// AVL Tree and TreeMap, sorted after Add/Removal. RedBlack tree Rebalance. 
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 """ AVL tree with rank.
 """
 class Node {
@@ -4823,52 +4845,20 @@ AVLTree(object):
     self.rite = None
   def __repr__(self):
       return str(self.key) + " size " + str(self.size) + " height " + str(self.height)
-  // # recurisve to child, rotate and update subtree stats in each recur return.
+  // # recurisve to child, rotate and update subtree stats in each recur return new root;
   def insert(self, key):
     if self.key == key: return self
-    elif key < self.key:
+    if key < self.key:
       if not self.left: self.left = AVLTree(key)
-      else:             self.left = self.left.recur(key)
+      else:             self.left = self.left.insert(key)
     else:
       if not self.rite: self.rite = AVLTree(key)
-      else:             self.rite = self.rite.recur(key)
-    # after insersion, rotate if needed.
-    self.updatarrize()  # rotation may changed left. re-calculate
+      else:             self.rite = self.rite.insert(key)
+    self.updateHeight()  # rotation may changed left. re-calculate
     newself = self.rotate(key)  ''' current node changed after rotate '''
     print "insert ", key, " new root after rotated ", newself
     return newself  // ret rotated new root
-  // non-recursive, can not update subtree stats. 
-  int insert(int k) {
-      AVLTree cur = this;
-      AVLTree pre = null;
-      while (cur != null) {
-          pre = cur;
-          if (cur.value > k) { cur = cur.left; } 
-          else               { cur = cur.rite; }
-      }
-      // when out while, cur == null
-      if (pre.value > k) { pre.left = new AVLTree(k); }
-      else               { pre.rite = new AVLTree(k); }
-  }
-  int insert(int k) {
-      if (k < value && left == null) { left = new AVLTree(k); }
-      else if (k > value && rite == null) { rite = new AVLTree(k); }
-      else if (k < value) { left = left.recur(k); }
-      else { rite = rite.recur(k); }
-      AVLTree newMe = balance();
-      return newMe;
-  }
-  // update current node stats by asking your direct children. The children also do the same.
-  def updatearrize(self):
-    self.height,self.size = 0
-    if self.left:
-      self.height = self.left.height
-      self.size = self.left.size
-    if self.rite:
-      self.height = max(self.height, self.rite.height)
-      self.size += self.rite.size
-    self.height += 1
-    self.size += 1
+  
   // delete a node.
   def delete(self,key):
     if key < self.key:   self.left = self.left.delete(key)
@@ -4884,9 +4874,22 @@ AVLTree(object):
         while node.left: node = node.left
         self.key = node.key
         self.rite = self.rite.delete(node.key)  // recursion
-    self.updateHeightSize()
+    self.updateHeight()
     subtree = self.rotate(key)
     return subtree
+
+  // update current node stats by asking your direct children. The children also do the same.
+  def updateHeight(self):
+    self.height,self.size = 0
+    if self.left:
+      self.height = self.left.height
+      self.size = self.left.size
+    if self.rite:
+      self.height = max(self.height, self.rite.height)
+      self.size += self.rite.size
+    self.height += 1
+    self.size += 1
+  
 
   # left heavy, pos balance, right heavy, neg balance
   # rite subtree left heavy, >, LR rotation. left subtree rite heavy, <, RL.
@@ -4907,7 +4910,7 @@ AVLTree(object):
         self.rite = self.rite.riteRotate()
         return self.leftRotate()  # left rotate after \
     return self  # no rotation
-  ''' bend / left heavy subtree to ^ subtree '''
+  ''' bend / left heavy subtree to ^ subtree by promote left child as new root'''
   def riteRotate(self):
     newroot = self.left  newrite = newroot.rite
     newroot.rite = self
@@ -4916,7 +4919,7 @@ AVLTree(object):
     self.updateHeightSize()
     newroot.updateHeightSize()
     return newroot   # ret the new root of subtree. parent point needs to update.
-  ''' bend \ subtree to ^ subtree '''
+  ''' bend \ subtree to ^ subtree by promote rite child as new root'''
   def leftRotate(self):
     newroot = self.rite  newleft = newroot.left
     newroot.left = self
@@ -4925,6 +4928,7 @@ AVLTree(object):
     self.updateHeightSize()
     newroot.updateHeightSize()
     return newroot
+
   def searchkey(self, key):
     if self.key == key:  return True, self
     elif key < self.key: return self.left.search(key) if self.left else False, self
@@ -4967,6 +4971,32 @@ def riteSmaller(arr):
 assert(riteSmaller([12, 1, 2, 3, 0, 11, 4]) == [6, 1, 1, 1, 0, 1, 0] )
 assert(riteSmaller([5, 4, 3, 2, 1]) == [5, 4, 3, 2, 1])
 
+// exist pair(i,j) abs(i,j)<=win, abs(arr[i],arr[j])<=diff;
+// abs(cur-x)<=diff; cur-x<diff && cur-x>-diff; (cur-diff)left<=x; (cur+diff)=rite >= x;
+// smallest > left arr/i shall within rite. 
+// TreeSet/TreeMap to balance height by rotating when adding arr[r]/remove arr[l] sliding win. 
+public boolean containsNearbyAlmostDuplicate(int[] arr, int win, int diff) {
+  int l=0,r=l+1;
+  TreeSet<Integer> winset = new TreeSet<>((a, b) -> a-b);
+  winset.add(arr[l]);
+  while(r<arr.length) {
+    if(r-l>win) { winset.remove(arr[l]); l++; }
+    int left=arr[r]-diff, rite=arr[r]+diff;
+    if(winset.size() > 0) {
+      // Bisect find the first left<=x; as arr is increasing, only check x<=rite is good; leftest bigger shall within rite.
+      Integer lower_bound = winset.ceiling(left); 
+      // SortedSet<Integer> tail = winset.tailSet(left);
+      // (winset.first() >= left && winset.last() <= rite)) { return true; } 
+      // ((winset.first() >= left && winset.first() <= rite) || 
+      //  (winset.last() >= left && winset.last() <= rite))) { return true; }
+      if(lower_bound != null && lower_bound <= rite) 
+        return true;
+      }
+    winset.add(arr[r]);
+    r++;
+  }
+  return false;
+}
 
 // segment tree. Each node track the range[st, ed] and the range aggregation(min,max,sum)
 // first segment 1 cover range[0,n], second segment covers [0, mid], seg 3, [mid+1,n]. 
@@ -5279,7 +5309,7 @@ class UnionFind {
   }
   private int findParent(int i) { 
     if (parent[i] != i) {  // recursion not ret in the middle. no need while loop.
-      parent[i] = findParent[parent[i]]; // update the parent, flatten, reduct long path.
+      parent[i] = findParent[parent[i]]; // flatten parent[i] direct to parent[root]=root; reduce height;
     }
     return parent[i];
     {
@@ -5339,7 +5369,12 @@ public int longestConsecutive(int[] nums) {
 //  3. DP[src,dst] = DP[src,k] + DP[k, dst]; In Graph/Matrix/Forest, from any to any, loop gap, loop start, loop start->k->dst.
 //      dp[i,j] = min(dp[i,k] + dp[k,j] + G[i][j], dp[i,j]);
 //      dp[i,j] = min(dp[i,j-1], dp[i-1,j]) + G[i,j];
-//  4. Topsort(G, src, stk), back-edge.
+//  4. Topsort(G, src, stk), back-edge. 
+//  int edge_classification(int x, int y){
+//    if (parent[y] == x) return(TREE);
+//    if (discovered[y] && !processed[y]) return(BACK);
+//    if (processed[y] && (entry_time[y]>entry_time[x])) return(FORWARD);
+//    if (processed[y] && (entry_time[y]<entry_time[x])) return(CROSS);
 //  6. node in path repr as a bit. END path is (111). Now enum all path values, and check from each head, the min.
 // - - - - - - - - - - - -// - - - - - - - - - - - -// - - - - - - - - - - - -
 // For DAG, enum each intermediate node, otherwise, topsort, or tab[i][j][step]
@@ -5390,6 +5425,7 @@ def minpath(G, src, dst):
   def topsort(G, src, stk):  # dfs all children, then visit root by push to stk top.
     def dfs(s,G,stk):
       for v in neighbor(G,s):
+        if(edge(s,v)) == BACK: return false;
         if not visited[v]:
           dfs(v, G, stk)
       visited[v] = true
@@ -6054,45 +6090,22 @@ print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
 
 // backwards from [m,n] up left to dp[row-1][col], dp[row][col-1] to [0,0] 
+// dp[i,j] = max(1, min(dp[i-1,j], dp[i,j-1])-arr[i,j])
 public int dungeon(int[][] arr) {
   int rows=arr.length,cols=arr[0].length;
   int[][] dp = new int[rows][cols];
-  for(int row=rows-1;row>=0;--row) {
-    for(int col=cols-1;col>=0;--col) { 
-      dp[row][col] = Integer.MAX_VALUE; 
-  }}
+  // for(int row=rows-1;row>=0;--row) {
+  //   for(int col=cols-1;col>=0;--col) { 
+  //     dp[row][col] = Integer.MAX_VALUE; 
+  // }}
   dp[rows-1][cols-1] = Math.max(1, 1-arr[rows-1][cols-1]);
-  for(int row=rows-1;row>=0;--row) {
-    for(int col=cols-1;col>=0;--col) {
-      if(row > 0) {
-        dp[row-1][col] = Math.min(dp[row-1][col], Math.max(1, dp[row][col]-arr[row-1][col]));
+  for(int i=rows-1;i>=0;--i) {
+    for(int j=cols-1;j>=0;--j) {
+      if(i > 0) {
+        dp[i-1][j] = Math.max(1, dp[i-1][j] > 0 ? Math.min(dp[i-1][j], dp[i][j]-arr[i-1][j]) : dp[i][j]-arr[i-1][j]);
       } 
-      if(col > 0) {
-        dp[row][col-1] = Math.min(dp[row][col-1], Math.max(1, dp[row][col]-arr[row][col-1]));
-      }
-    }
-  }
-  return dp[0][0];
-}
-// dp[i,j] = min(dp[i+1,j], dp[i,j+1])-arr[i,j], 1
-public int dungeon(int[][] arr) {
-  int rows=arr.length,cols=arr[0].length;
-  int[][] dp = new int[rows][cols]; int[][] dp = new int[rows+1][cols+1]; 
-  for(int row=rows-1;row>=0;--row) {
-    for(int col=cols-1;col>=0;--col) { 
-      dp[row][col] = Integer.MAX_VALUE; 
-    }}
-  // dp[rows-1][cols-1] = Math.max(1, 1-arr[rows-1][cols-1]);
-  // dp[rows][cols-1] = 1; dp[rows-1][cols] = 1; 
-  for(int row=rows-1;row>=0;--row) {
-    for(int col=cols-1;col>=0;--col) {
-      if(row==rows-1 && col==cols-1) dp[rows-1][cols-1] = Math.max(1, 1-arr[rows-1][cols-1]);
-      else {
-        dp[row][col] = Math.max(1, Math.min( 
-            (row==rows-1 ? Integer.MAX_VALUE : dp[row+1][col]), 
-            (col==cols-1 ? Integer.MAX_VALUE : dp[row][col+1])) - arr[row][col]);
-        dp[row][col] = Math.max(1, 
-          Math.min(dp[row][col+1], dp[row+1][col]) - arr[row][col]);
+      if(j > 0) {
+        dp[i][j-1] = Math.max(1, dp[i][j-1] > 0 ? Math.min(dp[i][j-1], dp[i][j]-arr[i][j-1]) : dp[i][j]-arr[i][j-1]);
       }
     }
   }
