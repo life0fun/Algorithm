@@ -42,7 +42,6 @@ hf_hub_download(
     filename="config.json",
     use_auth_token=True  # make sure you're logged in
 )
-
 # A basic module to distill from teacher. 
 # The teacher will generate the answer, and potentially a thought process.
 class TeacherQA(dspy.Module):
@@ -102,12 +101,8 @@ class HFWrapper:
                 prompt = prompts[i]
                 if completion.startswith(prompt):
                     completion = completion[len(prompt):].strip()
-            print(f"----decode completion start:\n {completion.strip()} \n -----\n")
-            decoded.append(completion.strip())
-            mock_answer = f"""[[ ## reasoning ## ]] The user is asking for the capital of Germany. This is a factual question that can be answered directly from common knowledge.
-[[ ## answer ## ]] The capital of Germany is Berlin. [[ ## completed ## ]]"""
-            fields = ChainOfThoughtAdapter().parse(StudentQASignature, mock_answer)
-            decoded.append(fields)
+            # decoded.append(completion.strip())
+            decoded.append("""[[ ## reasoning ## ]]\n The user is asking for the capital of Germany. This is a factual question that can be answered directly from common knowledge.\n[[ ## answer ## ]]\n The capital of Germany is Berlin.\n[[ ## completed ## ]]\n""")
         return decoded
 
     def __call__(self, prompt, **kwargs):
@@ -117,7 +112,6 @@ class HFLocalModel(dspy.BaseLM):
     def __init__(self, model_name, max_tokens=2048):
         self.backend = HFWrapper(model_name, max_tokens)
         super().__init__(model=model_name)
-
     
     def __call__(self, *args, **kwargs):
         # DSPy may pass chat-style inputs like {"messages": [...]}
@@ -145,11 +139,10 @@ class HFLocalModel(dspy.BaseLM):
         if prompt is None:
             raise ValueError(f"No prompt found in __call__. args={args}, kwargs={kwargs}")
 
-        print(f"----- calling LM with prompt \n {prompt} \n----\n")
         completions = self.backend.generate([prompt], **kwargs)
-        return completions
-    #     decoded = self.backend.decode(completions, prompts=[prompt])
-    #     return decoded[0]
+        decoded = self.backend.decode(completions, prompts=[prompt])
+        print(f"----- HFLocalModel calls LM with prompt:\n {prompt} \n ----Get Repsonse: {decoded[0]} -----\n")
+        return [decoded[0]]  # must return a list as Adapter Base expect lm outputs is a list !!
         
 # Teacher LM: A powerful model like GPT-4o-mini (or ChatGPT equivalent)
 # This model will generate high-quality demonstrations for the student.
@@ -190,10 +183,10 @@ print("\n--- Evaluating Student LM BEFORE Fine-tuning ---")
 # Temporarily configure DSPy to use the student_lm for evaluation
 dspy.settings.configure(lm=student_lm)
 
-student = StudentQA()
-question = "what is the capital of German ?"
-answer = student(question=question)
-print(f"the answer to question {question} is {answer}")
+#student = StudentQA()
+# question = "what is the capital of German ?"
+# answer = student(question=question)
+# print(f"the answer to question {question} is {answer}")
 # for ex in evaluate_dataset:
 #     print("Running on:", ex.question)
 #     out = student(question=ex.question)
