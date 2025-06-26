@@ -13,8 +13,7 @@
 // 10. BFS/DFS not scalable with edges. use PriorityQueue to sort min and prune.
 // 11. MergeSort: process each pair, turn N^2 to NlgN. all pairs(i, j) comp skipping some when merge sorted halves. Count of Range Sum within.
 // 12. i-j: dist(# of eles) between two ptrs. [i, j) exclude j; 0 when i==j; [j-i+1], [j-i), (j-i-2).
-// 13. Recur(arr,off,prefix) {for(i=off;++i){recur(i+1, prefix+arr[i]}}; outer loop over all coins, recur i+1 prefix into sub-recur; incl arr/i, excl all others.
-// 14. Recur(arr,off,prefix) {prefix+arr/i; recur(off+1, prefix)}}; NO outer loop over all coins, recur pos+1;
+// 13. Recur(arr,off,prefix) {for(i=off;i++){recur(i+1, prefix+arr[i]}}; outer loop over all coins, recur i+1 prefix into sub-recur; i was incl/excl in outer i iter.
 // 14. TreeMap/TreeSet(balance rotate) to sort a dynamic win of arr updated add r remove l; MergeSort when arr is fixed.   
 
 // Loop move edges ? Recur subset offset ? DP new offset ? Check Boundary and End state First, move smaller edges !!!
@@ -351,7 +350,6 @@ Node build(List<Object> arr, int depth) {
   return root;
 }
 Nodee query(Node root, query, best_node, best_dist) {
-
 }
 
 // sort the list by x dim. recur left, right.  
@@ -430,9 +428,7 @@ public double myPower(double x, int n) {
 }
 
 static int kadan(int[] arr) {
-  int gmax = 0, spanSum = 0;  // global states
-  int spanStart = 0, spanEnd = 0;
-  int maxStart = 0, maxEnd = 0;
+  int spanStart = 0, spanEnd = 0, spanSum, gmax;
   // Loop Invar: max till I. 
   for (int i = 0; i < arr.length; i++ ) {
     spanSum = Math.max(spanSum + arr[i], arr[i]);
@@ -603,7 +599,8 @@ static int tripletMaxProd(int[] arr) {
 print triplet_maxprod([7, 6, 8, 1, 2, 3, 9, 10])
 print triplet_maxprod([5,4,3,10,2,7,8])
 
-// Bisect ret the insertion index, arr[l] is the next larger value of target. arr[l-1] < target <= arr[l];
+// l ptr to the last eq/first larger(<= target), or first eq(< target); 
+// drag down r when arr/r > target, when l,m,r, make r<l, r ptr to smaller.
 static int Bisect(int[] arr, int target, boolean insert_at_end) {
   int l=0, r=arr.length-1;
   while (l <= r) {
@@ -619,14 +616,11 @@ static int Bisect(int[] arr, int target, boolean insert_at_end) {
   return l; // check l not oob arr.length;
 }
 static int BisectClosest(int[] arr, int l, int r, int target) {
-  int i = l, j = r;
-  while(i<=j) {
+  while(l<=r) {
     if(arr[m] < target) { l = m+1;} else {r = m-1;}
   }
-  // i pointes to the first entry GT target. [arr[i-1] <  target < arr[i]]
-  if(i>r) { return r;}
-  if(i==l) { return l;}
-  else { if(arr[i-1], target, arr[i])} { return i-1; } else return i;
+  if(l>=arr.length) return arr.length-1;
+  return l == 0 ? l : Math.min(arr[l], l-1);
 }
 
 """ Loop Invar: arr[l..r] sorted and contains v; 
@@ -1850,24 +1844,11 @@ static boolean regmatch(char[] s, char[] p, int soff, int poff) {
     }
 }
 
-""" For each item, if it in rite place, toggle arr[i] -= 1 for count,
-if it's dup and its rite place already taken, -= 1, otherwise, swap """
-def bucketsort_count(arr):
-  def swap(arr, i, j):   arr[i],arr[j] = arr[j],arr[i]
-  for i in xrange(len(arr)):
-    while arr[i] != i+1 and arr[i] >= 0 and arr[i] != 999:  # skip DUP
-      v = arr[i]
-      if arr[v] >= 0:    // swap and toggle!
-        swap(arr, i, v)
-        arr[v] = -1
-      else:             // inc and sentinel
-        arr[v] -= 1
-        arr[i] = 999    // set cur i to SENTI to indicate it is dup
-    if arr[i] == i+1:   // toggle to negate after position match.
-      arr[i] = -1
-  return arr
-print bucket([1, 2, 4, 3, 2])
-
+// - - - - - - - - - - - - - - - - - - - - -  - - -
+// Bucket sort: bucket width, # of bucket. 
+// sort eles into buckets so buckets are partially sorted. 
+// 1+ ele per bucket. inside buckets tracks aggregation of eles(min/max).
+// - - - - - - - - - - - - - - - - - - - - -  - - -
 static void swap(int[] arr, int i, int j) { int tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; }
 static int[] buckesort(int[] arr) {
   int l = 0; int sz = arr.length; int r = sz -1;
@@ -1971,7 +1952,6 @@ def repmiss(arr):
         print "dup at ", i, arr
         break
   return arr
-
 buckesort(new int[]{4,2,5,2,1});
 
 """ bucket tab[arr[i]] for i,j diff by t, and idx i,j with k """
@@ -1989,34 +1969,50 @@ def containsNearbyAlmostDuplicate(self, nums, k, t):
       if i >= k: del d[nums[i - k] / w]
   return False
 
-""" find dup in ary using slow/fast pointers 
-arr[a] is the same as a.next, after cycle meet, start from 0.
-"""
-def findDuplicate(arr):
-  slow = fast = finder = 0
-  while True:
-    slow = arr[slow]
-    fast = arr[arr[fast]]
-    if slow == fast:
-      while finder != slow:
-        finder = arr[finder]
-        slow = arr[slow]
-      return finder
-
-
-def minjp(arr):  // use single var to track, no need to have ary.
-  mjp = 1;
-  curmaxRite = arr[0]
-  nextMaxRite = arr[0]   // seed with value of first.
-  for i in xrange(1,n):
-    if i <= curMaxRite: // i is reachable form current jump,
-      nextMaxRite = Math.max(nextMaxRite, i+arr[i])
-    else:   // when approaching to current jp
-      mjp += 1
-      curMaxRite = nextMaxRite
-    if curMaxRite >= n:
-      return mjp
-assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
+class Solution {
+  public class Bucket {
+    int min; int max; int left; int rite; int idx;
+  }
+  public int maximumGap(int[] arr) {
+    // width = (max-min)/n-1; width must take floor. buckets = n-1; // (max-min)/width
+    // say 1,5,9, w=8/2=4; width=4, [1..5][6..10][11..15], buckets=9/5=2;
+    // 1,3,6,9, 8/3=2, 1-3, 4-6, 7-9
+    // width: 5/3=1, 1236, [1,2][3,4][5,6] num bucket=(max-min)/(width+1)
+    // [min..min+width][min+i*width+1...min+i+1)*width+1]
+    // x's bucket idx: (x-min)/(width+1); when x=min+w, idx = 0; so /(w+1);
+    int gmin=Integer.MAX_VALUE, gmax=Integer.MIN_VALUE, sz=arr.length;
+    for(int i=0;i<arr.length;i++) {
+      gmin = Math.min(gmin, arr[i]);
+      gmax = Math.max(gmax, arr[i]);
+    }
+    if(sz==1) return 0;
+    int width = (gmax-gmin)/(sz-1);
+    int nbuckets = sz-1; // (int)Math.ceil((gmax-gmin+1)/(width+1));
+    Bucket[] buckets = new Bucket[nbuckets];
+    for(int i=0;i<nbuckets;i++) {
+      buckets[i] = new Bucket();
+      buckets[i].min = Integer.MAX_VALUE;
+      buckets[i].max = Integer.MIN_VALUE;
+      buckets[i].left = gmin+i*width + 1;
+      buckets[i].rite = buckets[i].left + width;
+    }
+    for(int i=0;i<sz;i++) {
+      int bidx = (arr[i]-gmin)/(width+1);
+      buckets[bidx].min = Math.min(buckets[bidx].min, arr[i]);
+      buckets[bidx].max = Math.max(buckets[bidx].max, arr[i]);
+    }
+    int curmin = buckets[0].min, curmax=buckets[0].max, gap=curmax-curmin;
+    for(int i=1;i<nbuckets;i++) {
+      if(buckets[i].min != Integer.MAX_VALUE) {
+        gap = Math.max(gap, buckets[i].min-curmax);
+      }
+      if(buckets[i].max != Integer.MIN_VALUE) {
+        curmax = buckets[i].max;
+      }
+    }
+    return gap;
+  }
+}
 
 
 """ LoopInvar: track of 2 values for each ele, max of exclude this ele, and the
@@ -2032,26 +2028,6 @@ public int CalPackRob(int[] nums) {
   return pre;
 }
 
-// # tot = max(prepre + cur, pre)
-int rob(TreeNode root) {
-  int[] res = robSub(root);
-  return Math.max(res[0], res[1]);
-}
-// res[0]: # of nodes of subtree exclude root, res[1] is  # of nodes include root.
-int[] robSub(TreeNode root) {
-  if (root == null) return new int[]{0, 0};
-  
-  int[] left = robSub(root.left);
-  int[] right = robSub(root.right);
-  // # 0 is max of entire subtree, 1 is include root.
-  int[] res = new int[2];
-  // # max of entire tree, include root or exclude root.
-  res[0] = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);
-  // # max of include root
-  res[1] = root.val + left[0] + right[0];
-  return res;
-}
-
 public boolean canJump(int[] arr) {
   int r=0,maxr=0;
   while(r<=maxr) {
@@ -2061,6 +2037,21 @@ public boolean canJump(int[] arr) {
   }
   return false;
 }
+
+def minjp(arr):  // use single var to track, no need to have ary.
+  mjp = 1;
+  curmaxRite = arr[0]
+  nextMaxRite = arr[0]   // seed with value of first.
+  for i in xrange(1,n):
+    if i <= curMaxRite: // i is reachable form current jump,
+      nextMaxRite = Math.max(nextMaxRite, i+arr[i])
+    else:   // when approaching to current jp
+      mjp += 1
+      curMaxRite = nextMaxRite
+    if curMaxRite >= n:
+      return mjp
+assert minjp([1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9]) == 3
+
 // Track the step k when reaching A[i], so next steps is k-1,k,k+1. stones[i] value is idx that has a stone. 
 // Map<Integer, Set<Integer>> and branch next jumps.
 boolean canCross(int[] stones) {
@@ -2111,7 +2102,25 @@ public int canCompleteCircuit(int[] gas, int[] cost) {
   return start;
 }
 
-
+// # tot = max(prepre + cur, pre)
+int rob(TreeNode root) {
+  int[] res = robSub(root);
+  return Math.max(res[0], res[1]);
+}
+// res[0]: # of nodes of subtree exclude root, res[1] is  # of nodes include root.
+int[] robSub(TreeNode root) {
+  if (root == null) return new int[]{0, 0};
+  
+  int[] left = robSub(root.left);
+  int[] right = robSub(root.right);
+  // # 0 is max of entire subtree, 1 is include root.
+  int[] res = new int[2];
+  // # max of entire tree, include root or exclude root.
+  res[0] = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);
+  // # max of include root
+  res[1] = root.val + left[0] + right[0];
+  return res;
+}
 
 """ if different coins count the same as 1 coin only, the same as diff ways to stair """
 def nways(steps, n):
@@ -3202,6 +3211,54 @@ class Solution {
 }
 
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
+// recursion example, Flattern nested lists.
+// A nested list has a iter. the current nested list's iter recursively call into child's hasNext
+// with recursive iter for nested child, no need stk.
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
+public class NestedIterator implements Iterator<Integer> {
+  int pos = 0; // cursor to the current item in the list 
+  int expandedpos = -1; // not yet expanded.  
+  NestedIterator childiter; // recursive
+  List<NestedInteger> list;
+  // Deque<NestedIterator> stk;  // no need stk for recursion.
+
+  public NestedIterator(List<NestedInteger> nestedList) {
+    pos = 0; expandedpos=-1; // not expanded on construction. Lazy expansion;
+    list = nestedList;
+  }
+
+  public void expandList(int pos) {  // expand only when pos not yet expanded. 
+    if(expandedpos < pos && !list.get(pos).isInteger()) {
+      childiter = new NestedIterator(list.get(pos).getList()); // empty list ok;
+      expandedpos = pos;  // pos is expanded if it is a nested list;
+    } 
+  }
+  @Override
+  public Integer next() {
+    // hasNext already checked pos != end; as no next when pos == end ! 
+    if(list.get(pos).isInteger()) {
+      Integer ret = list.get(pos).getInteger();
+      pos++;
+      return ret;
+    }
+    // hasNext already expanded the list when pos is a list;
+    return childiter.next();
+  }
+
+  @Override
+  public boolean hasNext() {
+    // when pos is a list, expand it and recur to child iterator's hasNext;
+    while(true) {  // loop to skip empty list !
+      if(pos>=list.size()) return false;
+      if(list.get(pos).isInteger()) return true;  
+      expandList(pos);  // idempotent; will only expand once when pos is a list;
+      if(childiter.hasNext()) return true;
+      pos++; // loop to evaluate next pos hasNext();
+    }
+  }
+}
+
+// - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 // Sub Ary, SubSequence, K groups
 // recur: fill the partial result exhaust arr/i for each of [i+1..n] coins, recur i+1, not pos+1 to next pos.
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
@@ -3604,12 +3661,12 @@ public List<List<Integer>> combinationSum(int[] arr, int target) {
   return ret;
 }
 
-// recur with prefix to arr[pos], the prefix is diff from upper layer. recur next is pos+1
+// from root, fan out; multiways with diff prefix to pos, for each suffix, append head to prefix, recur suffix [i+1..];
 // shall use dp, dp is for aggregation.
 static List<List<Integer>> combinSumTotalWays(int[] arr, int pos, int remain, List<Integer> prefix, List<List<Integer>> res) {
   if (remain == 0) { result.add(prefix.stream().collect(Collectors.toList())); return result; }
-  { // Loop each i from pos, recur i+1, not pos+1;
-    for (int i=pos;i<arr.length;i++) { // Loop each arr/i, 
+  { // caller single call jump start from 0; Loop each suffix[pos+1..], recur i+1, not pos+1;
+    for (int i=pos;i<arr.length;i++) { // process each suffix with different prefix; recur i+1 means [0..i] done.
       for(int k=1;k<=remain/arr[i];++k) {  // incl arr[i] with at least 1+,  
         for(int j=0;j<k;j++) { prefix.add(arr[i]); } // <-- prefix is changed when recur down. restore it after recursion.
         recur(arr, /* next of coin i, not pos*/i+1, remain-k*arr[i], prefix, res); // <-- recur i+1 when outer loop over all coins.
@@ -4317,49 +4374,40 @@ def integer_partition(A, n, k):   //  dp[i, v] = dp[i-1,v] + dp[i-1, v-A.i]
 // Interval TreeMap Array and Interval Tree, segment
 // - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - -  - - - - - 
 class Solution {
-  // bisect interval [l..r] to be merged. [0..l-1] left half exclude l can be safely discarded !!
-  // [r+1..end] can be safely merged. in between, [l..r] needs to merge.
-  // if l>=r, means insert at l. no touch of the interval.
-  // compare intv_ed < [start .. end] < intv_start
-  public int[] overlapIntervals(int[][] arr, int start, int end) {
-    int[] start_end = new int[2];
+  public int[] leftrite(int[][] arr, int start, int end) {
+    // use start, search arr[l].end, where arr[l].end < start; no eq; [0..l] can be discarded safely.
+    // use end, search arr[r].start where arr[r].start > end, no eq; [r..n] can be discarded safely.
+    int[] lr = new int[2];
     int l=0,r=arr.length-1;
-    while(l<=r) {
-      int m = l+(r-l)/2, m_end = arr[m][1];
-      if(m_end < start) { l = m+1; /*safe to discard 0..l */ } 
-      else { r = m-1; } // l.end < start < m_end, 
+    while(l<=r) { // update l even a single entry.
+      int m = l+(r-l)/2;
+      if(arr[m][1] < start) { l = m+1;} // not mov l when arr[l].end = start; so [l-1].end strictly < start;
+      else { r=m-1;}
     }
-    start_end[0] = l;  // 0..l-1 is safe to discard. need merge intv from l, need merge.
-
-    l=0;r=arr.length-1;
-    while(l<=r) {
-      int m = l+(r-l)/2, m_start = arr[m][0];
-      // if(end >= m_start) { l=m+1; } else {r=m-1;}
-      if(m_start > end) { r=m-1; /*safe to discard m..n */}  
-      else { l=m+1; }// safely discard m to end;
-    }
-    start_end[1] = l-1;  // l-1 needs to merge as l is the first intv end < l.start.
-    return start_end; // all intervals need to be merged.
-  }
-  public int[][] insert(int[][] intervals, int[] newInterval) {
-    if(intervals.length ==0) { return new int[][]{newInterval};}
-    int[] start_end = overlapIntervals(intervals, newInterval[0], newInterval[1]);
-    List<int[]> merged = new ArrayList<>();
-    for(int i=0;i<start_end[0];++i) { merged.add(intervals[i]); }
+    lr[0] = l-1; // [0..l-1], can be discarded safely.
     
-    if(start_end[0]>start_end[1]){ merged.add(newInterval); }
-    else {
-      int st_intv = start_end[0];
-      int ed_intv = start_end[1];
-      merged.add(new int[]{
-        Math.min(newInterval[0], intervals[st_intv][0]),
-        Math.max(newInterval[1], intervals[ed_intv][1])
-      });
+    l=0; r=arr.length-1;
+    while(l<=r) { // update l even a single entry.
+      int m =l+(r-l)/2;
+      if(arr[m][0] <= end) { l = m+1;} // mov l even end=arr[l].start so arr[l].start strictly> end;
+      else { r=m-1;}
     }
-    for(int i=start_end[1]+1;i<intervals.length;++i) {
-      merged.add(intervals[i]);
-    }
-    return merged.toArray(new int[merged.size()][]);
+    lr[1] = l; // [l..n] arr[l].start > end; include l;
+    return lr;
+  }
+  public int[][] insert(int[][] arr, int[] newiv) {
+    List<int[]> res = new ArrayList<>();
+    int[] lr = leftrite(arr, newiv[0], newiv[1]);
+  
+    for(int i=0;i<=lr[0];i++) { res.add(arr[i]);}
+  
+    int mergedl = newiv[0], mergedr = newiv[1];
+    if(lr[0]+1 < arr.length) { mergedl = Math.min(mergedl, arr[lr[0]+1][0]); }
+    if(lr[1]-1 >= 0) { mergedr = Math.max(mergedr, arr[lr[1]-1][1]);}
+    res.add(new int[]{mergedl, mergedr});
+  
+    for(int i=lr[1];i<arr.length;i++) {res.add(arr[i]);}
+    return res.stream().toArray(int[][]::new);
   }
 }
 
@@ -6150,6 +6198,38 @@ def palindromMincut(s):
   # expand to full string by the end
   return tab[n-1]
 
+// enum all prefix and suffix segs, prefix[0..i],suffix[i+1..N]; if prefix isPal, lookup rev of suffix in dict, 
+// prefix pair(j,i); suffix pair(i,j)
+public boolean isPalin(char[] arr, int l, int r) {
+  if(l==0 && l==r) return true;  // empty at head is Pal;
+  if(l==arr.length) return false; // empty at end is not Pal;
+  if(l+1==r) return true; // single is Pal.
+  while(l<r) {
+    if(arr[l] != arr[r-1]) return false;
+    l++;r--;
+  }
+  return true;
+}
+public List<List<Integer>> PrefixSuffixPal(String w, int widx, Map<String, Integer> map) {
+  List<List<Integer>> res = new ArrayList<>();
+  StringBuilder sb = new StringBuilder(w); sb.reverse();
+  String rw = sb.toString();
+  char[] arr = w.toCharArray();
+  for(int i=0;i<=arr.length;i++) { // 
+    String sufrev = rw.substring(0, arr.length-i); // i=0, sufrev is the entire string.
+    String prerev = rw.substring(arr.length-i); // start from len-i
+    if(isPalin(arr, 0, i) && map.containsKey(sufrev) && map.get(sufrev) != widx) { // start from i=0, empty prefix;
+      List<Integer> pair = new ArrayList<>(); 
+      pair.add(map.get(sufrev)); pair.add(widx); res.add(pair);
+    }
+    if(isPalin(arr, i, arr.length) && map.containsKey(prerev) && map.get(prerev) != widx) {
+      List<Integer> pair = new ArrayList<>(); 
+      pair.add(widx); pair.add(map.get(prerev)); res.add(pair);
+    }
+  }
+  return res;
+}
+
 // palindrom partition. First, find all palindroms.
 // From head, DFS offset+1 find all palindrom, add res to global result set.
 List<List<String>> partition(String s) {
@@ -6210,16 +6290,6 @@ def nextPalindrom(v):
       arr[ml] = str(int(arr[ml])+1)
       arr[mr] = str(int(arr[mr])+1)
   return int(''.join(arr))
-
-""" palindrom pair, suffix, reverse. concat(prepend or append) the two words forms a palindrom
-for each word, list all prefix, reverse suffix.
-https://leetcode.com/problems/palindrome-pairs/discuss/79209/Accepted-Python-Solution-With-Explanation
-"""
-def palindromPair(arr):
-  for each word, find all its prefix and suffix
-    for each prefix, 
-      if prefix is palindrom, reverse corresponding suffix, find in dict, 
-         reverser(suffix) + prefix + suffix  is a palindrom.
 
 
 ''' bfs search on Matrix for min dist, put intermediate result[i,j] index in Q '''
