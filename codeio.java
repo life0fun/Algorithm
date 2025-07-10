@@ -5,7 +5,7 @@
 // 4. Sliding Min win sum K: keep prefix sorted, counted !! subary(l,r) or dist(l,r). Global L watermark trap. 
 // 3. Two pointers ary: Invariants. Update conditions. move smaller when <=; while(l<r){while(arr/l <= minH){l++;r--} minH=min(l,r)};
 // 4. Recursion(root, parent, prefix, collector); prune repeated state, edge class; leaf recur done update collector and parent; parent aggregates all children and update up again.
-// 5. Coin change order matters, outer loop v, dp[v]+=dp[v-a/i]; order not matter, outer loop coin types. Recur(coins, prefix+a/pos) not scale.
+// 5. Coin change order matters, outer loop v, inner loop each coins. dp[v]+=dp[v-a/i]; order not matter, outer loop each coin, inner loop v. Recur(coins, prefix+a/pos) not scale.
 // 6. K lists processing. merge, priority q. reasoning by add one upon simple A=[min/max], B=[min, min+1, min+k...] 
 // 7. Tree: recur(root, parent, prefix, collector) || while(cur!=null||stk.emptry), update state upon popping. parent aggreg all children and updates up.
 // 8. DP carry over aggregations: tot/min, word break/palind, DP stores aggregation and pass forward. Boundary rows!!
@@ -17,7 +17,7 @@
 // 14. TreeMap/TreeSet(balance rotate) to sort a dynamic win of arr updated add r remove l; MergeSort when arr is fixed.   
 
 // Loop move LR ? Recur subset pos+1 ? DP[i+1] ? Exit Check First; Boundary(l==r, arr[l]==arr[r]) and End state(off == len, arr[pos] < 0), move smaller edges !!!
-// Recursion: take boundary start and end as args, ret Agg of sub states. recur(start, end). Pratt(cur_idx, _parent_min_bp_as_stop_condition_); 
+// Recursion: (start, end, context) as args, ret Agg of sub states. recur(start, end). Pratt(cur_idx, _parent_min_bp_as_stop_condition_); 
 // DP !! boundaries(i=1,j=head) !! as the partial val is carried to tree DFS recur next candidates. 
 // 1. discovered state update, boundary check, build candidates, recur, visited aggregation.
 // 1. Backtrack dfs search carrying partial tree at k, construct candidates k+1, loop recur each candidate.
@@ -134,7 +134,7 @@
 // Interval Tree, find all overlapping intervals. floorKey/ceilingKey/submap/remove on add and delete.
 
 // Trie and Suffix tree. https://leetcode.com/articles/short-encoding-of-words/
-// Node is a map of edges { Map<headChar,Edge> edges;} Edge{startidx,endidx, endNode}; Edge stores label of substr index.
+// Node is a map of edges { Map<headChar,Edge> edges; rootNode} Edge{startidx,endidx, endNode}; Edge stores label of substr index.
 // Split edge by inserting new nodes. 
 
 // """ Graph: Adj edge list: Map<Node, LinkedList<Set<Node>>, recur thru all edges visiting nodes.
@@ -788,8 +788,8 @@ public int trapWater(int[] arr) {
   } 
   { // two ptrs from both sides, squeeze minH(left, rite edges) to peak. increase minH. 
     int l=0,r=arr.length-1,minH=0,water=0;
-    while(l<r) {  // move smaller edge; less or equal. when arr[l] <= minH, move l.
-      minH=Math.min(arr[l],arr[r])
+    while(l<r) {  // move smaller edge; 
+      minH=Math.min(arr[l],arr[r]) // calculate k that is next to minH; [l..r]
       { if(arr[l] == minH) { k=l; while(arr[k]<=minH){tot+=diff;k++} l=k;}
         else {k=r; while(arr[k]<=minH){tot+=diff;k--} r=k;}
       }
@@ -1504,21 +1504,20 @@ List<String> topKFrequent(String[] words, int k) {
     Collections.reverse(ans);
     return ans;
 }
-// assertion: maxlen must include maxdups. Maxdup is the max within the window !! as move l reduce dup cnts.
-// slide in arr/i, update maxdups first; diff=r-l+1-maxdup; diff>win, move l; update maxlen;
-public int characterReplacement(String s, int w) {
-  // track each char freq in map, track max. only when max outside.
+// if maxdup stays, l will be moved along with r; (r-l+1-maxdups > w), no maxlen increase.
+// until maxdups is recomputed with correct dup and increased, maxlen is then increased !
+public int characterReplacement(String s, int k) {
+  // track max cnts of arr/i; r-l-maxdups shall < k
   Map<Character, Integer> map = new HashMap<>();
   int l=0,r=0,maxlen=0,maxdups=0;
   for(int r=0;r<arr.length;r++) {  // while(r<s.length()) {
-      map.compute(s.charAt(r), (k,v) -> {return v==null ? 1 : v+1;});
-      maxdups = Math.max(maxdups, map.get(s.charAt(r)));
-      if(r-l+1-maxdups > w) {  // [l..r] length is r-l+1; mov l when win > w; not need to mov l when eq.
-          map.compute(s.charAt(l), (k,v) -> v-= 1);
-          l++;  // if l is maxdups, why not update maxdups ?
-      }
-      maxlen = Math.max(maxlen, r-l+1);
-      // r++;
+    map.compute(s.charAt(r), (k,v) -> {return v==null ? 1 : v+1;});
+    maxdups = Math.max(maxdups, map.get(s.charAt(r)));
+    if(r-l+1-maxdups > k) {  // do not mov l when == k !
+      map.compute(s.charAt(l), (key,cnt) -> cnt-= 1);
+      l++;  // if l is maxdups, why not update maxdups ? cur maxdups already triggers the mov of l;
+    }
+    maxlen = Math.max(maxlen, r-l+1);
   }
   return maxlen;
 }
@@ -5941,7 +5940,33 @@ def bfsInvalidParen(s):
   return res
 print bfsInvalidParen("()())()")
 
-""" first, find unbalance(l-r), traverse each pos recur dfs with excl/incl each pos, no dp short """
+// (( ))) ())
+// when first unbalance, make it balance, as the prefix, (prefix + rest), as a new string to balance; 
+// balance is trigger upon first ), remove each prev ), form the new prefix, and recur rest with diff prefix;
+public void removeInvalidParen(String s, Set<String> res) {
+  int i=0, j=0, lr = 0;
+  for(i=0;i<s.length();i++) {
+    if(s.charAt(i)=='(') lr++;
+    else if (s.charAt(i)==')') lr--;
+    else continue;
+    if(lr >= 0) continue;
+    // lr < 0, remove one of the prev ); i is consumed and is )
+    while(j<=i) {
+      if(s.charAt(j) != ')') { j++; continue; }
+      while(j<=i && s.charAt(j)== ')') j++;
+      String prefix=s.substring(0,j-1)+s.substring(j,i+1);
+      removeInvalidParen(prefix+s.substring(i+1), res);
+    }
+    return;  // first unbalance falls into here and no recur anymore.
+  }
+  if(lr==0) res.add(s);
+  else {
+    for(String ss : removeInvalidParentheses(s)) {
+      res.add(ss);
+    }
+  }
+}
+  
 def rmParenth(s, res):
   path = []
   L,R = 0,0
@@ -6009,7 +6034,6 @@ parenthDFS(3, 0, 0, "");
 // # concatenate more valid parenthesis substring if possible. 
 // # The longest we can go is f(i+1 + f(i+1) + 1). Therefore we have
 // # f(i) = f(i+1) + 2 + f(i + f(i+1) + 2)
-
 static int longestValidParenth(String parenth) {
   int sz = parenth.length();
   int[] f = new int[sz];
@@ -6031,14 +6055,14 @@ static int longestValidParenth(String parenth) {
   int maxlen = 0;
   Stack<Integer> stk = new Stack<Integer>();
   for (int i=0;i<sz;i++) {
-      if (parenth.charAt(i) == '(') { stk.add(/*stk_(_index*/i); }     // push in index
-      else {
-          if (stk.size() > 0) {
-              stk.pop();
-              int begIdx = stk.isEmpty() ? 0 : stk.peek();
-              maxlen = Math.max(maxlen, i-begIdx);
-          }                
-      }
+    if (parenth.charAt(i) == '(') { stk.add(/*stk_(_index*/i); }     // push in index
+    else {
+      if (stk.size() > 0) {
+        stk.pop();
+        int begIdx = stk.isEmpty() ? 0 : stk.peek();
+        maxlen = Math.max(maxlen, i-begIdx);
+      }                
+    }
   }
   System.out.println("longest valid " + maxlen);
   return maxlen;
@@ -6251,6 +6275,29 @@ static int DistinctSubseq(String s, String t) {
 }
 print distinct("bbbc", "bbc")
 print distinct("abbbc", "bc")
+
+// dp[m][n] = Max(dp[m-wi_zeros][n-wi_ones]+1) when include arr[i] with wi_zeros/ones
+public int findMaxForm(String[] arr, int m, int n) {
+  // sortbysmaller(arr, m, n);
+  int[][] dp = new int[m+1][n+1];
+  // Res[][] dp = new Res[m+1][n+1];
+  // for(int i=0;i<=m;i++){ for(int j=0;j<=n;j++) { dp[i][j] = new Res(); }
+  for(int k=0;k<arr.length;k++) {
+    int[] zos = zeros(arr[k]);
+    for(int i=m;i>=zos[0];i--) {
+      for(int j=n;j>=zos[1];j--) {
+        // dp[i][j].setlen = Math.max(dp[i][j].setlen, dp[i-zos[0]][j-zos[1]].setlen+1);
+        dp[i][j] = Math.max(dp[i][j], dp[i-zos[0]][j-zos[1]]+1);
+          // if(dp[i][j].l.size() <= dp[i-zos[0]][j-zos[1]].l.size()) {
+          //   dp[i][j] = new Res(dp[i-zos[0]][j-zos[1]]);
+          //   dp[i][j].add(k, zos[0], zos[1]);
+          //   assert(dp[i][j].zeros <= i && dp[i][j].ones <= j);
+          // }
+      }
+    }
+  }
+  return dp[m][n];
+}
 
 // backwards from [m,n] up left to dp[row-1][col], dp[row][col-1] to [0,0] 
 // dp[i,j] = max(1, min(dp[i-1,j], dp[i,j-1])-arr[i,j])
